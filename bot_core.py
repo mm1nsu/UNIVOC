@@ -66,48 +66,61 @@ def get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-# 실사용자 리포트: "보내고 답장 오기까지 너무 오래 걸림". Gemini 2.5 계열(flash) 모델은
-# thinking(내부 사고 토큰)이 기본으로 켜져 있는데, 여기서 하는 작업(슬롯 추출, 짧은 안내
-# 문구 생성)은 복잡한 추론이 필요 없는 단순 작업이라 thinking을 켜둘 이유가 없음 — 화면에
-# 안 보이는 "생각하는 토큰"을 매번 추가로 만드느라 응답이 느려지기만 함. thinking_budget=0
-# 으로 꺼서 체감 응답속도를 개선함(모델이 gemini-2.5-flash/flash-lite 계열이 아니면 이
-# 필드를 무시하거나 오류를 낼 수 있으니, 적용 후 실제로 응답이 오는지 로컬에서 꼭 확인할 것).
-_THINKING_CONFIG = {"thinking_budget": 0}
+# 실사용자 리포트: "보내고 답장 오기까지 너무 오래 걸림". Gemini 모델들은 답 내놓기 전에
+# 화면에 안 보이는 "생각하는 토큰"(thinking)을 기본으로 만드는데, 여기서 하는 작업(슬롯
+# 추출, 짧은 안내문구 생성)은 복잡한 추론이 필요 없는 단순작업이라 켜둘 이유가 없음.
+#
+# 근데 thinking을 끄는 API 파라미터가 모델 세대별로 다름(2026-09 기준):
+# - Gemini 2.5 계열: thinking_budget(토큰 수)으로 조절, 0을 주면 완전히 꺼짐.
+# - Gemini 3 계열(3.5-flash 포함): thinking_level(low/medium/high, 대부분 minimal 미지원)
+#   으로 조절하는 새 방식으로 바뀌었고, 공식 문서에 "Gemini 3 Flash/Flash-Lite는 thinking을
+#   완전히 끄는 걸 지원하지 않음"이라고 명시돼 있음 — thinking_budget=0을 줘도 안 먹히거나
+#   무시될 수 있음. 두 파라미터를 동시에 넣으면 400 에러가 나서 같이 쓸 수도 없음.
+# 그래서 모델명 보고 세대를 구분해서 맞는 파라미터만 골라 씀 — config.get_model()이 바뀌면
+# (관리자 페이지에서 모델명 변경) 자동으로 맞는 쪽으로 전환됨.
+def _thinking_config_for(model: str) -> dict:
+    model = (model or "").lower()
+    if model.startswith("gemini-3") or "gemini-3" in model:
+        # Gemini 3 계열은 완전 OFF가 안 되니, 그나마 제일 빠른 low로 맞춤
+        return {"thinking_level": "low"}
+    return {"thinking_budget": 0}
 
 
 def _generate_json(prompt: str, schema, temperature: float = 0.0):
     client = get_client()
+    model = config.get_model()
     t0 = time.perf_counter()
     response = client.models.generate_content(
-        model=config.get_model(),
+        model=model,
         contents=prompt,
         config={
             "response_mime_type": "application/json",
             "response_schema": schema,
             "temperature": temperature,
-            "thinking_config": _THINKING_CONFIG,
+            "thinking_config": _thinking_config_for(model),
         },
     )
     # 응답이 느리다는 리포트가 있어서, 실제로 Gemini 호출 자체가 얼마나 걸리는지 터미널에
     # 바로 보이게 함(한 턴에 이 호출이 여러 번 겹쳐서 체감 속도가 더 느려지는 구조라, 콜드
     # 스타트/네트워크/모델 문제 중 뭐가 진짜 원인인지 이 숫자로 구분할 수 있음).
-    print(f"[Gemini] {config.get_model()} JSON 호출 {time.perf_counter() - t0:.2f}s")
+    print(f"[Gemini] {model} JSON 호출 {time.perf_counter() - t0:.2f}s")
     return response.text
 
 
 def _generate_text(prompt: str, system_instruction: str, temperature: float = 0.4) -> str:
     client = get_client()
+    model = config.get_model()
     t0 = time.perf_counter()
     response = client.models.generate_content(
-        model=config.get_model(),
+        model=model,
         contents=prompt,
         config={
             "system_instruction": system_instruction,
             "temperature": temperature,
-            "thinking_config": _THINKING_CONFIG,
+            "thinking_config": _thinking_config_for(model),
         },
     )
-    print(f"[Gemini] {config.get_model()} 텍스트 호출 {time.perf_counter() - t0:.2f}s")
+    print(f"[Gemini] {model} 텍스트 호출 {time.perf_counter() - t0:.2f}s")
     return response.text
 
 

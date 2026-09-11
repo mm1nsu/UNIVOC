@@ -137,6 +137,47 @@
   }
   .role-chip.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
 
+  /* 선택삭제 + 전체선택 — 실사용자 요청으로 추가된 일괄 관리 도구 */
+  .toolbar-bulk{
+    margin-top:-6px;
+  }
+  .select-all-label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .select-all-label input{width:15px;height:15px;cursor:pointer;}
+  .bulk-count{color:var(--yu-blue);font-weight:600;}
+  .btn-delete-selected{
+    margin-left:auto;
+    font-size:12px;
+    font-weight:600;
+    color:var(--no);
+    background:var(--no-bg);
+    border:1px solid var(--no);
+    border-radius:20px;
+    padding:6px 14px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-delete-selected:disabled{
+    color:var(--muted);
+    background:var(--panel);
+    border-color:var(--border);
+    cursor:not-allowed;
+  }
+  .btn-delete-selected:hover:not(:disabled){background:var(--no);color:#fff;}
+  .app-check{
+    display:flex;
+    align-items:flex-start;
+    padding-top:2px;
+  }
+  .app-checkbox{width:16px;height:16px;cursor:pointer;}
+  .card-head-left{display:flex;gap:10px;align-items:flex-start;}
+
   .stage-track{
     display:flex;
     gap:8px;
@@ -328,6 +369,14 @@
     <button class="role-chip" data-role="admin">행정처</button>
     <span class="staff-name" id="staffNameLabel"></span>
   </div>
+  <div class="toolbar toolbar-bulk">
+    <label class="select-all-label">
+      <input type="checkbox" id="selectAllBox" />
+      전체선택
+    </label>
+    <span class="bulk-count" id="selectedCountLabel"></span>
+    <button class="btn-delete-selected" id="deleteSelectedBtn" disabled>선택삭제</button>
+  </div>
 
   <div id="list"></div>
 </main>
@@ -485,9 +534,14 @@ function renderCard(app){
 
   div.innerHTML = `
     <div class="card-head">
-      <div>
-        <div class="route">${app.home_major || '(소속 미확인)'}<span class="arrow">→</span>${app.target_major}</div>
-        <div class="meta">신청 ID ${app.id} · 세션 ${app.session_id.slice(0,8)}… · ${fmtDate(app.created_at)} 제출</div>
+      <div class="card-head-left">
+        <label class="app-check">
+          <input type="checkbox" class="app-checkbox" data-id="${app.id}" ${selectedIds.has(app.id) ? 'checked' : ''} />
+        </label>
+        <div>
+          <div class="route">${app.home_major || '(소속 미확인)'}<span class="arrow">→</span>${app.target_major}</div>
+          <div class="meta">신청 ID ${app.id} · 세션 ${app.session_id.slice(0,8)}… · ${fmtDate(app.created_at)} 제출</div>
+        </div>
       </div>
       <div class="status-badge ${app.status}">${statusLabel(app.status)}</div>
     </div>
@@ -506,8 +560,61 @@ function renderCard(app){
   div.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => decide(app.id, btn.dataset.action, btn.dataset.stage));
   });
+  div.querySelector('.app-checkbox').addEventListener('change', (e) => toggleSelect(app.id, e.target.checked));
   return div;
 }
+
+// ---------------- 선택삭제 + 전체선택 ----------------
+// 실사용자 요청. 지금 화면에 보이는(현재 탭 필터 기준) 신청서들 중에서 체크박스로 골라
+// 한 번에 지울 수 있게 함. 선택 상태는 목록을 다시 불러올 때마다(탭 전환/새로고침/삭제 후)
+// 초기화됨 — 필터가 바뀌면 어떤 게 선택돼있었는지 헷갈리기 쉬워서, 매번 깨끗하게 다시
+// 고르게 하는 쪽이 실수로 잘못 지울 위험이 더 적음.
+let selectedIds = new Set();
+const selectAllBox = document.getElementById('selectAllBox');
+const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+const selectedCountLabel = document.getElementById('selectedCountLabel');
+
+function updateBulkBar(){
+  const checkboxes = document.querySelectorAll('.app-checkbox');
+  selectAllBox.checked = checkboxes.length > 0 && selectedIds.size === checkboxes.length;
+  deleteSelectedBtn.disabled = selectedIds.size === 0;
+  selectedCountLabel.textContent = selectedIds.size > 0 ? `${selectedIds.size}건 선택됨` : '';
+}
+
+function toggleSelect(id, checked){
+  if(checked) selectedIds.add(id); else selectedIds.delete(id);
+  updateBulkBar();
+}
+
+selectAllBox.addEventListener('change', (e) => {
+  const checked = e.target.checked;
+  document.querySelectorAll('.app-checkbox').forEach(cb => {
+    cb.checked = checked;
+    if(checked) selectedIds.add(cb.dataset.id); else selectedIds.delete(cb.dataset.id);
+  });
+  updateBulkBar();
+});
+
+deleteSelectedBtn.addEventListener('click', async () => {
+  if(selectedIds.size === 0) return;
+  if(!confirm(`선택한 신청서 ${selectedIds.size}건을 삭제할까? 승인/반려 기록까지 전부 지워지고 되돌릴 수 없어!`)) return;
+  try{
+    const res = await fetch('/api/recognition/applications/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ids: Array.from(selectedIds)})
+    });
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || '삭제 중 오류가 났어요.');
+      return;
+    }
+    selectedIds.clear();
+    loadList();
+  }catch(e){
+    alert('서버랑 통신 중 오류가 났어요.');
+  }
+});
 
 async function decide(id, action, stage){
   const meta = STAGE_META[stage];
@@ -540,6 +647,7 @@ async function decide(id, action, stage){
 }
 
 async function loadList(){
+  selectedIds.clear();  // 목록이 바뀌는 시점(탭 전환/새로고침/삭제 후)마다 선택 초기화
   listEl.innerHTML = '<div class="empty">불러오는 중...</div>';
   try{
     const url = currentStatus ? `/api/recognition/applications?status=${currentStatus}` : '/api/recognition/applications';
@@ -547,12 +655,15 @@ async function loadList(){
     const apps = await res.json();
     if(!apps.length){
       listEl.innerHTML = '<div class="empty">해당하는 신청서가 없어요.</div>';
+      updateBulkBar();
       return;
     }
     listEl.innerHTML = '';
     apps.forEach(app => listEl.appendChild(renderCard(app)));
+    updateBulkBar();
   }catch(e){
     listEl.innerHTML = '<div class="empty">목록을 불러오지 못했어요.</div>';
+    updateBulkBar();
   }
 }
 

@@ -1133,6 +1133,25 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
     return target.model_dump()
 
 
+# 직원 화면(staff.html)에서 여러 신청서를 체크박스로 골라 한 번에 지우는 기능 — 실사용자
+# 요청("선택삭제+전체선택 기능 추가"). 승인/반려 감사기록까지 포함해서 완전히 삭제되는
+# 되돌릴 수 없는 작업이라, 화면에서도 확인창을 한 번 거치게 해뒀음(아래 staff.html 참고).
+class DeleteApplicationsIn(BaseModel):
+    ids: list[str]
+
+
+@app.post("/api/recognition/applications/delete")
+def delete_recognition_applications(body: DeleteApplicationsIn):
+    if not body.ids:
+        return JSONResponse(status_code=400, content={"error": "삭제할 신청서를 선택해줘"})
+    apps = load_recognition_apps()
+    ids_set = set(body.ids)
+    remaining = [a for a in apps if a.id not in ids_set]
+    deleted_count = len(apps) - len(remaining)
+    save_recognition_apps(remaining)
+    return {"deleted": deleted_count}
+
+
 if __name__ == "__main__":
     import uvicorn
 

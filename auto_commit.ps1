@@ -16,6 +16,9 @@ function Get-WorkingTreeStatus {
 
 $previousStatus = Get-WorkingTreeStatus
 $changedAt = $null
+if ($previousStatus) {
+    $changedAt = Get-Date
+}
 Write-Log 'polling watcher started'
 
 try {

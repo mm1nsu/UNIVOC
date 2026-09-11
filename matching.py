@@ -102,6 +102,41 @@ def _region_conflicts(student_region: str | None, condition_texts: list[str]) ->
     return False
 
 
+# ---------------- 학과제한 "명확히 일치" 강제포함 ----------------
+#
+# 실사용자 리포트: 시각디자인 전공 학생한테 "시각디자인 전공자 및 판화학과"가 학과제한인
+# 장학금이 2차 LLM 소프트매칭(soft_match_conditions)에서 걸러지는 문제. 학과제한은 원래
+# 자유서술형이라 2차 LLM 판단에 맡기는 영역이지만, "학생이 말한 전공명이 공지 원문에
+# 문자 그대로 들어있는" 경우는 지명 비교(_region_conflicts)처럼 규칙만으로 100% 확실하게
+# 판단 가능함 — 이런 명확한 경우엔 LLM이 뭐라고 판단하든(확률적 판단이라 틀릴 수 있음)
+# 무조건 후보로 유지시킴. 반대방향(불일치라고 배제)으로는 절대 안 씀 — "관련 학과 포함"
+# 처럼 표현이 다양해서 안 맞는다고 자동배제하면 오배제 위험이 큼(기존 소프트매칭 원칙과
+# 동일하게 여기서도 "확실한 포함"에만 개입하고 배제는 절대 안 함).
+_MAJOR_SUFFIXES = ("학과", "전공", "학부", "계열", "과")
+
+
+def _major_core(text: str) -> str:
+    """학과명 비교용 — 흔한 접미사(학과/전공/학부/계열/과) 제거. 학생 발화("시각디자인학과")와
+    공지 원문("시각디자인 전공자")이 접미사만 다르게 표현되는 경우가 많아서, 접미사를 뗀
+    "핵심 학과명"을 공지 원문 안에서 그대로 찾아야 이런 표현 차이에도 안정적으로 매칭됨."""
+    text = (text or "").strip()
+    for suf in _MAJOR_SUFFIXES:
+        if text.endswith(suf) and len(text) > len(suf):
+            return text[: -len(suf)]
+    return text
+
+
+def major_clearly_matches(student_major: str | None, major_restriction: str | None) -> bool:
+    """학생이 말한 전공의 핵심 학과명이 공지의 학과제한 원문에 그대로 포함되면 True.
+    2글자 미만인 핵심명은(오탐 위험이 커서) 매칭 대상에서 제외함."""
+    if not student_major or not major_restriction:
+        return False
+    core = _major_core(student_major)
+    if len(core) < 2:
+        return False
+    return core in major_restriction
+
+
 def _status_matches(student_status: str | None, allowed: list[str]) -> bool:
     """재학상태 비교 — 공지 원문(재학생/신입생/휴학생...)과 학생 자유발화(재학/휴학...)가
     독립적으로 추출돼서 표현이 완전히 똑같으란 보장이 없음("재학" vs "재학생" 등).

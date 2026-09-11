@@ -21,7 +21,7 @@ import bot_core
 import config
 import curriculum
 import recognition_doc
-from matching import match_scholarships
+from matching import match_scholarships, major_clearly_matches
 from rules import check_dual_major_eligibility
 from schemas import (
     CompletedCourseItem,
@@ -384,6 +384,15 @@ def filter_by_soft_conditions(
             )
             return matches
 
+    # 실사용자 리포트: 시각디자인 전공 학생한테 "시각디자인 전공자 및 판화학과"가 학과제한인
+    # 장학금이 2차 LLM 소프트매칭에서 걸러짐 — 학생 전공이 공지 학과제한 원문에 문자 그대로
+    # 들어있는데도 제외된 거라 "확률적 판단이 가끔 틀릴 수 있다"로 넘어갈 문제가 아니라
+    # 실제 버그임. 학과명이 이렇게 명확히 일치하는 경우는 지역 하드필터처럼 규칙만으로
+    # 100% 확실하게 판단 가능한 영역이라, LLM이 뭐라고 판단하든(eligible=false를 줘도)
+    # major_clearly_matches()가 True면 무조건 후보로 강제 유지시킴 — LLM 오판이 이 케이스를
+    # 다시는 못 뚫게 규칙이 최종 결정권을 가짐. (반대방향은 안 씀: 학과가 안 맞아 보인다고
+    # 규칙으로 자동배제하지는 않음 — 표현이 다양해서 오배제 위험이 크기 때문.)
+    #
     # 실사용자 리포트: 조건 맞는 장학금이 2차 소프트매칭에서 조용히 사라지는 문제를 진단할
     # 방법이 없었음(왜 빠졌는지 서버 로그에 아무 흔적도 안 남음). LLM이 eligible=false를 준
     # 항목은 무조건 로그에 남겨서, 다음에 똑같은 문제가 재현되면 터미널에서 바로 "무슨 조건
@@ -393,8 +402,14 @@ def filter_by_soft_conditions(
         key = s.id or s.name
         eligible, reason = verdicts.get(key, (True, ""))
         if not eligible:
-            print(f"[filter_by_soft_conditions] 제외됨: {s.name} (id={key}) — 이유: {reason}")
-            continue
+            if major_clearly_matches(state.major, s.eligibility.major_restriction):
+                print(
+                    f"[filter_by_soft_conditions] LLM은 제외(false)라고 했지만 학과가 "
+                    f"명확히 일치해서 강제로 유지: {s.name} (id={key}) — LLM이 준 이유: {reason}"
+                )
+            else:
+                print(f"[filter_by_soft_conditions] 제외됨: {s.name} (id={key}) — 이유: {reason}")
+                continue
         filtered.append((s, needs_income))
     return filtered
 

@@ -4,6 +4,7 @@ CLI/웹이 공통으로 사용. API 키/모델은 config.py에서 매번 새로 
 관리자 페이지에서 키를 바꾸면 재시작 없이 바로 반영됨.
 """
 import json
+import time
 
 from google import genai
 
@@ -65,8 +66,18 @@ def get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
+# 실사용자 리포트: "보내고 답장 오기까지 너무 오래 걸림". Gemini 2.5 계열(flash) 모델은
+# thinking(내부 사고 토큰)이 기본으로 켜져 있는데, 여기서 하는 작업(슬롯 추출, 짧은 안내
+# 문구 생성)은 복잡한 추론이 필요 없는 단순 작업이라 thinking을 켜둘 이유가 없음 — 화면에
+# 안 보이는 "생각하는 토큰"을 매번 추가로 만드느라 응답이 느려지기만 함. thinking_budget=0
+# 으로 꺼서 체감 응답속도를 개선함(모델이 gemini-2.5-flash/flash-lite 계열이 아니면 이
+# 필드를 무시하거나 오류를 낼 수 있으니, 적용 후 실제로 응답이 오는지 로컬에서 꼭 확인할 것).
+_THINKING_CONFIG = {"thinking_budget": 0}
+
+
 def _generate_json(prompt: str, schema, temperature: float = 0.0):
     client = get_client()
+    t0 = time.perf_counter()
     response = client.models.generate_content(
         model=config.get_model(),
         contents=prompt,
@@ -74,18 +85,29 @@ def _generate_json(prompt: str, schema, temperature: float = 0.0):
             "response_mime_type": "application/json",
             "response_schema": schema,
             "temperature": temperature,
+            "thinking_config": _THINKING_CONFIG,
         },
     )
+    # 응답이 느리다는 리포트가 있어서, 실제로 Gemini 호출 자체가 얼마나 걸리는지 터미널에
+    # 바로 보이게 함(한 턴에 이 호출이 여러 번 겹쳐서 체감 속도가 더 느려지는 구조라, 콜드
+    # 스타트/네트워크/모델 문제 중 뭐가 진짜 원인인지 이 숫자로 구분할 수 있음).
+    print(f"[Gemini] {config.get_model()} JSON 호출 {time.perf_counter() - t0:.2f}s")
     return response.text
 
 
 def _generate_text(prompt: str, system_instruction: str, temperature: float = 0.4) -> str:
     client = get_client()
+    t0 = time.perf_counter()
     response = client.models.generate_content(
         model=config.get_model(),
         contents=prompt,
-        config={"system_instruction": system_instruction, "temperature": temperature},
+        config={
+            "system_instruction": system_instruction,
+            "temperature": temperature,
+            "thinking_config": _THINKING_CONFIG,
+        },
     )
+    print(f"[Gemini] {config.get_model()} 텍스트 호출 {time.perf_counter() - t0:.2f}s")
     return response.text
 
 

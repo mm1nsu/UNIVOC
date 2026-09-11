@@ -557,7 +557,12 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         return {"reply": guide, "stage": "consult", "options": []}
 
     # stage == "consult"
-    reply = bot_core.generate_consult_answer(convo, sub["selected"])
+    # 아까 번호 붙여서 보여준 후보 전체(sub["matches"])를 같이 넘겨줌 — 학생이 자기가 고른
+    # 것 말고 "근데 1번은 얼마야?"처럼 다른 번호를 다시 물어봐도 실제 DB 정보로 답하게 함
+    # (bot_core.generate_consult_answer 주석 참고 — 예전엔 선택된 것 1개만 봐서 다른 번호
+    # 질문엔 정보 있는데도 "모른다"고 지어내는 버그가 있었음).
+    all_candidates = [s for s, _ in sub.get("matches") or []]
+    reply = bot_core.generate_consult_answer(convo, sub["selected"], all_candidates)
     return {"reply": reply, "stage": "consult", "options": []}
 
 

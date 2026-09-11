@@ -340,14 +340,40 @@ def generate_action_guide(selected: Scholarship) -> str:
 
 # ---------- 4. 선택 이후 자유 상담 ----------
 
-def generate_consult_answer(conversation_history: str, selected: Scholarship) -> str:
+# 실사용자 리포트: 학생이 최종 선택한 장학금(1개)으로 상담 단계에 들어간 뒤, "근데 1번은
+# 얼마 주는거야?"처럼 자기가 고른 게 아닌 "다른 번호" 후보를 다시 물어보면, 이 함수가
+# selected(선택된 것 딱 1개)만 갖고 있어서 그 후보의 실제 DB 정보(amount 등)를 아예 볼 수가
+# 없었음 — 그래서 실제로는 DB에 금액이 버젓이 있는데도 "정보가 없다"고 지어내서 답하는
+# 버그가 있었음. 아까 번호 붙여서 보여줬던 후보 전체 목록(all_candidates)을 같이 넘겨서,
+# 선택 안 한 다른 번호에 대한 질문도 실제 데이터로 답할 수 있게 함.
+def generate_consult_answer(
+    conversation_history: str,
+    selected: Scholarship,
+    all_candidates: list[Scholarship] | None = None,
+) -> str:
+    candidates_block = ""
+    if all_candidates:
+        listing = "\n".join(
+            f"{i + 1}번: {s.model_dump_json()}" for i, s in enumerate(all_candidates)
+        )
+        candidates_block = f"""
+
+[아까 학생한테 번호 붙여서 보여준 후보 전체 목록 — 학생이 지금 선택한 것 말고 "n번은
+얼마야/무슨 조건이야" 같은 식으로 다른 번호를 물어보면, 절대 모른다고 하지 말고 반드시
+여기서 그 번호를 찾아 실제 데이터로 답해라. 여기 없는 정보(예: amount가 실제로 null)만
+"정확한 건 확인해봐"라고 안내해라]
+{listing}"""
+
     prompt = f"""[학생이 선택한 장학금 정보]
 {selected.model_dump_json(indent=2)}
+{candidates_block}
 
 [지금까지 대화]
 {conversation_history}
 
-위 대화의 마지막 학생 질문에 자연스럽게 답해라.
+위 대화의 마지막 학생 질문에 자연스럽게 답해라. 선택한 장학금이 아니라 다른 번호의 후보를
+물어보면, 위 [후보 전체 목록]에서 그 번호를 찾아서 답해라 — 목록에 있는데도 "정보 없다"고
+하면 안 된다.
 """
     return _generate_text(prompt, CONSULT_PROMPT, temperature=0.4)
 

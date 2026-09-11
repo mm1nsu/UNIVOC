@@ -344,6 +344,15 @@
     padding:9px 12px;
   }
 
+  /* 지금 보고 있는 화면이 최신 코드로 반영된 건지 바로 확인할 수 있게(실사용자 요청) */
+  #versionInfo{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:20px;
+    opacity:.7;
+  }
+
   /* 커스텀 모달 — 네이티브 alert/confirm/prompt 대신 화면 톤에 맞춘 대화창.
      Promise 기반(showModal)이라 await로 기존 흐름을 거의 그대로 유지할 수 있음. */
   .modal-overlay{
@@ -453,6 +462,7 @@
   </div>
 
   <div id="list"></div>
+  <div id="versionInfo"></div>
 </main>
 
 <div class="modal-overlay" id="modalOverlay" hidden>
@@ -822,6 +832,17 @@ document.querySelectorAll('.toolbar .tab').forEach(tab => {
   });
 });
 document.getElementById('refreshBtn').addEventListener('click', loadList);
+
+// 지금 이 화면이 최신 코드로 반영된 건지 데모 중 바로 확인할 수 있게(실사용자 요청)
+async function checkVersion(){
+  const versionEl = document.getElementById('versionInfo');
+  try{
+    const res = await fetch('/api/version');
+    const data = await res.json();
+    versionEl.textContent = `마지막 업데이트: ${data.last_updated} (KST)`;
+  }catch(e){ /* 무시 */ }
+}
+checkVersion();
 
 loadList();
 </script>

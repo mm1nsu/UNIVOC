@@ -291,6 +291,16 @@
   #composer button:hover{background:var(--yu-blue-dark);}
   #composer button:disabled{background:#c9ccd1;cursor:default;}
 
+  /* 지금 보고 있는 게 최신 버전인지 데모 중에 바로 확인할 수 있게(실사용자 요청) —
+     서버 코드 파일들의 마지막 수정 시각(KST)을 눈에 안 띄게 작게 표시함 */
+  #versionInfo{
+    text-align:center;
+    font-size:10.5px;
+    color:var(--muted);
+    padding:0 18px 10px;
+    opacity:.7;
+  }
+
   .typing{
     font-size:13px;
     color:var(--muted);
@@ -366,6 +376,7 @@
     <input id="input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" aria-label="메시지 입력" />
     <button type="submit">전송</button>
   </form>
+  <div id="versionInfo"></div>
 </div>
 
 <script>
@@ -511,6 +522,18 @@ async function checkSettings(){
   }catch(e){ /* 무시 */ }
 }
 
+// 지금 로컬/Render 등 보고 있는 화면이 최신 코드로 반영된 건지 데모 중에 바로 확인할 수 있게
+// (실사용자 요청: "몇시몇분에 업데이트한 버전인지 웹에서 볼 수 있게 해줘") — 서버 파일들의
+// 마지막 수정시각(한국시간 기준으로 서버가 계산해서 내려줌)을 화면 하단에 작게 표시함.
+async function checkVersion(){
+  const versionEl = document.getElementById('versionInfo');
+  try{
+    const res = await fetch('/api/version');
+    const data = await res.json();
+    versionEl.textContent = `마지막 업데이트: ${data.last_updated} (KST)`;
+  }catch(e){ /* 무시 — 표시만 못 될 뿐 챗봇 기능엔 영향 없음 */ }
+}
+
 // 응답 기다리는 동안 입력창/전송버튼/옵션·퀵바·초안확인 버튼을 다 잠가서, 응답이 느릴 때
 // (특히 Render 무료 플랜 콜드스타트로 30~50초 걸릴 때) 답답해서 두 번 누르는 것 때문에
 // 같은 메시지가 두 번 전송되거나 신청서가 중복 제출되는 걸 막음. sendMessage() 맨 앞의
@@ -573,6 +596,7 @@ document.querySelectorAll('.quickbar [data-cmd], #draftActions [data-cmd]').forE
 });
 
 checkSettings();
+checkVersion();
 
 // 새로고침으로 돌아온 경우 저장해둔 대화 로그를 그대로 다시 그려줌(세션ID도 이미 위에서
 // sessionStorage로 복원됨) — 없으면 처음 방문이니 인사말부터 시작. addMessage에 skipSave=true를

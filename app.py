@@ -10,6 +10,7 @@ import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -186,6 +187,37 @@ def dualmajor_page():
 @app.get("/staff")
 def staff_page():
     return FileResponse(str(STATIC_DIR / "staff.html"))
+
+
+# ---------------- 버전(마지막 업데이트 시각) ----------------
+# 실사용자 요청: "몇시몇분에 업데이트한 버전인지 웹에서 볼 수 있게 해줘" — 로컬에서 테스트
+# 중인 코드랑 Render에 배포된 코드가 서로 다른 시점일 수 있어서, 지금 화면에 뜬 게 정확히
+# 언제 반영된 코드인지 데모 중에도 바로 확인할 수 있게 함. 서버가 돌아가는 컴퓨터의 시스템
+# 시간대가 뭐든(로컬 PC는 KST, Render는 보통 UTC) 항상 한국시간(KST)으로 통일해서 보여줌 —
+# 안 그러면 로컬이랑 Render 화면에 서로 다른 시간이 찍혀서 더 헷갈릴 수 있음.
+_VERSION_FILES = [
+    "app.py",
+    "bot_core.py",
+    "matching.py",
+    "schemas.py",
+    "rules.py",
+    "curriculum.py",
+    "static/index.html",
+    "static/staff.html",
+]
+
+
+@app.get("/api/version")
+def get_version():
+    mtimes = []
+    for rel in _VERSION_FILES:
+        p = BASE_DIR / rel
+        if p.exists():
+            mtimes.append(p.stat().st_mtime)
+    if not mtimes:
+        return {"last_updated": "확인 불가"}
+    latest = datetime.fromtimestamp(max(mtimes), tz=ZoneInfo("Asia/Seoul"))
+    return {"last_updated": latest.strftime("%Y-%m-%d %H:%M")}
 
 
 # ---------------- 설정(API 키) ----------------

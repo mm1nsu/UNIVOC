@@ -1,0 +1,2915 @@
+[
+  {
+    "id": "91c9ce10f21a",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "2026학년도 2학기 장학사정 결과 발표",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "수업료 전액 범위 내 (장학금 유형 및 지원구간별 차등 지급)",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "2026학년도 2학기 재학생 중 장학생 선발 기준 충족자 (2026-1학기 성적 보유자)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "장학금별 상이 (추천: 3.0 이상 또는 3.5 이상, 면학: 2.0 이상)",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "구분별 차등 (추천/면학 장학금: 1~6구간 및 기초·차상위, 국가장학금: 9구간 이하)",
+      "credit_requirement": "직전학기 12학점 이상 취득 (추천장학금 기준)",
+      "special_conditions": [
+        "2026-2학기 한국장학재단 국가장학금 신청자 (교내 복지 장학금 공통)"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "URP종합정보시스템 → 장학관리 → 장학수혜내역조회",
+    "application_steps": [
+      "URP종합정보시스템 접속",
+      "장학관리 선택",
+      "장학수혜내역조회"
+    ],
+    "notes": "등록금 고지서상 우선감면 원칙이며 변동사항이 있을 수 있으므로 수강/등록 전 고지서를 반드시 재확인해야 합니다. 미등록 휴학 시 장학금이 소멸되며, 등록 휴학 시 수혜가 유지됩니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "91c9a79477b8",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "제24기 후기(2026년 2학기) 삼원장학생 선발 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "1인당 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "4년제 대학교 3~4학년",
+      "major_restriction": "시각디자인 전공자 및 판화학과",
+      "gpa_requirement_raw": "최근 1년 평균성적 B+학점 이상 (3.5 / 4.5 만점 기준 이상)",
+      "gpa_requirement_percent": 77.8,
+      "income_bracket_max": 7,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "기업체 학술연수 및 입사 조건부 장학금을 받지 않는 자"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "삼원장학생 선발원서 1부",
+      "자기소개 및 학업계획서 1부",
+      "주민등록등본 또는 가족관계증명서 1부",
+      "학자금 지원구간 통지서 1부",
+      "성적증명서 1부",
+      "통장사본 1부",
+      "개인정보 수집·이용·제공 동의서 1부",
+      "공모전 입상증명서 1점 (해당자에 한함)"
+    ],
+    "how_to_apply": "우편접수(마감일 소인분 유효) 또는 방문접수",
+    "application_steps": [
+      "지원서 접수: 2026.09.01.(화) ~ 2026.09.30.(수)",
+      "서류 심사 및 면접전형(필요시)",
+      "장학생 발표: 2026.10.22.(목)",
+      "장학금 지급: 2026.10.23.(금)"
+    ],
+    "notes": "생활비성 장학금으로 타 장학금과 이중수혜 가능. 장학금 수령 학기 휴학 불가(휴학 시 장학금 전액 반환). 2026.10.23 이후 발급된 재학증명서 1부를 2026.10.30까지 제출해야 함.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "5bb82d2202b2",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "2026학년도 2학기 천마가족장학금 신청 안내",
+    "apply_start": "2026-09-07",
+    "apply_end": "2026-11-20",
+    "amount": "수업료의 30%",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "신입생",
+        "편입생"
+      ],
+      "grade_or_semester_note": "정규학기 이내(일반학과 8학기 이내 / 건축학전공 10학기 이내 / 약학부 및 의학과 12학기 이내). 신·편입학 첫 학기는 성적 기준 미적용. 정규학기 초과자는 가족 중 1명이라도 있을 경우 신청 불가.",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전 학기 평점평균 B(3.0) 이상 (단, 신·편입학 첫 학기는 성적 기준 미적용)",
+      "gpa_requirement_percent": 66.7,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전 학기 과락 없이 12학점 이상 취득 (단, 신·편입학 첫 학기는 성적 기준 미적용)",
+      "special_conditions": [
+        "본교 학부 과정에 가족(부·모·형제자매) 2명 이상이 정규학기 이내(수업연한 학기)에 동시 재학 중인 학부생",
+        "신청 가족 모두 2026학년도 2학기 수업일수 3/4선까지 재학 상태를 유지해야 함",
+        "제외 대상: 정규학기 초과자, 대학원생, 외국인, 징계처분을 받은 자"
+      ],
+      "other_conditions": "소득 분위 무관"
+    },
+    "required_documents": [
+      "주민등록등본 또는 (부/모 명의) 가족관계증명서 1부 (공고일 기준 2개월 이내 발급, 주민등록번호 뒷자리 비공개 마스킹 처리 후 PDF 업로드)"
+    ],
+    "how_to_apply": "URP 포털 시스템을 통한 온라인 신청",
+    "application_steps": [
+      "URP 시스템 접속",
+      "장학관리 접속",
+      "천마가족장학금 신청 선택",
+      "유의사항 확인 및 개인정보 동의",
+      "등록된 가족현황 조회 및 확인",
+      "신청된 가족현황(본인 및 가족) 입력",
+      "증빙서류(PDF) 업로드",
+      "[저장하기] 클릭"
+    ],
+    "notes": "2027년 1월 중 학생 본인 명의 계좌로 지급 예정 (학자금 대출자는 대출 상환 기관으로 직접 상환 처리). 등록금 범위 내에서만 지원되며 타 장학금 수혜 후 남은 실납부 잔여액 한도로만 지급. 학기 중 3/4선 이전에 가족 중 1인이라도 휴학 시 가족 전체 선발 취소.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231554923&article.offset=0&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "e2e4e0e18dad",
+    "doc_type": "학자금대출 안내",
+    "category": "기타",
+    "name": "2026-2학기 한국장학재단 학자금대출 안내(분할납부대출 포함)",
+    "apply_start": "2026-07-01",
+    "apply_end": "2026-11-18",
+    "amount": "등록금: 당해학기 소요액 전액 (학제/유형별 한도 상이), 생활비: 연 400만 원(학기당 200만 원)",
+    "is_open_application": true,
+    "benefit_type": "대출",
+    "eligibility": {
+      "student_status": [
+        "학부생",
+        "대학원생",
+        "학점은행제 학습자",
+        "전문기술석사"
+      ],
+      "grade_or_semester_note": "학부 신입생 제한 없음, 학부 재학생 직전학기 12학점(또는 소속대학 최소 이수학점) 이상, 대학원 제한 없음",
+      "major_restriction": null,
+      "gpa_requirement_raw": "70/100점(C학점) 이상 (일반 상환)",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "취업 후 상환 등록금/일반 상환은 제한 없음, 취업 후 상환 생활비는 8구간 이내(대학원 6구간 이내)",
+      "credit_requirement": "학부 재학생 직전학기 12학점 이상 이수",
+      "special_conditions": [
+        "취업 후 상환: 학부 만 35세 이하(선취업 후진학자 등 만 45세 이하), 대학원 만 40세 이하",
+        "일반 상환: 만 55세 이하",
+        "온라인 금융교육 이수 필수",
+        "가구원 정보제공 동의 필수"
+      ],
+      "other_conditions": "일반 상환의 경우 학자금대출 연체자 및 금융채무불이행자 대출 제한"
+    },
+    "required_documents": [
+      "온라인 신청서 및 전자서명",
+      "보호(종료)아동 관련 증빙 서류 (해당자)"
+    ],
+    "how_to_apply": "한국장학재단 모바일 앱 또는 홈페이지(www.kosaf.go.kr) 접속 후 학자금대출 대출신청(통합신청) 진행",
+    "application_steps": [
+      "한국장학재단 모바일 앱 또는 홈페이지 접속",
+      "본인 전자서명수단으로 로그인 후 [학자금대출] -> [대출신청(통합신청)] 진행",
+      "학사 정보 입력, 학자금 유형 선택, 약관 동의, 신청정보 및 가족정보 입력",
+      "온라인 금융교육 이수 및 진단평가 완료",
+      "가구원 정보제공 동의 완료",
+      "대출 심사 승인 후 대출실행 진행"
+    ],
+    "notes": "대출 신청은 09:00~24:00 가능(마감일은 18:00), 대출 실행은 주말 및 공휴일 제외 09:00~17:00 가능. 지원구간 산정에 약 8주 소요되므로 조기 신청 권장.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "6a363db93d8b",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "[사전 공표] 학자금 지원구간 산정체계 개편 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "국가장학금 I유형 연간 100만 원 ~ 전액 / 다자녀 국가장학금 연간 135만 원 ~ 전액 (구간별 차등)",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "개편안 기준 기초·차상위 및 '가' ~ '라' 구간 (현행 기초·차상위 및 1~9구간, 10구간/마구간은 미지원)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "한국장학재단 학자금 지원(국가장학금 등) 신청 가구 대상"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "2027학년도 1학기 한국장학재단 국가장학금 신청 시 자동 적용",
+    "application_steps": [],
+    "notes": "2027학년도 1학기 국가장학금 신청부터 현행 10개 구간 체계에서 5개 구간('가~마' 구간) 체계로 통합 개편 적용 예정 안내입니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "2ea84e8c1279",
+    "doc_type": "장학공지",
+    "category": "기타",
+    "name": "장학금 지급을 위한 학생입금계좌 등록 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "해당 사항 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "본교 학적부 상의 성명과 일치하는 본인 명의의 입출금 계좌 보유자"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "온라인 등록: 학생종합정보시스템(URP) → 등록관리 → 학생입금계좌등록",
+    "application_steps": [
+      "학생종합정보시스템(URP) 접속",
+      "등록관리 메뉴 이동",
+      "학생입금계좌등록 클릭",
+      "은행명, 계좌번호, 예금주 입력 후 신청 클릭"
+    ],
+    "notes": "본인 명의 입출금 계좌만 등록 가능(적금/청약계좌 불가). 계좌 미등록 및 오입력 시 장학금 지급 지연 가능. 계좌 변경 시 동일 경로에서 신규 계좌 입력하여 변경 신청.",
+    "source_url": null,
+    "target_year": "상시"
+  },
+  {
+    "id": "9e0f8f4af0f6",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 성취(대) 장학생 선발계획 공고",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-23",
+    "amount": "1인당 150만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "대학교 2학년 이상 재학생",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전 학기까지의 전체 평균 평점 3.5 이상(4.5 만점 기준) 또는 3.3 이상(4.3 만점 기준)",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전 학기 12학점 이상 취득",
+      "special_conditions": [
+        "대전 소재 대학: 본인이 공고일(2026. 9. 1.) 기준 1년 전부터 계속해서 대전광역시에 주소를 두고 있는 학생",
+        "타지역 소재 대학: 본인 또는 부모가 공고일(2026. 9. 1.) 기준 1년 전부터 계속해서 대전광역시에 주소를 두고 있는 학생",
+        "학교(총)장 또는 단과대학장 추천 필수"
+      ],
+      "other_conditions": "징계 처분자, 형사처벌/사회적 물의 유발자, 허위 기재자, 최종 발표일 기준 미재학자, 졸업유예생/수료생/초과학기생/대학원생, 비인가/사이버대/방통대 재학생, 2026년 상반기 재단 장학금 수혜자 제외"
+    },
+    "required_documents": [
+      "장학금 지원 신청서 (온라인 신청으로 대체)",
+      "개인정보 수집·이용·제공 및 조회 동의서 (온라인 신청으로 대체)",
+      "[서식 1] 장학생 추천서",
+      "[서식 2] 서약서",
+      "주민등록등본",
+      "성적증명서 (전체 학년)",
+      "재학증명서",
+      "본인 명의 통장 사본",
+      "자격증 및 공인어학성적 증빙서류 (해당자)",
+      "가족관계증명서 (해당자)"
+    ],
+    "how_to_apply": "대전청년포털(www.daejeonyouthportal.kr) 온라인 접수",
+    "application_steps": [
+      "대전청년포털 가입/로그인",
+      "장학·기부 메뉴 선택",
+      "장학금 신청(성취 장학금) 선택",
+      "신청서 작성 및 평가사항 입력",
+      "증빙서류 첨부",
+      "접수 완료"
+    ],
+    "notes": "생활비성 장학금으로 중복수혜 가능. 학업성적 80% + 자격증 10% + 어학 10% 합산 평가. 최종 선발자는 2026년 12월 증서 수여식 필수 참석.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a6c268a9e700",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 하반기 인천인희망드림 장학생 선발 공고",
+    "apply_start": "2026-09-10",
+    "apply_end": "2026-10-08",
+    "amount": "1인당 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "정규학기 재학생 대상 (휴학생, 재수생, 수료생, 초과학기 재학생 제외)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "대학생: 직전학기 4.5 만점 기준 2.8 이상 (4.3 만점 기준 2.6 이상) / 고등학생: [~2024년도 입학자] 직전학기 전 과목 내신 평균 등급 5등급 이내, [2025년도~ 입학자] 3등급 이내",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 6,
+      "income_bracket_priority_note": "가정형편 기준 우선 선발 후, 동점자 발생 시 성적 고득점자 순 선발",
+      "credit_requirement": "대학생 직전학기 12학점 이상 (단, 4학년의 경우 9학점 이상)",
+      "special_conditions": [
+        "공고일(2026. 9. 3.) 기준 본인 또는 부모의 주민등록 주소지가 인천광역시인 자 (대학생은 인천 관내 대학 재학생인 경우 주소지 상관없이 지원 가능)",
+        "대학생: 본인 또는 부모가 기초생활수급자, 차상위계층, 한부모가정, 중증장애인 등록자 또는 한국장학재단 학자금 지원구간 6구간 이내",
+        "고등학생: 본인 또는 부모가 기초생활수급자, 차상위계층, 한부모가정, 중증장애인 등록자",
+        "전년도(2025년도) 인천인재평생교육진흥원 장학생 선발자 제외",
+        "전년도 및 동일연도(2025~2026년도) 진흥원 해외 프로그램 참여자 제외",
+        "한 가구 내 1인만 심사 대상 포함"
+      ],
+      "other_conditions": "동일 연도 인천인재평생교육진흥원 내 장학금 간 중복 수혜 불가 (1인 1종만 신청 가능). 타 기관 생활비성 장학금과 중복 수혜 가능."
+    },
+    "required_documents": [
+      "장학생 지원신청서 (온라인 작성)",
+      "자기소개서 (온라인 작성)",
+      "재학증명서",
+      "주민등록초본 (부모 주소지 기준일 경우 부 또는 모 기준 가족관계증명서 필수)",
+      "직전학기 성적증명서",
+      "가정형편 증명서 (기초생활수급자, 차상위계층, 한부모가정, 중증장애인 증명서 또는 한국장학재단 학자금 지원구간 통지서)",
+      "본인 명의 보통예금통장 사본 (부모 명의 시 가족관계증명서 추가)"
+    ],
+    "how_to_apply": "인천인재평생교육진흥원 홈페이지(www.itle.or.kr) 접속 후 [장학사업-장학금 지원신청] 온라인 접수",
+    "application_steps": [
+      "신청접수: 2026-09-10 ~ 2026-10-08",
+      "서류심사: 2026-10-12 ~ 2026-11-20",
+      "선발심사위원회 심의: 2026-11-27",
+      "결과발표: 2026-12-04 18:00",
+      "장학금 지급: 2026-12-16 18:00"
+    ],
+    "notes": "온라인 신청 완료 후 수정 불가. 서류 제출 일체 반환 불가. 제출 서류는 공고일(2026. 9. 3.) 이후 발급분만 유효.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "52c4bbf97105",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 2학기 (재)춘곡장학회 장학생 선발 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "전문대학(2~3년제) 1인당 150만 원, 종합대학(4년제) 1인당 200만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학생"
+      ],
+      "grade_or_semester_note": "대구 및 경산 지역 대학 2학기 이상 재학 중인 학생 (신입생 불가, 편입생은 편입 후 1학기 이상 이수 필수)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "대학 전체학기 성적 평균 3.0 이상 (4.5 만점 기준) 또는 2.7 이상 (4.3 만점 기준)",
+      "gpa_requirement_percent": 66.7,
+      "income_bracket_max": 7,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전 정규학기 12학점 이상 이수",
+      "special_conditions": [
+        "대구 및 경산 지역 위치 전문대학 및 종합대학 재학생",
+        "소득관련 증빙서류 발급이 가능한 내국인 학생"
+      ],
+      "other_conditions": "한국장학재단 학자금 지원구간 1~7구간 또는 복지자격(기초생활수급자, 차상위계층) 보유자"
+    },
+    "required_documents": [
+      "지원신청서, 자기소개서, 개인정보동의서",
+      "성적증명서",
+      "재학증명서",
+      "학자금지원구간통지서",
+      "통장사본",
+      "수급자증명서 또는 차상위확인서 (해당자)"
+    ],
+    "how_to_apply": "개인 이메일 접수 (choongok8096@naver.com)",
+    "application_steps": [
+      "재단 홈페이지(www.choongok.or.kr)에서 신청 서식 다운로드 후 작성",
+      "제출 서류 목록을 스캔 파일 또는 PDF 원본으로 준비",
+      "지정된 이메일 제목 형식으로 choongok8096@naver.com 접수"
+    ],
+    "notes": "생활비 지원 장학금으로 중복 수혜 가능. 2026년도 2학기 휴학 예정자는 지원 제외.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "3df283ae905c",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 (재)포항시장학회 장학생 선발 안내",
+    "apply_start": "2026-08-24",
+    "apply_end": "2026-09-22",
+    "amount": "1인당 최대 200만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 성적 평균 2.5점 이상 (4.5점 만점 기준)",
+      "gpa_requirement_percent": 55.6,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "2026년도 2학기 한국장학재단 학자금 지원구간 통지를 받은 자",
+      "credit_requirement": null,
+      "special_conditions": [
+        "선발 공고일 현재 본인 또는 보호자가 1년 이상 계속하여 포항시에 주민등록을 두고 있는 자 (지역인재장학생은 본인의 주민등록이 반드시 포항시에 있어야 함)"
+      ],
+      "other_conditions": "문화·예술·기능 특기 및 곰두리(장애)장학금은 성적 기준 없음"
+    },
+    "required_documents": [],
+    "how_to_apply": "재단 홈페이지를 통한 온라인 접수 (접속이 어려운 경우 장학회 문의)",
+    "application_steps": [],
+    "notes": "선발 결과 발표: 2026년 11월 예정 (개별 통보). 중복 수혜 조건부 가능 (타 기관 등록금 전액 지원자 또는 등록금 본인 부담금 50만 원 미만자 등은 지원 불가).",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "46a8a24dbf4b",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 국가유산진흥원 전통 기·예능 분야 및 매장유산 관련 분야 우수 장학생 선발 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "1인당 장학금 150만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "2학년 이상 (2026년 2학기 기준)",
+      "major_restriction": "전통 기·예능 분야(전통예술학과, 한국음악과, 전통미술공예학과, 전통연희학과, 국악과, 전통조경학과 및 이와 유사한 관련 학과), 매장유산 관련 분야(고고인류학과, 고고미술사학과, 국가유산관리학과, 문화유산보존학과, 사학과, 문화인류학과 및 이와 유사한 관련 학과)",
+      "gpa_requirement_raw": "전체학기 성적평점 4.5점 만점 기준 3.0 이상",
+      "gpa_requirement_percent": 66.7,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "국가유산 및 문화예술 관련 기관(단체) 추천 학생 우대",
+        "사회봉사활동에 적극적으로 참여한 학생 우대",
+        "국가 또는 공공기관, 단체 등에서 표창이나 상장을 수여받은 학생 우대",
+        "국민기초생활 수급자 우대",
+        "등록장애인 우대"
+      ],
+      "other_conditions": "등록금을 초과하는 타 장학금 및 학자금대출과 중복수혜 불가 (등록금 범위 내 중복수혜 가능)"
+    },
+    "required_documents": [
+      "장학생 지원신청서 1부 (PDF 및 HWP)",
+      "자기소개서 1부",
+      "개인정보 수집·이용 및 제공 동의서 1부",
+      "재학증명서 1부",
+      "성적증명서 1부",
+      "장학생 후보자 추천서 1부 (해당자)",
+      "기타활동 증빙서류 각 1부 (해당자)",
+      "장애인 증명서 또는 국민기초생활수급자 증명서 1부 (해당자)"
+    ],
+    "how_to_apply": "이메일 접수 (janghak@kh.or.kr)",
+    "application_steps": [
+      "서류 접수: 2026. 9. 1.(화) ~ 9. 30.(수)",
+      "서류 심사: 2026. 10. 1.(목) ~ 10. 16.(금)",
+      "결과 발표: 2026. 10. 27.(화)",
+      "장학증서 수여: 2026. 10. 30.(금)"
+    ],
+    "notes": "제출 서류는 PDF 변환 후 1개 파일로 병합하여 제출하되, 지원신청서 원본 HWP 파일도 별도 제출해야 합니다. 증빙서류는 2026년 9월 30일 기준으로 유효해야 합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "fb83278b9f8e",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 (재)수림재단 제13회 동교인재상 선발 공고",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-10-16",
+    "amount": "대상: 500만 원, 금상: 300만 원, 은상: 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생"
+      ],
+      "grade_or_semester_note": "국내 4년제 이상 대학의 최종 학년 재학생(휴학생 포함)",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "재학 중에 성취한 탁월한 공적으로 타의 모범이 되고, 대학의 명예 선양과 발전에 크게 기여한 개인"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "지원 신청서 1부",
+      "공적 자술서 1부",
+      "공적 증빙서류(수상실적확인서 등) 1부",
+      "재학 또는 휴학 증명서 1부 (공고일인 2026년 9월 1일 이후 발급분)",
+      "개인정보 수집·이용 및 제공에 관한 동의서 1부",
+      "소속 대학 학과장 또는 지도교수 추천서 1부 (2차 면접 대상자 제출)",
+      "추천인의 개인정보 수집·이용에 관한 동의서 1부 (2차 면접 대상자 제출)"
+    ],
+    "how_to_apply": "지원자 본인이 구비서류를 갖추어 재단으로 직접 등기우편 제출 (서울특별시 서초구 서초대로 397, A동 2407호(서초동, 부띠크모나코))",
+    "application_steps": [
+      "서류 접수 (~2026-10-16)",
+      "1차 서류심사",
+      "2차 면접심사 (2026년 11월 예정)",
+      "시상 (2026년 12월 예정)"
+    ],
+    "notes": "1회성 포상 성격의 상금이므로 한국장학재단 학자금 이중지원 대상이 아님. 지도교수/학과장 추천서는 서류심사 합격자에 한하여 제출. 모든 증명서는 공고일(2026.09.01.) 이후 발급분만 유효.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "901fd4629d3f",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "제29기 두을장학생 선발 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "등록금 전액 (2학년부터 졸업 시까지) 및 매 학기 자기계발비 90만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "2026년 2학기 기준 국내 4년제 대학교 1학년 2학기 재학 중인 여자 대학생",
+      "major_restriction": null,
+      "gpa_requirement_raw": "2026년 정규 1학기 성적 3.5 이상 / 4.5 만점 기준",
+      "gpa_requirement_percent": 77.8,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "생활환경 곤란자 우대",
+      "credit_requirement": "2026년 정규 1학기 총 15학점 이상 이수",
+      "special_conditions": [
+        "대한민국 국적 소지자",
+        "여자 대학생",
+        "이공계 전공 학생 우대"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "대학교 재학증명서 1부",
+      "대학교 성적증명서 1부",
+      "가족관계증명서 또는 주민등록등본 1부",
+      "학자금 지원구간 통지서(한국장학재단 발급) 1부",
+      "외국어 자격증 사본(선택)",
+      "사회봉사활동 확인서(선택)",
+      "대회 상장 사본(선택)",
+      "국민기초생활보장 수급대상자 증명서 또는 차상위계층 증명서(선택)",
+      "복지카드 사본(선택)"
+    ],
+    "how_to_apply": "온라인 신청 (두을장학재단 홈페이지: www.dooeul.or.kr ▶ 지원신청 ▶ 지원서 작성 및 구비서류 PDF 업로드 ▶ 최종접수)",
+    "application_steps": [
+      "1차 서류전형",
+      "2차 면접전형"
+    ],
+    "notes": "접수된 서류는 일체 반환하지 않으며, 등록금 전액 및 매 학기 자기계발비는 선발 후 매 학기 학점 및 활동평가를 거쳐 계속 지급 여부를 심사합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "ea003e6662a9",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "3대 동문가족 특별장학금 신청 안내",
+    "apply_start": "2026-09-07",
+    "apply_end": "2026-11-20",
+    "amount": "수업료의 30%",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "신입생",
+        "편입생"
+      ],
+      "grade_or_semester_note": "정규학기 이내 학부 재학생 (신·편입학 첫 학기는 성적 기준 미적용)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 평점평균 2.5 이상",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "직계존속 가족 중 2대가 영남대학교를 졸업하여, 본인을 포함한 가족 3대가 영남대학교 동문인 자"
+      ],
+      "other_conditions": "징계처분을 받은 자는 관련 규정에 따라 장학금 지급이 제한될 수 있음"
+    },
+    "required_documents": [
+      "3대 동문가족 특별장학금 신청서 1부",
+      "부·모 명의의 가족관계증명서 1부"
+    ],
+    "how_to_apply": "장학팀 방문 접수(학생지원센터 2층 219호) 또는 이메일 접수(scholar@ynu.ac.kr)",
+    "application_steps": [
+      "신청 서류 준비 (신청서 1부, 부·모 명의 가족관계증명서 1부)",
+      "장학팀 방문 접수 또는 이메일 접수",
+      "URP 종합정보시스템에 본인 명의 계좌 등록 확인"
+    ],
+    "notes": "기존 신청자는 재신청 불필요. 서류는 발급일 기준 2개월 이내 및 주민등록번호 뒷자리 마스킹 필수. 수업료 전액 범위 내 중복 가능.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231554921&article.offset=0&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "da3ea4c89d9f",
+    "doc_type": "장학공지",
+    "category": "기타",
+    "name": "2026년 대학생 학자금대출 부담경감 지원사업 공고",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "대출이자 전액 지원(2025년 하반기~2026년 상반기 발생 이자액) 및 신용회복 분할상환약정 초입금(총 약정금액의 5%) 지원",
+    "is_open_application": true,
+    "benefit_type": "이자지원",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생",
+        "졸업생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "예산 초과 시 학자금 지원구간 낮은 순으로 우선 지원",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026. 9. 1.) 현재 직계존속 또는 학생 본인이 주민등록상 대구광역시에 거주 중인 자",
+        "대구·경북 소재 대학교 학부 재(휴)학생, 2021년 이후 졸업생, 대학원 재(휴)학생",
+        "신용회복지원은 공고일 현재 대구광역시 주민등록 39세 이하 및 한국장학재단 학자금대출 부실채무자"
+      ],
+      "other_conditions": "2021~2025년 대구시 학자금대출 신용회복 지원 수혜 이력이 있는 자 제외"
+    },
+    "required_documents": [
+      "주민등록등본 1부",
+      "대학 재학(휴학)증명서 또는 졸업(예정)증명서 1부",
+      "가족관계증명서(상세) 1부 (직계존속 주소지가 대구인 경우)"
+    ],
+    "how_to_apply": "대구광역시 민원공모홈서비스(minwon.daegu.go.kr) 온라인 접수",
+    "application_steps": [
+      "대구광역시 민원공모홈서비스 접속",
+      "'민원 신청·발급'에서 '학자금대출' 검색",
+      "해당 사업(이자지원 또는 신용회복지원) 선택 후 '신청하기' 클릭 및 서류 업로드"
+    ],
+    "notes": "모든 제출 서류는 공고일(2026. 9. 1.) 이후 발급된 서류만 인정하며, 주민등록번호 뒷자리는 마스킹 처리하여 제출해야 함. 이자지원 확정 전 대출 전액을 상환한 자는 제외됨.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a59823603b42",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 하반기 익산시 대학(원)생 학자금 이자지원 신청자 접수 안내",
+    "apply_start": "2026-08-31",
+    "apply_end": "2026-09-18",
+    "amount": "2017년부터 한국장학재단에서 대출받은 학자금(등록금 및 생활비)의 2026년 상반기(2026. 1. 1. ~ 6. 30.) 발생 이자 지원",
+    "is_open_application": true,
+    "benefit_type": "이자지원",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생",
+        "졸업생",
+        "대학원생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "예산 초과 시 1순위 기초생활수급자 및 차상위계층, 2순위 학자금 지원구간(소득분위)이 낮은 순 반영",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026. 8. 31.) 현재 익산시에 주민등록이 되어 있는 전국 대학(원)생",
+        "2017년 1월 1일부터 한국장학재단으로부터 학자금(등록금, 생활비) 대출을 받은 자 중 대학 및 대학원에 재학/휴학 중인 자 또는 졸업 후 5년 이내인 대학 졸업자"
+      ],
+      "other_conditions": "타 기관으로부터 학자금 대출이자 명목 전액 지원을 받는 자, 익산시 외 전출자, 고등교육기관 제적자, 대출 전액 상환자 등은 지원 제외"
+    },
+    "required_documents": [
+      "온라인 신청서",
+      "주민등록초본 1부 (학생 본인 기준, 최근 1년 주소 변동 내역 및 발생일/신고일 포함 필수, 주민등록등본 불인정)",
+      "재학증명서 또는 휴학증명서 1부 (2026년 8월 졸업생은 졸업증명서 제출)",
+      "졸업증명서 1부 (5년 이내 대학 졸업자에 한함)"
+    ],
+    "how_to_apply": "익산시 통합예약시스템(https://www.iksan.go.kr/reserve) 접속 → 복지/행정 → 대학생학자금이자지원 메뉴에서 온라인 신청",
+    "application_steps": [
+      "익산시 통합예약시스템(https://www.iksan.go.kr/reserve) 접속",
+      "복지/행정 메뉴 접속",
+      "대학생학자금이자지원 메뉴에서 온라인 신청"
+    ],
+    "notes": "지급 시기는 2026년 12월 예정이며 한국장학재단 개인별 원리금 상환계좌로 직접 상환 처리됨(단, 대출 완제자는 개인 계좌로 입금). 서류는 2026. 8. 31. 이후 발급된 스캔본만 인정됨.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "2192900009a5",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 (재)경주시장학회 장학생 선발 안내",
+    "apply_start": "2026-09-07",
+    "apply_end": "2026-09-23",
+    "amount": "1인당 200만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "정규 학제 기간 이내 (4년제 기준 8학기 이내)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "3.0/4.5",
+      "gpa_requirement_percent": 66.7,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "한국장학재단 학자금 지원 구간 통지서 제출 가능자 (생활정도 50% 반영)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026.08.24.) 현재 1년 이상 경주시 관내 거주자 (부모 또는 학생 본인)",
+        "총장, 학장 또는 학과장의 추천을 받은 자 (체육분야 특기장학생은 경주시 체육회장 추천)",
+        "1세대 1인 신청",
+        "특기생 전형 요건: 최근 1년 이내(2025.09.01. ~ 공고일 현재) 도 단위 이상 규모 대회에서 3위 이내 수상(입상) 실적이 있는 자"
+      ],
+      "other_conditions": "휴학 중이거나 휴학 예정자 제외, 정학/퇴학 등 징계처분자 제외"
+    },
+    "required_documents": [
+      "장학금 지원신청서 1부 (총장, 학장 또는 학과장 추천 직인/서명 필수)",
+      "개인(신용)정보 수집·이용·제공 및 조회 동의서 1부",
+      "재학증명서 1부",
+      "성적증명서(4.5점 만점) 1부 (전체 학년 성적이 표기된 것)",
+      "가족관계증명서 1부 (부 또는 모 명의 발급, 가족구성원 전체 표기)",
+      "주민등록초본 1부 (부모 또는 학생 중 경주시 거주기간이 가장 오래된 자 기준, 전입일 및 주소변동사항 표기)",
+      "한국장학재단 학자금 지원 구간 통지서 1부 (2026학년도 2학기)",
+      "추가 서류(해당자 한정, 가산점 증빙): 기초생활수급자·차상위계층 증명서, 장애인증명서, 한부모가족증명서, 다자녀 증빙, 고등학교졸업증명서(지역 고교 졸업 후 지역 대학 진학자) 등"
+    ],
+    "how_to_apply": "경주시장학회 홈페이지를 통한 온라인 접수",
+    "application_steps": [
+      "온라인 접수: 경주시장학회 홈페이지를 통해 신청 (2026.09.07 ~ 09.23)",
+      "총장직인 날인: 영남대학교 학생지원센터 2층 장학팀 방문 날인",
+      "1차 합격자 서류 제출: 장학회 홈페이지 온라인 업로드 (2026.10.08 ~ 10.19)"
+    ],
+    "notes": "선발 평가 기준: 성적 35% + 생활정도 50% + 경주시 거주기간 15%. 생활비 지원 장학금으로 이중수혜 가능.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "7a25a3dea3ad",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 익산사랑 장학생 선발 공고",
+    "apply_start": "2026-09-03",
+    "apply_end": "2026-09-09",
+    "amount": "대학생 100만~200만 원, 중학생 50만 원, 고등학생 70만 원, 초등학생 100만 원 (생활비성)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "대학생: 2026년 1학기 이수 (복학생은 직전 학기 성적)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "일반 분야 대학생: A학점 이상 / 특별·다자녀·다문화 분야 대학생: B학점 이상",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "특별 분야: 국민기초생활수급자, 차상위계층 또는 부·모 합산 건강보험료 납부 금액 월 50,000원 이하",
+      "credit_requirement": "2026년 1학기 취득 학점 12학점 이상 (대학생, 계절학기 제외)",
+      "special_conditions": [
+        "거주요건: 공고일(2026.8.26.) 기준 본인 또는 부·모 중 1인이 익산시에 연속 주소 유지 (관내 대학생 6개월 이상, 관외 대학생/중·고등학생 1년 이상)",
+        "봉사활동 필수 요건: 2025.7.1.~2026.6.30. 기간 실적 (일반, 특별, 다자녀 공통)"
+      ],
+      "other_conditions": "휴학생 제외"
+    },
+    "required_documents": [
+      "장학생 신청서 ([별지1] 서식)",
+      "학교장 추천서 (초·중·고등학생 필수)",
+      "성적증명서 및 직전 학기 성적 증빙 자료",
+      "자원봉사 실적 인증서 (VMS, 1365 활동 확인서 또는 학교생활기록부)",
+      "기타 해당 분야별 증빙 서류 (수급자/차상위/건강보험료 납부확인서, 주민등록등·초본 등)"
+    ],
+    "how_to_apply": "대학생: 개인별 직접 접수 (방문 또는 등기우편) / 초·중·고(일반·특별·다자녀): 학교장 추천 접수 / 중·고·대(다문화·예체기능·인성): 개인별 직접 접수 (중·고등학생은 학교장 확인 추천서 첨부)",
+    "application_steps": [
+      "서류 준비 및 관련 증빙 발급",
+      "방문 접수(익산시청 7층) 또는 등기우편 접수((재)익산사랑장학재단)"
+    ],
+    "notes": "우편 접수는 2026년 9월 9일(수) 우체국 소인분까지 인정. 생활비성 장학금임.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a0e9c3b0e6ed",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 하반기 울산연구원 장학생 선발계획 공고",
+    "apply_start": "2026-09-16",
+    "apply_end": "2026-09-23",
+    "amount": "우수장학금/다자녀장학금: 1인당 최대 150만 원, 생활장학금/재능장학금/지역정착청년인재장학금: 1인당 최대 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "신입생",
+        "재학생",
+        "졸업예정자",
+        "졸업자"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "휴학생, 교환학생, 정규 수업연한 기간 초과자, 특별학제 학생 제외",
+        "지역정착청년인재장학금: 관내 고등·대학교 2026년도 졸업자 또는 2027년도 졸업예정자",
+        "우수장학금: 울산시 소재 고등학교 졸업자 등"
+      ],
+      "other_conditions": "한국장학재단 고객번호 제출 필요. 등록금성 장학금(우수·다자녀)은 본인 부담금이 없는 경우 지원 불가, 생활비성 장학금(생활·재능·지역정착)은 본인 부담금이 없어도 지원 가능."
+    },
+    "required_documents": [
+      "온라인 신청서 (마이페이지 출력본 3종)",
+      "신청 자격별 증빙서류"
+    ],
+    "how_to_apply": "홈페이지 온라인 접수 후 신청서(3종) 및 증빙서류를 1개의 PDF 파일로 병합하여 이메일(injae@uri.re.kr) 제출",
+    "application_steps": [
+      "홈페이지(https://uill.uri.re.kr/) 회원가입 후 로그인",
+      "[장학금] - [장학금 신청] - [2026년 하반기 장학금 신청] 클릭",
+      "지원 장학금 선택, 한국장학재단 고객번호 및 자격요건 입력 후 접수신청(신청완료)",
+      "[마이페이지]에서 장학금 신청서 출력",
+      "신청서(3종) 및 증빙서류를 컬러 스캔 후 1개의 PDF 파일로 병합하여 이메일(injae@uri.re.kr) 제출"
+    ],
+    "notes": "작성완료 상태가 아닌 접수신청(신청완료) 상태여야 함. 서류 미비 시 보완 기회 없이 심사 제외. 2026-10-06 ~ 2026-10-23 동안 홈페이지에서 서류 승인/미승인 상태 확인 필수.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231385659&article.offset=10&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "63926a6c580a",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 2학기 선원가족장학사업 선발 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-10-23",
+    "amount": "고등학생 120만 원, 대학생 본인 부담액 기준 최대 350만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "고등학생",
+        "대학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "대학생 직전학기 성적 평균 2.0 이상 / 고등학생(무상교육대상자) 직전학기 성적 교내 상위 10% 이내",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "2025년도 선원월평균임금 이하 (선원가족 중 2인 이상 고교/대학 재학 시 기준금액의 10% 가산 적용)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "선원법 제3조 적용선박에 승선 및 하선한 선원 및 그 가족 (본인, 배우자, 부모, 자녀)",
+        "총 승무 경력 3년 이상으로 하선 후 1년 이내 (연근해어선 부원은 1년 이상)"
+      ],
+      "other_conditions": "학비(수업료)를 면제받는 경우, 사내 학자금 및 타 기관 장학금 등록금 범위 초과 수혜자, 선원법 적용 제외 선박 승선자, 선박소유자, 관공선 선원 제외"
+    },
+    "required_documents": [
+      "장학생선발신청서(학생용) 1부",
+      "장학생선발신청서(사업장확인용) 1부",
+      "개인정보 수집·이용 및 제공 동의서 1부",
+      "서약서 1부",
+      "월평균급여증명서류 1부 (2025년도 근로소득원천징수영수증)",
+      "가족관계증명서 1부",
+      "재학증명서 원본 1부",
+      "등록금 납부내역서 또는 교육비 납입증명서 1부",
+      "직전학기 성적증명서 원본 1부",
+      "승무경력증명서 1부 (해당자)",
+      "기타 증빙서류 (해당자)"
+    ],
+    "how_to_apply": "방문 접수 또는 우편 접수 ((우) 부산광역시 중구 충장대로9번길 66, 한국선원복지고용센터 복지지원팀)",
+    "application_steps": [
+      "한국선원복지고용센터 홈페이지 공지사항에서 소정 양식 다운로드 및 제출 서류 구비",
+      "접수처로 방문 접수 또는 우편 접수"
+    ],
+    "notes": "재학증명서 및 성적증명서는 반드시 원본으로 제출해야 함 (PDF 다운로드 단순 출력본은 사본 처리될 수 있음). 등록금 범위를 초과하는 이중지원 불가.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "d9d4d05e87b4",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 하반기 (재)달서인재육성장학재단 장학생 선발 안내",
+    "apply_start": "2026-08-31",
+    "apply_end": "2026-09-28",
+    "amount": "대학생 1인당 230만 원 (성적우수: 등록금 범위 내 차액 지원, 희망생활/특기: 생활비 정액 지원)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "100점 만점 기준 평균 90점 이상 (백분위 성적)",
+      "gpa_requirement_percent": 90.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "희망생활 분야는 2026년 기준 중위소득 100% 이내 (재산 총액 2억 원 이하)",
+      "credit_requirement": "2026년도 1학기 12학점 이상 이수자 ('P' 선택과목 미포함)",
+      "special_conditions": [
+        "선발 공고일(2026. 8. 24.) 현재 1년 이상 대구광역시 달서구 관내에 주소를 두고 거주하는 구민 또는 그 자녀",
+        "1세대 1명(2026년 기준), 1종류의 장학금만 신청 가능"
+      ],
+      "other_conditions": "대학(총)장 추천 필요 (성적우수 분야). 당해 2학기 타 장학금으로 등록금 전액 수혜자, 2026년도 기 수혜자, 휴학생/2학기 복학생, 징계처분자 등 제외"
+    },
+    "required_documents": [
+      "성적우수 장학생 신청 및 추천서 (재단 소정 서식 별지 제1-1-1호, 제1-1-2호)",
+      "주민등록등본 1부 (최근 5년 이상 주소변동사항 포함 / 부모와 주소 분리 시 신청자 기준 가족관계등록부 1부 추가)",
+      "개인(신용)정보 수집·이용·제공 및 조회 동의서 및 서약서 (별지 제2호 서식)",
+      "품행 및 장학금 수혜여부 확인서 (별지 제3호 서식)",
+      "2026년 2학기 교육비 납입 영수증(등록금 납부 확인서)",
+      "2026년 1학기 성적증명서 1부 (평균 성적 백분율 표기 필수)",
+      "한국장학재단 학자금 지원구간 통지서 1부 (9구간 이내 확인용)",
+      "신청자 본인 명의 통장 사본 1부"
+    ],
+    "how_to_apply": "신청 서류 작성 후 영남대학교 장학팀 방문하여 총장 직인 날인받은 뒤, 달서인재육성장학재단 사무국, 거주지 동 행정복지센터 또는 달서구체육회로 제출",
+    "application_steps": [
+      "신청 서류 작성 및 준비",
+      "영남대학교 장학팀(학생지원센터 2층 219호) 방문하여 대학(총장) 직인 날인",
+      "달서인재육성장학재단 사무국, 거주지 동 행정복지센터 또는 달서구체육회로 접수기간 내 방문/제출"
+    ],
+    "notes": "성적우수 장학금은 등록금성 지원으로 전액 감면 수혜자는 대상에서 제외되나, 희망생활 장학금은 생활비성 지원으로 타 장학금 수혜 여부와 관계없이 중복 지원 가능합니다. 1세대당 1명, 1개 장학금 유형만 신청 가능합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a26bf6f7fe8a",
+    "doc_type": "공지사항",
+    "category": "미분류",
+    "name": "공지사항 원문 미입력",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "정보 없음",
+    "application_steps": [],
+    "notes": null,
+    "source_url": null,
+    "target_year": "정보 없음"
+  },
+  {
+    "id": "2a65b3927995",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 (재)광산장학회 장학생 선발안내",
+    "apply_start": "2026-08-24",
+    "apply_end": "2026-09-18",
+    "amount": "종합대 200만원, 전문대 150만원, 중·고생 및 학교밖청소년 50만원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "대학생",
+        "중학생",
+        "고등학생",
+        "청소년"
+      ],
+      "grade_or_semester_note": "2026년도 2학기 기준 12학점 이상 이수",
+      "major_restriction": null,
+      "gpa_requirement_raw": "우수 장학생: 전체학기 3.5/4.5 이상 / 일반·특정 장학생: 전체학기 3.0/4.5 이상",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "일반/특기/학교밖청소년: 2026년도 전국가구 중위소득 100% 이내 (우수/특정: 소득 기준 제한 없음)",
+      "credit_requirement": "2026년도 2학기 기준 12학점 이상 이수",
+      "special_conditions": [
+        "공고일(2026. 8. 24.) 기준 광주 광산구에 주민등록을 두고 1년 이상 계속 거주 중인 주민 또는 자녀",
+        "우수 장학생: 대학수학능력시험(또는 고교성적) 전 과목 평균 2등급 이내",
+        "일반/특정 장학생: 대학수학능력시험(또는 고교성적) 전 과목 평균 3등급 이내",
+        "특정 장학생: 다자녀(3명 이상), 다문화, 북한이탈주민 가정 자녀 대상",
+        "2026년도 2학기 휴학 예정자 지원 불가"
+      ],
+      "other_conditions": "2026년 1월~8월 내 (재)광산장학회 기선발자 지원 불가"
+    },
+    "required_documents": [
+      "장학생 신청서 및 구비서류 일체",
+      "학교장(총장) 추천서 (직인 날인 필수)",
+      "성적증명서",
+      "주민등록등본"
+    ],
+    "how_to_apply": "방문 접수 또는 등기우편 접수 ((재)광산장학회 사무국)",
+    "application_steps": [
+      "광산구청 홈페이지에서 신청서 및 서식 다운로드 후 작성",
+      "영남대학교 장학팀(학생지원센터 2층 219호) 방문하여 추천서 직인 날인 받기",
+      "(재)광산장학회 사무국으로 서류 방문 제출 또는 등기우편 발송"
+    ],
+    "notes": "우수 장학생은 등록금 지원 성격(차액 50만원 이하 시 신청 불가), 기타 장학생은 생활비 지원 성격. 기금 출연 시 가점 및 이전 기선발 이력 시 감점 항목 적용.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "2f9b52c7e60d",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026년 2학기 보훈(가족)장학 신청 안내",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "대학원: 학기당 최고 130만 원, 대학: 학기당 최고 100만 원, 특수학교: 학기당 30만 원 (실제 납부 수업료 범위 내 지원)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "대학원: 정규 첫 학기 신입생 및 수업연한 초과자 제외 / 대학: 수업연한 초과자 제외, 신입생은 성적 기준 제외",
+      "major_restriction": null,
+      "gpa_requirement_raw": "대학원: 직전학기 백분율 80점 이상 / 대학: 직전학기 백분율 70점 이상 / 특수교육: 성적 제한 없음",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "기초생활수급자 및 차상위계층 등 저소득자 우선순위 반영",
+      "credit_requirement": null,
+      "special_conditions": [
+        "국가보훈법령에 따른 교육지원 대상자 및 가족(본인, 배우자, 자녀, 전몰군경 손자녀 등)",
+        "특수교육대상자"
+      ],
+      "other_conditions": "수업연한 초과자 및 당해 학기 본인 납부 수업료가 없는 자(전액 장학 수혜자 등) 제외"
+    },
+    "required_documents": [
+      "보훈장학/보훈가족장학 신청서",
+      "개인정보 이용 및 제공 사전동의서",
+      "재학증명서",
+      "직전학기 성적증명서 (백분율 환산 점수 기재)",
+      "당해연도 당해학기 수업료 납입증명서",
+      "주민등록등본 (필요 시 가족관계등록부)",
+      "장학금 신청자 통장 사본",
+      "선발 우선순위 증빙자료 (기초생활수급자증명서, 차상위계층 확인서 등 해당자)",
+      "특수교육대상자 배치 결과통지서 (해당자)"
+    ],
+    "how_to_apply": "교육기관 소재지 관할 보훈(지)청 보훈과 방문 접수 또는 등기우편 접수",
+    "application_steps": [
+      "제출 서류 구비",
+      "관할 보훈(지)청 보훈과 방문 또는 등기우편 접수"
+    ],
+    "notes": "타 장학금 수령 등으로 실납부 수업료가 0원인 경우 지원 제외. 신청 인원이 예산을 초과할 경우 선발 우선순위 기준에 따라 선발됨. 등기우편은 마감일 우체국 소인분까지 유효.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "7d10130ee25f",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "다문화가정 장학금 신청 안내",
+    "apply_start": "2026-09-07",
+    "apply_end": "2026-11-20",
+    "amount": "수업료의 30%",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "정규학기 이내 (단, 신·편입학 첫 학기는 성적 기준 미적용)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 평점평균 2.0 이상",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "다문화가정의 자녀"
+      ],
+      "other_conditions": "징계처분을 받은 자의 경우 관련 장학금 규정에 따라 지급 제한"
+    },
+    "required_documents": [
+      "다문화가정 장학금 신청서 1부 (소정 양식, 개인정보 수집·이용 동의 포함)",
+      "부·모 귀화 시: 기본증명서(상세) 및 가족관계증명서(상세) 각 1부 (귀화하지 않은 경우 가족관계증명서(상세) 1부)"
+    ],
+    "how_to_apply": "장학팀 방문 접수(학생지원센터 2층 219호) 또는 이메일 접수(scholar@ynu.ac.kr)",
+    "application_steps": [
+      "URP 종합정보시스템(URP > 등록관리 > 학생입금계좌)에 본인 명의 계좌 등록",
+      "필요 제출 서류(발급 2개월 이내, 상세, 주민번호 뒷자리 마스킹) 준비",
+      "장학팀 방문 또는 이메일로 신청서 및 증빙 서류 제출"
+    ],
+    "notes": "기존 수혜자는 재신청 불필요. 수업료 전액 범위 내 타 장학금과 중복 수혜 가능. 2026년 11월 20일 17:00 이후 접수 불가.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "b98d16da148d",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 국가근로장학생 사전교육자료 및 재단 교육자료 게시(전산 매뉴얼 포함)",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "교내근로 시간당 10,320원, 교외근로 시간당 12,790원",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 백분위 C0(70점/100점) 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "대한민국 국적 소지자",
+        "취업자 근로 금지(4대 보험 가입자 등 참여 불가)",
+        "이해관계 회피 의무 준수",
+        "타 근로장학 사업 중복 참여 불가"
+      ],
+      "other_conditions": "미등록 휴학 예정자, 학적변동자는 근로 불가. 장애인 및 자립준비청년은 성적 기준 적용 제외 가능."
+    },
+    "required_documents": [
+      "학기당 근로시간 제한 예외 대상자 증빙서류 (해당자에 한함)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 및 한국장학재단 모바일 출근부 앱 활용",
+    "application_steps": [
+      "서약서 제출 및 사이버 오리엔테이션 수강 (한국장학재단 홈페이지)",
+      "학업시간표 등록 (통합정보시스템/재단 홈페이지)",
+      "업무스케줄 작성 (모바일 출근부 앱 또는 재단 홈페이지)",
+      "사전교육 이수보고서 작성 및 제출",
+      "출근부 입력 및 월말 최종 제출"
+    ],
+    "notes": "수업시간과 근로시간 중복 절대 불가, 근로시간 30분 단위 인정, 위치기반 모바일 출근부(GPS) 운영, 근로기관-장학생 상호평가 필수, 부정근로 적발 시 제재 및 전액 환수.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "2d90769bd9a3",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "2026-2학기 행정인턴십장학생 '선발발표' 및 선발학생 부서단위 '사전교육' 참석 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "근로시간에 따라 장학금 지급 (세부 시급 미기재)",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026-2학기 행정인턴십장학생으로 최종 선발된 학생",
+        "부서단위 사전교육에 반드시 참석 가능한 자"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "2026-2학기 수강신청내역 1부",
+      "월별 출근부"
+    ],
+    "how_to_apply": "종합정보시스템(URP) > 장학관리 > 행정인턴십선발내역조회에서 선발 내역 확인. 근로 포기 시 2026-08-24(월)까지 장학팀 유선 연락(053-810-1148)",
+    "application_steps": [
+      "선발 내역 조회 (URP)",
+      "사전교육 참석 (2026-08-25 14:00, 근로부서 행정실)",
+      "월별 출근부 작성 및 근로 수행"
+    ],
+    "notes": "1일 최대 근로시간 3시간(월~금). 근로시간은 수업시간과 중복 불가. 근로 불성실 시 자격 상실 및 향후 국가근로/행정인턴십 선발 제외.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "ee6b1f535043",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "제24기 후기(2026년 2학기) 삼원장학생 선발",
+    "apply_start": "2026-09-01",
+    "apply_end": "2026-09-30",
+    "amount": "1인당 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "4년제 대학교 3~4학년",
+      "major_restriction": "시각디자인 전공 및 판화학과",
+      "gpa_requirement_raw": "최근 1년 평균성적 B+학점 이상 (4.5 만점 기준 3.5 이상)",
+      "gpa_requirement_percent": 77.8,
+      "income_bracket_max": 7,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "기업체 학술연수 및 입사 조건부 장학금을 받지 않는 자"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "삼원장학생 선발원서 (재단 소정양식)",
+      "자기소개 및 학업계획서 (재단 소정양식)",
+      "주민등록등본 또는 가족관계증명서 1부 (부·모 함께 표기, 지원자 본인 주민등록번호 13자리 모두 공개 처리, 비동거 시 보호자 관계 입증서류 제출)",
+      "2026년 2학기 한국장학재단 학자금 지원구간 통지서 1부 (원본 또는 PDF 출력본)",
+      "전 학년 성적증명서 1부 (4.5 만점 기준, 2026년 1학기 포함 / 편입생은 편입 전 학교 성적증명서 필수 첨부, 원본 또는 PDF 출력본)",
+      "통장사본 1부 (본인 또는 보호자 명의)",
+      "개인정보 수집·이용·제공 동의서 (재단 소정양식)",
+      "입상증명서 1점 (선택 - 가점 반영, 시각디자인 및 판화 공모전에 한함, 발급처 및 연락처 표기 필수, 휴학 기간을 제외한 최근 2년 이내 수상 실적만 인정)"
+    ],
+    "how_to_apply": "우편접수(마감일 소인분까지 유효) 또는 방문접수 (제출처: (04919) 서울시 광진구 천호대로 549, G-TOWER 12층 (재)삼원장학재단 김대호팀장)",
+    "application_steps": [
+      "지원서 접수: 2026년 9월 1일(화) ~ 9월 30일(수)",
+      "1차 서류전형: 학자금 지원구간 통지서, 성적증명서, 공모전 수상내역, 자기소개서 종합 심사",
+      "2차 면접전형: 필요 시 진행",
+      "장학생 발표: 2026년 10월 22일(목) 재단 홈페이지 게재 예정",
+      "장학금 지급: 2026년 10월 23일(금) 예정"
+    ],
+    "notes": "생활비 지원 장학금으로 타 장학금과 이중수혜 가능. 장학금을 수령한 학기에는 휴학이 불가하며, 휴학할 경우 장학금을 전액 반환해야 함. 2026년 10월 23일(금) 이후 발급된 재학증명서 1부를 2026년 10월 30일(금)까지 재단에 추가 제출 필수.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "d934c5ca70a6",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 국가근로장학생 '선발발표' 및 선발학생 '부서별사전교육' 참석 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "근로시간에 따른 국가근로장학금 지급",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026-2학기 학적 상태가 '재학' 중인 학생 (재입학예정자의 경우 기한 내 등록금 납부 후 재학 신분 유지)",
+        "4대 보험 가입 등 취업 중인 학생 참여 불가 (단, 일용직·알바·체험형 인턴은 증빙 제출 시 가능)",
+        "선발된 근로기관 관리자(대표자, 담당자 등)와 가족관계(배우자, 직계혈족, 4촌 이내 방계혈족)인 경우 근로 불가"
+      ],
+      "other_conditions": "한국장학재단 내 근로성 사업 간 중복 참여 금지 (교사대생튜터링사업, 다문화·탈북학생멘토링장학금 등과 중복 불가)"
+    },
+    "required_documents": [
+      "2026-2학기 수강신청내역 1부"
+    ],
+    "how_to_apply": "종합정보시스템(URP) > 장학관리 > 국가근로선발내역조회",
+    "application_steps": [
+      "종합정보시스템(URP)에서 선발 내역 확인",
+      "교내근로 선발자는 2026-08-25(화) 14:00까지 배정 근로부서 행정실 사전교육에 수강신청내역 지참 후 참석",
+      "교외근로 선발자는 사전교육자료 및 재단 전산매뉴얼 숙지 후 배정 기관 담당자에게 즉시 유선 연락"
+    ],
+    "notes": "근로 포기 희망 시 2026-08-24(월)까지 장학팀(053-810-1148)으로 유선 연락. 수업, 시험, 휴강, 보강 등 모든 정규 학업 시간과 근로시간 중복 일체 불가. 불성실 근태 시 근로 즉시 종료 및 향후 선발 영구 제외.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "12ae84bccfd5",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 손태희장학재단 4기 장학생 선발 안내",
+    "apply_start": "2026-08-24",
+    "apply_end": "2026-09-08",
+    "amount": "1인당 200만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "2026학년도 1학기 환산점수 84점 이상 (100점 만점 기준)",
+      "gpa_requirement_percent": 84.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "학업장려 장학생: 기준 중위소득 바탕 학자금 지원 구간 경곗값에 의거, 재단 내부 기준에 따라 선발",
+      "credit_requirement": "2026학년도 1학기 12학점 이상 이수 (성적우수 장학생: 18학점 이상)",
+      "special_conditions": [
+        "성적우수 장학금과 학업장려 장학금 중 택1 (중복 지원 불가)"
+      ],
+      "other_conditions": "2026학년도 1학기 국내 대학교 성적증명서 제출 가능자"
+    },
+    "required_documents": [
+      "장학금 지원 신청서 1부",
+      "장학생 추천서 1부",
+      "자기소개서 1부",
+      "장학금 사용 계획서 1부",
+      "2026학년도 1학기 성적증명서 1부",
+      "본인 명의 통장 사본 1부"
+    ],
+    "how_to_apply": "1차 온라인 접수(QR코드) 완료 후, 2차 등기우편 접수(서류 원본) 제출",
+    "application_steps": [
+      "1차 온라인 접수(QR코드)",
+      "장학팀 방문하여 추천서/신청서 등 총장직인 날인",
+      "2차 등기우편 접수(서류 원본 제출)"
+    ],
+    "notes": "제출 서류는 하나의 봉투에 동봉하고 겉면에 이름, 대학교, 지원분야를 필히 기재. 공고문 서식 준수 및 한글 파일 12pt 작성.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231216973&article.offset=20&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "7d31226270c6",
+    "doc_type": "공지사항",
+    "category": "미지정",
+    "name": "공지사항 내용 없음",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "",
+    "application_steps": [],
+    "notes": null,
+    "source_url": null,
+    "target_year": ""
+  },
+  {
+    "id": "efb2fad3fb0f",
+    "doc_type": "장학공지",
+    "category": "기타",
+    "name": "2026년 하반기 군산시 대학생 학자금 이자 지원 공고",
+    "apply_start": "2026-08-10",
+    "apply_end": "2026-09-04",
+    "amount": "2016년 1학기 이후 대출받은 학자금(등록금 및 생활비)의 2026년 상반기 발생 이자 지원",
+    "is_open_application": true,
+    "benefit_type": "이자지원",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생",
+        "졸업생"
+      ],
+      "grade_or_semester_note": "졸업 후 5년 이내 졸업생 (휴학생 대출이자 지원 기간 최대 6학기, 군복무 휴학 기간 미포함)",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "예산 초과 시 한국장학재단 학자금 지원구간이 낮은 단계 순으로 우선 선발",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026. 8. 4.) 기준 군산시에 주민등록지를 두고 있는 전국 대학교 및 대학원 재학생, 휴학생, 졸업 후 5년 이내의 졸업생",
+        "한국장학재단을 통해 대출받은 학자금(등록금 및 생활비) 잔액이 있는 자 (2016년 1학기 이후 대출분 대상)"
+      ],
+      "other_conditions": "제외 대상: 다른 기관·단체·개인으로부터 학자금 이자 명목으로 지원받은 경우, 수료생, 제적생, 자퇴생, 군산시 외 지역으로 전출한 경우, 한국장학재단 대출자료 추출 시 완제(전액 상환)된 경우"
+    },
+    "required_documents": [
+      "신청서 1부 [붙임1]",
+      "행정정보 공동이용 사전동의서 1부 [붙임2]",
+      "[재학생/휴학생] 재학증명서 또는 휴학증명서 1부",
+      "[졸업생] 졸업증명서 1부"
+    ],
+    "how_to_apply": "군산시청 홈페이지(http://www.gunsan.go.kr) 접속 -> 회원가입 및 로그인 -> 생활복지 -> 교육 -> 학자금대출이자지원 메뉴에서 신청",
+    "application_steps": [
+      "군산시청 홈페이지 접속 및 로그인",
+      "생활복지 -> 교육 -> 학자금대출이자지원 메뉴 이동",
+      "온라인 신청서 작성 및 제출서류 첨부"
+    ],
+    "notes": "모든 서류는 공고일(2026. 8. 4.) 이후 발급본만 인정되며, 자필 서명 또는 도장 날인 필수. 2026년 12월 경 한국장학재단 대출계좌 원리금 상환 처리(현금 입금 불가).",
+    "source_url": "http://www.gunsan.go.kr",
+    "target_year": "2026"
+  },
+  {
+    "id": "78e53b4398c8",
+    "doc_type": "기타",
+    "category": "기타",
+    "name": "공지사항 원문 없음",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "정보 없음",
+    "application_steps": [],
+    "notes": null,
+    "source_url": null,
+    "target_year": "정보 없음"
+  },
+  {
+    "id": "4e9aec0dee04",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 5·18희망장학생 모집공고",
+    "apply_start": "2026-08-06",
+    "apply_end": "2026-08-12",
+    "amount": "1인당 100만 원 (생활비 장학금)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "기초생활수급자, 차상위계층, 중위소득 100% 이하인 자는 가산점 부여",
+      "credit_requirement": null,
+      "special_conditions": [
+        "국내 거주 중인 국내 대학 재학생(4년제 및 전문대 무관, 전공 제한 없음)",
+        "민주화운동 및 국가폭력 피해자 (유)자녀 또는 5·18정신(민주·인권·평화 등) 계승 공동체 기여 활동자"
+      ],
+      "other_conditions": "징계받은 자/징계 의결 중인 자, 품위 손상 사실이 있는 자, 5·18민주화운동 당사자 본인 및 희생(유)자녀, 국가폭력 피해 당사자 본인, 휴학 중인 자(2026년 2학기 복학생은 가능)는 지원 불가"
+    },
+    "required_documents": [
+      "(서식1) 5·18희망장학생 지원서",
+      "(서식2) 자기소개서 (2장 이내)",
+      "(서식4) 개인정보 수집·이용·제공·조회 동의서",
+      "(서식6) 서약서",
+      "주민등록등본 또는 가족관계증명서 1부 (지원 요건 ① 해당자는 가족관계증명서 필수)",
+      "재학증명서 1부 (2026년 2학기 복학 예정자는 복학신청·확인서 제출)",
+      "부모의 민주화운동 및 국가폭력 피해사실 입증자료 (해당 자녀 필수)",
+      "(서식5) 공동체 기여 활동 내용서 및 증빙자료 (해당자 필수)",
+      "(서식3) 추천서 (선택)",
+      "가산점 대상자 증빙 서류(수급자 증명서, 차상위계층 확인서, 건강보험자격확인통보서 및 납부확인서 등) (해당자)"
+    ],
+    "how_to_apply": "이메일 접수 (nohsy12@518.org)",
+    "application_steps": [
+      "제출 서류 순서대로 단 1개의 PDF 또는 HWP 파일로 병합",
+      "이메일(nohsy12@518.org)로 2026년 8월 12일 18:00까지 제출"
+    ],
+    "notes": "우편 접수 불가. 제출 서류는 단 1개의 PDF 또는 HWP 파일로 병합해야 하며 압축(zip) 제출 시 미제출 처리됨. 서류 발급 유효기간은 2026. 7. 28. ~ 2026. 8. 12. 발급분만 인정.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "79f4310a0490",
+    "doc_type": "일반공지",
+    "category": "기타",
+    "name": "한국장학재단 공공데이터 활용 SOS, 7문 7답 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "해당 사항 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": "공공데이터를 활용(논문 작성, 학술 연구, 앱/웹 서비스 개발 등)하고자 하는 국민, 학생, 연구자, 기업 누구나 이용 가능"
+    },
+    "required_documents": [
+      "미개방 데이터 요청 시: 공공데이터 제공신청서",
+      "우수사례 무료 홍보 희망 시: 공공데이터 활용 우수사례 등록신청서"
+    ],
+    "how_to_apply": "공공데이터 포털(www.data.go.kr) 온라인 이용",
+    "application_steps": [
+      "공공데이터 포털(www.data.go.kr) 접속",
+      "공공데이터 제공신청: 공공데이터 포털 > 데이터요청 > 공공데이터 제공신청",
+      "우수사례 홍보 신청: 공공데이터 포털 > 데이터 활용 > 공공데이터 우수사례 > 활용기업사례 등록 및 한국장학재단 연락"
+    ],
+    "notes": "한국장학재단 공공데이터 문의: 053-210-6463 / 공공데이터 활용지원센터: 1566-0025. 개방 데이터의 99.96%가 무료이며 회원가입이나 승인 없이 즉시 검색 및 다운로드 가능합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "e07004809c91",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 2학기 푸른등대 기부장학금 사업 계획 및 신규장학생 선발 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "학기당 250만 원 (유형별로 지원 학기 수 상이)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "잔여 정규학기 요건 유형별 상이 (가수 윤하: 1개 학기 이상, 공수 김용호: 2개 학기 이상 / 신입생 및 편입생 제외)",
+      "major_restriction": "가수 윤하 유형: 학과명에 '물리', '천문' 단어 포함 학과 (물리치료학과 등 의료·보건계열 제외)",
+      "gpa_requirement_raw": "직전 정규학기 성적 백분위 80점 이상",
+      "gpa_requirement_percent": 80.0,
+      "income_bracket_max": 6,
+      "income_bracket_priority_note": "학자금 지원구간 6구간 이하",
+      "credit_requirement": "직전 정규학기 최소 12학점 이상 이수",
+      "special_conditions": [
+        "대한민국 국적 보유자",
+        "전공대, 대학원대, 원격대학(방송통신대, 사이버대 등), 기능대, 평생교육원 재학생 제외",
+        "신입생 및 편입생 제외"
+      ],
+      "other_conditions": "공수 김용호 유형: 인재육성 프로그램 참가 가능한 자 / 가산점 항목(사회적 배려계층, 봉사활동 50시간 이상) 보유자 우대"
+    },
+    "required_documents": [
+      "유형별 필수 서류 (예: 지정 양식 자기소개서 온라인 작성)",
+      "가산점 증빙 서류 (사회적 배려계층 증빙, 봉사활동 실적 증빙서 등 해당자)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 온라인 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지 접속",
+      "기부처 유형별 신청 자격 확인",
+      "온라인 신청서 작성 및 필수/가산점 증빙 서류 제출"
+    ],
+    "notes": "기부처별 지원 대상 및 자격 요건이 엄격히 제한되므로 개별 유형 안내 확인 필요. 선발 후 휴학 시 자격 유지되나 졸업·편입·자퇴 시 자격 상실.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "0bf6690058b2",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 부마민주항쟁기념재단 장학생 모집 공고",
+    "apply_start": "2026-07-13",
+    "apply_end": "2026-07-17",
+    "amount": "대학생: 1인당 150만 원, 초등학생~청소년: 1인당 50만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "초등학생",
+        "청소년",
+        "대학생",
+        "입학예정자",
+        "휴학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "부마민주항쟁 피해자 및 관련자의 초등학생 이상 (유)손자녀",
+        "민주화운동 관련자의 청소년 이상 (유)자녀",
+        "시민사회운동 활동가의 청소년 이상 자녀",
+        "기타 장학금 지급이 합당하다고 인정되는 자"
+      ],
+      "other_conditions": "가계 곤란도 확인을 위한 건강보험료 납부확인서 제출 필수"
+    },
+    "required_documents": [
+      "[서식 1] 장학생 지원서 (조·부모 경력, 가정환경, 민주주의 활동, 향후 계획 등)",
+      "[서식 2] 장학생 지원자 정보",
+      "[서식 3] 개인정보 수집·이용 동의서",
+      "가족관계증명서 1부",
+      "재학증명서, 휴학증명서, 또는 입학예정 증빙서류 1부",
+      "건강보험료 납부확인서 1부 (2026년 1월부터의 납부 실적)",
+      "부마민주항쟁 관련자증서 1부 (해당자)",
+      "[서식 4] 추천서 또는 인우보증서 (해당자)",
+      "사회봉사활동 실적 증빙자료 (해당자)"
+    ],
+    "how_to_apply": "이메일 접수 (1026@buma1979.or.kr) 후 전화로 수신 여부 확인",
+    "application_steps": [
+      "서류 작성 및 준비",
+      "이메일(1026@buma1979.or.kr)로 PDF 파일 제출",
+      "재단으로 수신 여부 확인"
+    ],
+    "notes": "휴학생의 경우 휴학 및 복학 사유를 최종 확인한 후 장학금이 지급됩니다. 서류 접수는 E-mail(PDF 파일)로만 진행되므로 발송 후 반드시 재단으로 수신 여부를 확인해야 합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "3f66775c967d",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "2026-2학기 행정인턴십장학생 희망근로지 신청 안내",
+    "apply_start": "2026-08-06",
+    "apply_end": "2026-08-12",
+    "amount": "시급 10,320원 (예정)",
+    "is_open_application": true,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학예정자",
+        "재입학예정자"
+      ],
+      "grade_or_semester_note": "2026-2학기 정규학기 내 (정규학기 초과자 신청 불가)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 70/100점(백분위) 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "1순위: 0~4구간, 2순위: 5~6구간, 3순위: 7~9구간",
+      "credit_requirement": null,
+      "special_conditions": [
+        "복학 및 재입학 예정자는 복학신청 또는 재입학신청 완료 후 희망근로지 신청 가능",
+        "2026-2학기 재입학생 중 개강일 전까지 미등록한 자는 선발 제외",
+        "미등록 휴학 대상자는 선발되었더라도 근로 진행 불가",
+        "국가근로장학생과 행정인턴십장학생 간 중복 신청 불가"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "온라인 신청 (URP종합정보 > 장학관리 > 행정인턴십장학생신청 화면에서 1, 2지망 신청)",
+    "application_steps": [
+      "URP종합정보 접속",
+      "장학관리 > 행정인턴십장학생신청 화면 이동",
+      "1, 2지망 신청"
+    ],
+    "notes": "합격자 발표: 2026-08-20 15:00 예정. 근로기간: 2026-09-01 ~ 2027-02-12. 1일 최대 3시간 근로 가능. 수업시간과 근로시간 중복 절대 불가.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231020059&article.offset=20&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "53f7edb9e685",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 국가근로장학생 희망근로지 신청 안내",
+    "apply_start": "2026-08-06",
+    "apply_end": "2026-08-12",
+    "amount": "교내근로 시급 10,320원 / 교외근로 시급 12,790원 (학기당 최대 640시간 이내)",
+    "is_open_application": true,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학예정자",
+        "재입학예정자"
+      ],
+      "grade_or_semester_note": "2026-2학기 정규학기 내 재학생, 복학예정자, 재입학예정자 (정규학기 초과자 신청 불가)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 백분위 성적 70점(70/100) 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "1순위: 0~4구간, 2순위: 5~6구간, 3순위: 7~9구간",
+      "credit_requirement": null,
+      "special_conditions": [
+        "한국장학재단 2026-2학기 국가근로장학생(1차) 신청 완료자",
+        "행정인턴십장학생과 이중/중복 신청 불가"
+      ],
+      "other_conditions": "복학 및 재입학 예정자는 복학신청 또는 재입학신청이 완료된 후 신청 가능"
+    },
+    "required_documents": [
+      "장애인등록증 사본 1부 (장애인 본인 대상자 한정)"
+    ],
+    "how_to_apply": "URP종합정보 > 장학관리 > '국가근로장학생신청' 화면에서 1, 2지망 신청",
+    "application_steps": [
+      "한국장학재단 2026-2학기 국가근로장학생(1차) 신청 완료",
+      "URP종합정보 > 장학관리 > '국가근로장학생신청' 화면에서 희망근로지 1, 2지망 신청",
+      "장애인 본인 대상자의 경우 장애인등록증 사본 장학팀 제출"
+    ],
+    "notes": "한국장학재단 국가근로장학생 신청과 학교 희망근로지 신청을 모두 완료해야 함. 합격자 발표: 2026-08-20(목) 15:00 예정.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "462f5ec7bf8f",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 (주)코나아이 소상공인 장학생 선발 공고",
+    "apply_start": "2026-07-20",
+    "apply_end": "2026-08-11",
+    "amount": "1인당 100만 원 (화성시 지역화폐로 지급)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학예정자"
+      ],
+      "grade_or_semester_note": "2026년 2학기 재학 중인 대학생 (복학예정자 포함)",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 10,
+      "income_bracket_priority_note": "생활정도 100% 심사 (수급자 100점, 차상위 98점, 학자금 지원구간 1구간 100점 ~ 10구간 63점 차등 배점)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "본인 또는 부·모(친권자) 중 1명이 공고일(2026. 7. 20.) 기준 1년 이상 화성시에 계속 거주",
+        "공고일 기준 1년 이상 화성시에서 계속 영업 중인 화성시 지역화폐 가맹점의 자녀",
+        "중소기업현황정보시스템 상 ‘소상공인 확인서’ 발급이 가능한 소상공인의 자녀",
+        "1가구당 1자녀만 지원 가능"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "장학금 신청서",
+      "주민등록초본",
+      "가족관계증명서",
+      "대학 재학증명서",
+      "경제상황 증빙서류 (저소득층 증빙서류 또는 한국장학재단 학자금 지원구간 통지서)",
+      "사업자등록증 또는 사업자등록증명원",
+      "소상공인 확인서"
+    ],
+    "how_to_apply": "화성시인재육성재단 홈페이지(www.hstree.org) 온라인 접수",
+    "application_steps": [
+      "로그인",
+      "마이페이지",
+      "멤버십 메뉴",
+      "장학사업 신청",
+      "서류 업로드 후 임시저장 및 최종 제출"
+    ],
+    "notes": "화성시 지역화폐로 지급되는 생활비성 장학금. 동점시 화성시 거주기간이 오래된 순으로 선발.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "dbbcb0a596d1",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 재단법인 서구인재육성재단 장학생 선발 안내",
+    "apply_start": "2026-07-20",
+    "apply_end": "2026-09-04",
+    "amount": "대학생 1인당 2,000,000원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "신입생",
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "성적우수: 4.5 만점 기준 3.8 이상 / 희망: 4.5 만점 기준 2.5 이상 / 진학: 내신 50% 이상 2등급 이내 또는 수능 국·영·수 등급 합 8 이내",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 5,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전학기(2026년 1학기) 12학점 이상 이수자",
+      "special_conditions": [
+        "선발 공고일 현재(2026.7.20.) 1년 이상 대구광역시 서구에 주소를 두고 거주하는 구민 또는 그 자녀",
+        "1세대 당 1명 지원 가능"
+      ],
+      "other_conditions": "2026년 2학기 전액 장학금 수혜자, 휴학생, 정규학기 초과자, 방송통신대/사이버대/학점은행제 등 재학생, 징계처분자 제외"
+    },
+    "required_documents": [
+      "신청 및 추천서 (별지 제1호 서식)",
+      "품행 및 장학금 수혜여부 확인서 (별지 제2호 서식)",
+      "개인정보 수집·이용·제공 동의서 및 서약서 (별지 제3호 서식)",
+      "주민등록등본 1부 (서구 거주자 부모 또는 자녀의 최근 5년간 주소변동사항 포함)",
+      "성적증명서 (고교 성적/수능 성적 또는 2026년 1학기 성적증명서)",
+      "2026년 2학기 교육비 납입증명서",
+      "재학증명서",
+      "동장사실조사서 (희망장학생 해당, 별지 제4호 서식)",
+      "학자금지원구간 통지서 (희망장학생 해당)"
+    ],
+    "how_to_apply": "영남대학교 장학팀 방문 후 직인 날인 받아 주소지 관할 동 행정복지센터 방문 접수 또는 우편 접수",
+    "application_steps": [
+      "신청 서류 작성 완료 후 영남대학교 장학팀(학생지원센터 2층 219호) 방문하여 직인 날인",
+      "주소지 관할 동 행정복지센터 방문 접수 또는 우편 접수"
+    ],
+    "notes": "직인 날인은 평일 10:00~17:00 (점심시간 12:00~13:00 제외) 운영. 2026년 1학기 성적이 없는 복학예정자는 가장 최근 학기 성적증명서와 휴학증명서 제출 필요.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=230865600&article.offset=30&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "5e630fea4eff",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 정읍시민장학재단 우수인재장학금 장학생 선발 공고",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "4년제 대학생 및 전문대학생 차등 지급 (구체적 금액 수치 누락)",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "신입생",
+        "복학생",
+        "편입생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "평점평균 백분율 환산 85점 이상",
+      "gpa_requirement_percent": 85.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "건강보험료 납부확인서 등을 바탕으로 한 생활형편 평가 반영",
+      "credit_requirement": "학기별 최소 이수학점 기준 충족",
+      "special_conditions": [
+        "공고일(2026년 7월 8일) 현재 부 또는 모가 정읍시에 계속하여 주소를 두고 있는 국내 대학 재학생",
+        "우수인재장학금 선발 기회는 1회로 제한",
+        "직업학교, 원격대학(사이버대 및 방송통신대), 평생교육원 교육과정, 시간제 과정, 학비 전액 지원 대학 재학생 제외"
+      ],
+      "other_conditions": "당해연도 정읍시에서 지급하는 타 장학금 수령자 제외, 동일 세대 2명 선발 시 1명만 지원 (단, 3자녀 이상 다자녀 가정은 2명 선발 가능)"
+    },
+    "required_documents": [
+      "정읍시민장학재단 장학생지원서 1부 [서식 1]",
+      "개인정보 제공·활용 동의서 1부 [서식 2]",
+      "성적증명서 1부",
+      "재학증명서 1부",
+      "주민등록초본 1부 (정읍시에 주소를 둔 부 또는 모 기준)",
+      "가족관계증명서 1부 (정읍시에 주소를 둔 부 또는 모 기준)",
+      "통장사본 1부 (장학금 입금 계좌로 반드시 부모 명의 계좌 제출)",
+      "건강보험료 납부확인서 또는 건강보험 자격득실확인서 (기간: 2025년 7월 ~ 2026년 6월)",
+      "복학생 및 편입생 학적부 1부 (해당자)",
+      "가산점 증빙 서류 (해당자: 소년소녀가정, 장애인가정, 국가유공자가정, 조손가정 등)"
+    ],
+    "how_to_apply": "부 또는 모의 주민등록지 읍·면·동 주민센터 방문 제출",
+    "application_steps": [
+      "구비 서류 발급 및 작성",
+      "부 또는 모의 주민등록지 읍·면·동 주민센터 방문 제출"
+    ],
+    "notes": "모든 구비서류는 공고일(2026.07.08.) 이후 발급된 원본 제출 필수. 당해연도 정읍시 지급 타 장학금 수령자는 제외.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "b070a142a6cc",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 쌍용곰두리장학생 지원신청 안내",
+    "apply_start": "2026-07-07",
+    "apply_end": "2026-07-21",
+    "amount": "학기당 100만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "장학금 시작일 기준 잔여 정규학기가 1개 학기 이상 남아있는 자 (2026년 2학기 입학생 제외)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 백분율 성적 80점 이상",
+      "gpa_requirement_percent": 80.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전학기 최소 12학점(대학) / 6학점(대학원) 이상",
+      "special_conditions": [
+        "대한민국 국적의 일반대학(원) 및 전문대학 재학 중인 장애학생",
+        "원격대학(방송통신대, 사이버대 등) 및 평생교육원 제외"
+      ],
+      "other_conditions": "성적우수, 예·체능 특기, 정보통신 특기 분야별 상세 기준 별도 적용"
+    },
+    "required_documents": [
+      "장학생 지원신청서 및 자기소개서 (소정양식)",
+      "개인정보 수집·이용 및 제3자 제공 동의서 (소정양식)",
+      "직전 학기 성적증명서",
+      "장애인 증명 서류 (장애인복지카드 사본 또는 장애인증명서)",
+      "가족관계증명서 (가족관계증명서 상 가족 사항 기재)",
+      "2026년도 학자금 지원구간 통지서 (한국장학재단 발급)",
+      "추천서 (선택)",
+      "국민기초생활보장수급자 증명서 또는 차상위계층 확인서 (해당자)",
+      "각종 대회 입상증명서 사본 (해당자)",
+      "국가기술자격증 사본 (해당자)"
+    ],
+    "how_to_apply": "학생지원센터 2층 219호 장학팀 방문 제출 또는 이메일(scholar@ynu.ac.kr) 제출",
+    "application_steps": [
+      "교내 접수: 방문 제출 또는 이메일 제출 후 장학팀으로 확인 전화",
+      "대학 장학팀을 통해 학교장 명의 전자공문으로 한국장애인개발원에 재단 접수 진행"
+    ],
+    "notes": "개인이 재단으로 직접 신청하는 것은 불가하며, 매 학기 성적(백분율 80점 이상) 및 최소 이수학점 기준 유지 필요",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "b8d7cd957610",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년도 세종이도인재장학금 디딤돌 장학사업 학자금대출 관련분야(원금상환, 이자지원) 신청 공고",
+    "apply_start": "2026-07-06",
+    "apply_end": "2026-08-31",
+    "amount": "원금상환 분야: 1인당 최대 1,000,000원 / 이자지원 분야: 1인당 최대 500,000원",
+    "is_open_application": true,
+    "benefit_type": "이자지원",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생",
+        "졸업생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": 6,
+      "income_bracket_priority_note": "한국장학재단 학자금 지원구간이 낮은 순으로 우선 선발",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026.7.1.) 기준 1년 이상 세종특별자치시에 계속 거주 중인 자 (부·모 또는 본인)",
+        "2016년 1학기 이후 한국장학재단 학자금 대출(등록금 및 생활비) 이용자"
+      ],
+      "other_conditions": "원금상환 분야는 2026년 1학기 지원구간 6구간 이하 재학생만 가능. 이자지원 분야는 대학/대학원 재학생, 휴학생, 졸업 후 2년 이내 미취업자 가능(직장 재직자 및 사업자 등록자 제외). 농어촌 대출자 제외."
+    },
+    "required_documents": [
+      "신청서, 개인정보 활용 동의서, 서약서, 행정정보 공동이용 사전동의서 各 1부",
+      "주민등록초본 1부",
+      "가족관계증명서 1부(초본 제출 대상이 부·모인 경우 필수)",
+      "2026년 1학기 학자금지원구간 통지서 1부 (원금상환 분야)",
+      "한국장학재단 부채확인서 1부 (원금상환 분야)",
+      "재학증명서 1부 (원금상환 분야)",
+      "학적/신분 증빙서류 (이자지원 분야)",
+      "한국장학재단 관련 대출/부채 증빙 서류 (이자지원 분야)"
+    ],
+    "how_to_apply": "이메일 개별 접수 (jh@sri.re.kr)",
+    "application_steps": [
+      "서류 구비 후 이메일(jh@sri.re.kr) 접수 (메일 제목: 신청분야명_성명)"
+    ],
+    "notes": "장학금은 개인 계좌로 지급되지 않고 한국장학재단 대출 계좌로 직접 상환 처리됨. 농어촌 학자금 대출은 제외됨.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "d0795ea31dde",
+    "doc_type": "공지사항",
+    "category": "기타",
+    "name": "공지사항 원문 요청 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "정보 없음",
+    "application_steps": [],
+    "notes": "변환할 공지사항 원문 및 첨부파일 내용 입력 요청 안내",
+    "source_url": null,
+    "target_year": "정보 없음"
+  },
+  {
+    "id": "be5109f24cf9",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 미래이음 장학금 장학생 선발계획 재공고(추가모집)",
+    "apply_start": "2026-07-01",
+    "apply_end": "2026-07-15",
+    "amount": "1인당 5,000,000원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "신입생",
+        "재학생"
+      ],
+      "grade_or_semester_note": "휴학생, 수료생, 초과학기 재학생, 대학원생 지원 제외",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "기초생활수급자 및 차상위계층 우선선발",
+      "credit_requirement": null,
+      "special_conditions": [
+        "공고일(2026.07.01.) 기준 제주특별자치도 외 소재 대학에 재학 중인 39세 이하 청년",
+        "통학 목적으로 도외 지역 임차주택에 거주하는 자 (본인 또는 부모 명의 월세 임대차계약서 제출 가능자, 전세 및 대학 기숙사 거주자 제외)",
+        "제주4·3유족 또는 독립유공자 증손·고손 조건 중 1개 충족"
+      ],
+      "other_conditions": "2026년 제주 대학생 글로벌 영어 챌린지 캠프 선발자 제외, 공고일 기준 1년 이내 정학 이상의 징계 처분을 받았거나 1학기 이상 학업을 중단했던 자 제외"
+    },
+    "required_documents": [
+      "2026년 미래이음 장학금 신청 제출(구비) 서류 일체",
+      "개인정보 제공 동의서",
+      "본인 또는 부모 명의 월세 임대차계약서 및 주민등록등본",
+      "유형별(제주4·3유족 또는 독립유공자 후손) 자격 증빙서류",
+      "성적 증빙서류(신입생: 수능 성적표 / 재학생: 백분율 환산성적이 기재된 직전 학기 성적표)"
+    ],
+    "how_to_apply": "(재)제주평생교육장학진흥원 홈페이지(https://jiles.or.kr) 접속 > [인재양성사업] > [제주인재육성 장학사업] > [제주인재육성 장학금 신청]",
+    "application_steps": [
+      "신청 접수(7.1.~7.15.)",
+      "장학생선발심사위원회 심사(7월 중)",
+      "홈페이지 결과 발표(7월 말)",
+      "수여식 및 장학금 지급(8월 중)"
+    ],
+    "notes": "기존 신청자는 별도의 재신청 없이 기존 접수 건 유효. 타 장학금과 중복수혜 가능(글로벌 영어 챌린지 캠프 제외). 장학증서 수여식에 직접 참석하거나 진흥원에 방문하여 수령해야 장학금 지급 가능.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "1a19bdcffd97",
+    "doc_type": "학자금대출공지",
+    "category": "기타",
+    "name": "2026년 2학기 농촌출신대학(원)생 학자금대출(무이자) 지원 안내",
+    "apply_start": "2026-07-01",
+    "apply_end": "2026-07-28",
+    "amount": "당해 학기 대학(기관)이 통보한 등록금 전액 (입학금, 수업료 등)",
+    "is_open_application": true,
+    "benefit_type": "대출",
+    "eligibility": {
+      "student_status": [
+        "대학생",
+        "대학원생",
+        "신입생",
+        "재학생",
+        "편입생",
+        "복학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 100점 만점 환산 70점 이상 (단, 신입생군은 적용 제외)",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전학기 소속학교 최저이수학점 또는 12학점 이상 이수 (단, 신입생·편입생·재입학생 등 신입생군은 적용 제외)",
+      "special_conditions": [
+        "농어촌지역에 주민등록 주소를 두고 6개월(180일) 이상 거주하거나 농어업에 종사하고 있는 학부모의 자녀 또는 본인, 또는 농식품인재 지원 대상학과 재학/복학/입학 예정자"
+      ],
+      "other_conditions": "학점은행제 교육기관 및 외국대학 재학생 제외"
+    },
+    "required_documents": [
+      "농업경영체등록확인서, 농업경영체증명서 또는 농업인 확인서 (농업 종사자 중 전산연계 미확인자)",
+      "어업경영체등록확인서 또는 어업인 확인서 (어업 종사자 중 전산연계 미확인자)",
+      "개인별 필수 제출 서류 (신청 완료 후 한국장학재단 서류제출현황 화면에서 확인)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지(www.kosaf.go.kr) 또는 재단 모바일 앱(App) 온라인 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지 또는 모바일 앱을 통한 온라인 신청",
+      "필수 제출 서류 확인 및 서류 이미지 업로드",
+      "필수 금융교육 2개 과목 이수",
+      "한국장학재단 대출 심사",
+      "대출 승인 후 실행 기간 내 학생 본인이 직접 대출 실행"
+    ],
+    "notes": "대출 이율 0%(무이자). 생활비 지원 제외. 대출 승인 통보를 받은 후 대출 실행 기간(2026.08.21. ~ 2026.10.02.) 내 본인이 직접 실행 절차를 완료해야 등록금이 대학 계좌로 입금됨. 모든 서류는 신청일 전 1개월 이내 발급분만 유효.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "e57638790ccd",
+    "doc_type": "학자금대출",
+    "category": "기타",
+    "name": "2026-2학기 한국장학재단 AI학업장려 학자금대출 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "대출",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": "통계학과, 화학공학부 (고분자•바이오소재전공, 화공시스템전공, 첨단화학공학전공, 융합화학공학전공, 에너지화공전공), 컴퓨터공학과, 전자공학과, 컴퓨터학부 (컴퓨터공학전공, 정보통신공학전공, 소프트웨어융합전공), 미래자동차공학과, 로봇공학과, 자동차소프트웨어학과, 소프트웨어응용학부 (AI데이터사이언스전공, 응용소프트웨어전공, 미디어융합전공), 스마트모빌리티학과, 미디어커뮤니케이션학과, 경영학과, 시각디자인학과",
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "취업 후 상환 학자금대출 이자면제 지원 희망 시 학자금 지원구간 산정을 위한 가구원 정보제공 동의 필요",
+      "credit_requirement": null,
+      "special_conditions": [
+        "AI·SW 관련 학과로 AI·SW중심대학 및 AI거점대학 사업에 참여하고 있는 학과의 학생",
+        "온라인 금융교육 이수 완료 필수"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "가족정보 관련 서류 (필요 시 제출)",
+      "성실사용 계획서: AI·SW 학업 목적으로 사용할 것에 동의하는 계획서 온라인 제출 (연 1회)",
+      "사용 결과보고서: AI학업장려비 사용 후 결과보고서 제출 (연 1회)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지(온라인)에서 학자금대출 신청서 작성 후 온라인 금융교육 이수, 가구원 정보제공 동의, 대출 승인 후 전자서명수단을 통해 개별 실행",
+    "application_steps": [
+      "한국장학재단 홈페이지(온라인)에서 학자금대출 신청서 작성 (일반/취업후/AI학업장려 학자금대출 동시 신청)",
+      "온라인 금융교육 이수",
+      "가구원 정보제공 동의 (학자금 지원구간 산정 희망 시)",
+      "대출 승인 후 전자서명수단을 통해 AI학업장려 학자금대출 개별 실행"
+    ],
+    "notes": "사전 대상 학과 선정/등록 절차와 성실사용 계획서 및 사용 결과보고서 제출 필수. 대출 실행 후 전과한 경우 공문 처리 필요. 대출 실행 학기 기준으로 AI·SW중심대학 및 AI거점대학 사업에 참여 중인 대학 및 학과에 한하여 지원됨.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "0e4612f26b6d",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-1학기 주거안정장학금 6월분 지급요청서 제출 안내",
+    "apply_start": "2026-07-01",
+    "apply_end": "2026-07-07",
+    "amount": "실 지출 임차비용 기준 지급 (월세, 기숙사비 일시납 월할 계산액, 보증금 환산액 등)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026학년도 1학기 주거안정장학금 선발자",
+        "대학 소재지를 기준으로 원거리에 해당하는 주거지에서 거주하며 실제 지출이 발생한 학생",
+        "주거안정장학금 장학생 서약서 제출을 완료한 학생"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "지출 입증 서류 (임대차계약서, 영수증, 계좌 이체내역, 납부내역 등)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지를 통한 온라인 신청",
+    "application_steps": [
+      "한국장학재단(www.kosaf.go.kr) 로그인",
+      "[장학금] > [주거안정장학금] > [교육이수 및 장학생서약서 제출]에서 서약서 제출",
+      "[장학금] > [주거안정장학금] > [지급요청서 작성] 클릭",
+      "선발 연도 및 학기 확인 후 지급요청서 작성 및 지출 정보 입력",
+      "입력 저장 후 반드시 [제출] 버튼까지 클릭하여야 정상 제출 완료됨"
+    ],
+    "notes": "기한(2026. 7. 7.) 내 지급요청서를 제출하지 않을 경우 6월분 장학금 지급 대상에서 제외됩니다. 실제 지출(결제/납부) 시점을 기준으로 작성해야 하며, 증빙 서류는 지급일로부터 5년간 보관해야 합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "091225581f45",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "한국도로공사 지역공부방 인턴십 프로그램 장학생 선발 안내",
+    "apply_start": "2026-06-15",
+    "apply_end": "2026-06-24",
+    "amount": "1인당 200만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "대구·경북지역 주요 대학 재학생 및 휴학생",
+        "2026년 장학금 지급이 가능하고, 인턴십 전 기간 내 중도포기 예정이 없는 자",
+        "지역공부방 프로그램 참여 및 자원봉사활동 실적이 있는 자",
+        "3주간 진행되는 인턴십 및 멘토링 프로그램(본사 및 지역공부방 현장) 전 일정 참여 가능자"
+      ],
+      "other_conditions": "교내 추천 순위: 1순위 지역공부방 프로그램 참여 횟수 및 자원봉사 시간, 2순위 직전학기 성적"
+    },
+    "required_documents": [
+      "한국도로공사 인턴십 신청서 1부 (개인정보 수집·이용·제공 동의서 포함, 소정 서식)",
+      "재학증명서 1부 (대학 재학/휴학 여부 확인용)",
+      "지역공부방 프로그램 참여 및 자원봉사활동 확인서 1부 (1365 자원봉사포털 등 발급본)"
+    ],
+    "how_to_apply": "장학팀 이메일 접수 (scholar@ynu.ac.kr)",
+    "application_steps": [
+      "대학생 모집·선발(6월)",
+      "인턴십 및 멘토링 운영(7월)",
+      "장학금 지급(11월)"
+    ],
+    "notes": "인턴십 운영기간: 2026.07.06 ~ 2026.07.23 (총 3주 과정). 인턴십 출석 요건 미충족, 중도 포기 등 지급 기준 미달 시 장학생 선발 취소 및 지급 제외.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a09fd8d568cd",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 롯데장학재단 '신격호 롯데 취업준비생 장학생' 모집 안내",
+    "apply_start": null,
+    "apply_end": "2026-06-22",
+    "amount": "100만 원 (1회 限)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "휴학생",
+        "졸업유예",
+        "수료",
+        "졸업예정",
+        "졸업생"
+      ],
+      "grade_or_semester_note": "국내 4~6년제 대학 정규과정 5학기 이상 수료(예정)자 및 졸업 후 1년 이내인 자",
+      "major_restriction": "언론·미디어 분야(PD/기자/아나운서/기획마케팅) 취업을 희망하는 자",
+      "gpa_requirement_raw": "3.0/4.5",
+      "gpa_requirement_percent": 66.7,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "사회배려대상자 중 경제적 취약계층 유형 지원 시 한국장학재단 소득분위 3분위 이하 해당자 가능",
+      "credit_requirement": "5학기 이상 수료(예정)",
+      "special_conditions": [
+        "언론·미디어 분야(PD/기자/아나운서/기획마케팅) 취업을 희망하는 전국 4년제 이상 대학교 재학생 및 졸업생",
+        "사회배려대상자 유형(경제적 취약계층, 장애인가정, 한부모가정, 다자녀가구, 다문화가정, 위탁가정, 북한이탈주민가정, 자립준비청소년) 중 하나에 해당하는 자",
+        "신격호 롯데 취업준비생 장학사업 기수혜자(1~7기) 지원 불가"
+      ],
+      "other_conditions": "수여식 및 직무교육 프로그램 전 일정 참석자에 한해 장학금 지급"
+    },
+    "required_documents": [
+      "재학증명서 또는 휴학증명서 (재학생)",
+      "졸업증명서 및 건강보험자격득실확인서 (졸업생)",
+      "학점증명서 (총 평점 확인 가능 서류)",
+      "사회배려대상자 증빙서류 (기초생활수급자증명서, 차상위확인서, 한국장학재단 소득분위증명, 장애인증명서, 한부모가정증명서, 주민등록등본, 가족관계증명서, 외국인사실확인서, 가정위탁보호확인서, 이탈주민등록증, 북한이탈주민확인서, 보호종료확인서, 퇴소확인서 등 해당 유형별 서류)"
+    ],
+    "how_to_apply": "롯데장학재단 홈페이지 공지사항 내 네이버폼(https://naver.me/FM9q7BZj)을 통한 온라인 접수",
+    "application_steps": [
+      "롯데장학재단 홈페이지 공지사항 접속",
+      "네이버폼 신청서 작성 및 증빙서류 온라인 제출"
+    ],
+    "notes": "타 장학금과 중복 수혜 가능. 수여식 및 직무교육 프로그램(2026.07.14~2026.07.16) 전 일정 필수 참석.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "08196909f4f5",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-1학기 국가근로장학금 '하계방학집중근로프로그램' 선발학생 사전교육자료 공지",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "교외근로 시간당 12,790원 (1일 최대 8시간, 주당 최대 40시간, 학기당 최대 640시간)",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 성적 C0(70점/100점 만점) 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026학년도 1학기 국가근로장학금 하계방학집중근로프로그램 최종 선발 학생",
+        "장애인, 자립준비청년/보호아동 성적 예외 가능",
+        "4대보험 가입 조기취업자 근로 불가(일용직, 알바, 체험형 인턴은 증빙 시 예외 가능)",
+        "근로기관 관리자와 가족관계인 경우 근로 불가"
+      ],
+      "other_conditions": "대학생 근로장학사업(국가근로장학금, 대학생 청소년 교육지원사업, 다문화·탈북학생 멘토링 장학금 등) 간 중복/동시 참여 불가"
+    },
+    "required_documents": [
+      "서약서",
+      "안전교육이수보고서(교육 사진 1장 및 담당자 서명 포함)",
+      "조기취업자 예외 증빙자료(해당자)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 및 모바일 출근부 앱을 통해 필수 사전 진행 및 보고서 제출",
+    "application_steps": [
+      "한국장학재단 사이버오리엔테이션 수강 및 서약서 제출",
+      "근로시작일 당일 근로시작 전 모바일 출근부 앱 또는 재단 홈페이지에 업무스케줄 등록",
+      "모바일 출근부 앱 위치기반 위치정보 동의 진행",
+      "근로시작 후 5일 이내 안전교육이수보고서 업로드",
+      "근로 종료 즉시 모바일 앱으로 실시간 출근부 작성"
+    ],
+    "notes": "부정근로(대리/허위근로 등) 적발 시 장학금 전액 환수, 최대 2년 참여 제한, 제재부가금 부과 가능. 점심 및 저녁 휴게시간은 출근부 입력 제외. 근로기관 만족도 상호평가 필수(40시간, 160시간 초과 시).",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=230331183&article.offset=40&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "5a6259e4335c",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-1학기 국가근로장학금 '하계방학집중근로프로그램' 학생 선발 발표",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "실제 근로시간에 따른 시급제 근로장학금 지급 (1일 최대 8시간, 주당 최대 40시간, 학기당 최대 640시간)",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "4대보험 가입 취업자 근로 금지 (일용직, 알바, 체험형 인턴은 증빙자료 제출 필수)",
+        "근로기관 관리자(담당자, 대표자 포함)와 가족관계(배우자, 직계혈족, 4촌 이내의 방계혈족)인 경우 근로 불가"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "증빙자료 (4대보험 가입 일용직, 알바, 체험형 인턴에 해당하는 경우)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 > 장학금 > 국가근로및취업연계장학금 > 국가근로장학금 > 근로장학관리 > 대학자체선발기준 및 선발현황에서 결과 확인",
+    "application_steps": [
+      "한국장학재단 홈페이지에서 선발 결과 및 상세정보 확인",
+      "발표 당일 근로지 담당자에게 유선 연락하여 배정 사실 안내 및 근로일정 재확인",
+      "선발 포기 희망 시 2026-06-17까지 장학팀으로 전화 연락",
+      "별도 게시될 사전교육자료 숙지 후 근로 시작"
+    ],
+    "notes": "선발 포기 의사 접수 마감: 2026-06-17. 프로그램 운영 기간: 2026-07-01 ~ 2026-08-31. 사전 승인 없는 근로일정 변경 및 대학 승인 없는 임의 근로는 장학금 미지급.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "a8a4b64245b9",
+    "doc_type": "공지사항",
+    "category": "기타",
+    "name": "장학금 공지사항 정보 없음",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "정보 없음",
+    "application_steps": [],
+    "notes": null,
+    "source_url": null,
+    "target_year": "정보 없음"
+  },
+  {
+    "id": "6e64b6e8e89d",
+    "doc_type": "기타",
+    "category": "기타",
+    "name": "공지사항 정보 없음",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "정보 없음",
+    "application_steps": [],
+    "notes": "공지사항 원문 내용이 제공되지 않았습니다.",
+    "source_url": null,
+    "target_year": "정보 없음"
+  },
+  {
+    "id": "46ea8f5dbf0f",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 소선나눔기금 과학기술분야 대학(원)생 발굴 장학금 지원사업 신청 안내",
+    "apply_start": "2026-06-01",
+    "apply_end": "2026-06-19",
+    "amount": "1인당 최대 2,000만 원 이내 (1년 기준)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "대학생",
+        "대학원생"
+      ],
+      "grade_or_semester_note": "대학생의 경우 3학년 이상",
+      "major_restriction": "기초과학분야(물리, 화학, 생명과학, 수학 등), 미래산업분야(지능정보기술, 바이오헬스, 에너지신산업, 나노과학기술 등)",
+      "gpa_requirement_raw": "평균 B학점 이상",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "대구·경북 소재 대학 및 대학원 재학생 또는 대구 출신 고등학교 졸업자 중 타 지역 대학 및 대학원 재학생",
+        "연구목표와 학업 비전이 뚜렷하며 도덕성·정직성·성실함을 갖춘 학생"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "자기소개서 1부 (학업성과, 연구실적, 연구특허, 장학금 사용계획 포함 / 소정 양식)",
+      "수학계획서 1부 (소정 양식)",
+      "개인정보 수집·이용 및 제공 동의서 1부 (소정 양식)",
+      "재학증명서 1부",
+      "성적증명서 1부 (대학원생은 학부 성적증명서 포함 제출)",
+      "주민등록등본 1부",
+      "소득관련 서류 (건강보험 서류 3종 일체, 국민기초생활수급자 증명서, 차상위계층 증명서, 한부모가족 증명서 중 택1)",
+      "추천서 1부 (선택)"
+    ],
+    "how_to_apply": "등기우편 접수 필수 (방문 접수 불가 / 대구광역시 달서구 달구벌대로 1834 성안오피스텔 16층 배분사업팀 장경화 차장 앞)",
+    "application_steps": [
+      "서류 접수(6.1~6.19)",
+      "서류 확인(6.22~7.3)",
+      "서류심사(7.6~7.24)",
+      "면접심사(7.27~8.14)",
+      "최종 발표(8월 말~9월 중)",
+      "전달식 및 지급(9월 중)"
+    ],
+    "notes": "장학생 선정 시 학기별 성적증명서, 분기별 과업서, 연구계획서 제출 및 장학생 간 교류활동 필수 참여. 허위 사실 기재 시 장학금 전액 환수.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "29b35f258a28",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-1학기 주거안정장학금 5월분 지급요청서 제출 안내",
+    "apply_start": "2026-06-01",
+    "apply_end": "2026-06-07",
+    "amount": "주거 관련 실 지출비용 지원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026-1학기 주거안정장학생 선발자 대상",
+        "사전 필수 요건: 지급요청서 작성 전 '주거안정장학금 장학생 서약서' 제출 완료 필수(학기별 1회)",
+        "주거지 요건: 대학 소재지를 기준으로 원거리에 해당하지 않는 지역(동일 광역교통권·인접시·동일 군)의 주거지에서 발생한 지출 내역만 인정"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "주거안정장학금 장학생 서약서 (학기별 1회 사전 제출 필수)",
+      "5월분 주거 지출 내역 및 지급요청서 (온라인 입력)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지(www.kosaf.go.kr) 로그인 > 장학금 > 주거안정장학금 > 지급요청서 작성 > 해당 학기 선택 후 작성 > 반드시 [제출] 버튼 클릭",
+    "application_steps": [
+      "한국장학재단 홈페이지 로그인",
+      "장학금 > 주거안정장학금 > 지급요청서 작성",
+      "해당 학기 선택 후 작성",
+      "반드시 [제출] 버튼 클릭"
+    ],
+    "notes": "2026. 6. 1.(월) ~ 6. 7.(일) 기한 내 미제출 시 해당 월 장학금 지급 대상 제외. 사용 시점이 아닌 실제 지출 시점 기준으로 작성. 생활관생은 식비를 제외한 일시납 금액을 매월마다 분할 입력. 퇴관 시 장학팀으로 즉시 연락 필요.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "0f36149399ec",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-1학기 국가근로장학생 (공휴일수업대체지정일/기말시험기간/방학기간근로제한시간변경 등) 근로관련 유의사항 안내",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "실 근로시간에 따른 국가근로장학금 지급 (단, 근로기간 종료 이후에 진행한 근로는 장학금 지급 불가)",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026학년도 1학기 국가근로장학생으로 현재 근로를 진행 중인 학생"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "근로지 담당자와 사전 협의 후 방학시작일(2026. 6. 22.) 근로시작 시간 전까지 한국장학재단 출근부 시스템에 변경 입력",
+    "application_steps": [
+      "근로지 담당자와 사전 협의",
+      "방학시작일(2026. 6. 22.) 근로시작 시간 전까지 한국장학재단 출근부 시스템에 변경 입력"
+    ],
+    "notes": "수업시간 및 근로시간 중복 체크 적용 기간: ~ 2026. 6. 21.(일)까지 / 기말시험기간: 2026. 6. 15.(월) ~ 6. 19.(금) / 하계방학기간: 2026. 6. 22.(월) ~ 8. 31.(월)",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "b51f828f26b3",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026년 2학기 농림축산식품부 「청년창업농장학금」 장학생 선발 공고",
+    "apply_start": "2026-06-01",
+    "apply_end": "2026-06-30",
+    "amount": "매학기 등록금 전액 + 학업장려금 250만 원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "일반 4년제 대학교: 3학년 이상 (3학년 1학기 진학 예정자 포함) / 전문대학 및 농업계대학 농식품계열학과: 1학년 2학기 이상 (1학년 2학기 진학 예정자 포함)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 성적 백분위 점수 70점 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": "직전학기 12학점 이상 이수",
+      "special_conditions": [
+        "대한민국 국적자",
+        "시행년도(2026.1.1.) 기준 만 40세 미만",
+        "졸업 후 수혜 학기당 6개월(180일) 동안 영농 및 농림축산식품 분야 취업 또는 창업 유지 필수"
+      ],
+      "other_conditions": "계속자는 직전학기 의무교육 이수 필수"
+    },
+    "required_documents": [
+      "취·창업 계획서 (온라인 시스템 입력)",
+      "기타 증빙서류 (선발안내서 세부 기준 참조)"
+    ],
+    "how_to_apply": "한국농어촌희망재단 홈페이지(www.rhof.or.kr) 온라인 직접 신청",
+    "application_steps": [
+      "신청",
+      "대학교 추천",
+      "서류심사",
+      "보증보험 가입",
+      "최종선발"
+    ],
+    "notes": "타 장학금과 중복 수혜 불가. 최종 선발 전 보증보험 가입 필수. 졸업 후 의무종사 미이행 시 지원 장학금 전액 환수. 세션 오류 방지를 위해 신청서/계획서는 사전 작성 후 복사·붙여넣기 권장.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=230091939&article.offset=50&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "97e354d90959",
+    "doc_type": "장학공지",
+    "category": "교내장학",
+    "name": "2026-2학기 행정인턴십장학생 신청관련 사전 안내",
+    "apply_start": "2026-05-22",
+    "apply_end": "2026-08-12",
+    "amount": "정보 없음",
+    "is_open_application": false,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학생",
+        "재입학생"
+      ],
+      "grade_or_semester_note": "2026-2학기 정규학기 내",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 백분위 성적 70/100점 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026-2학기 한국장학재단 1차 통합신청 기간 내 신청을 완료한 자 (2차 신청자는 선발 심사 제외)",
+        "과거 국가장학금을 수혜하고 등록휴학을 한 복학생의 경우에도 학자금지원구간 산정을 위해 반드시 국가장학금 1차 신청 필요"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "한국장학재단 홈페이지에서 국가장학금 1차 신청 완료 후 학교 URP 포털 시스템을 통해 희망근로지 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지에서 국가장학금 1차 통합신청 (2026-05-22 ~ 2026-06-22)",
+      "학교 URP 포털 시스템을 통해 교내 희망근로지 신청 (2026-08-06 ~ 2026-08-12 예정)"
+    ],
+    "notes": "선발 시 적용되는 지원구간은 2026년 8월 12일 기준 확인되는 정보 사용. 등록휴학 복학생도 학자금지원구간 산출을 위해 국가장학금 재신청 필요. 교내 희망근로지 신청 세부 공지는 2026년 7월 말 별도 공지 예정.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "ab6551cfbd0c",
+    "doc_type": "장학공지",
+    "category": "기타",
+    "name": "2026-2학기 한국장학재단 학자금 대출 사전 신청 일정 및 방법 안내",
+    "apply_start": "2026-05-22",
+    "apply_end": null,
+    "amount": "등록금 및 생활비 대출",
+    "is_open_application": true,
+    "benefit_type": "대출",
+    "eligibility": {
+      "student_status": [
+        "대학생",
+        "대학원생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": "2026-2학기 학자금 대출(등록금/생활비) 이용 희망자"
+    },
+    "required_documents": [],
+    "how_to_apply": "한국장학재단 온라인(홈페이지 또는 모바일 앱) 신청",
+    "application_steps": [
+      "홈페이지: 한국장학재단 홈페이지 로그인 > 학자금대출 > 학자금대출 신청 > [통합신청 바로가기] > 학자금대출 > 사전신청현황에서 신청 완료 확인",
+      "모바일: 한국장학재단 모바일 어플 로그인 > 학자금대출 > 대출신청(통합신청) > 마지막 화면의 [신청현황 보러가기]에서 신청 완료 확인"
+    ],
+    "notes": "국가장학금 1차 신청 마감(2026. 6. 22. 18시) 이후에도 사전신청 가능. 취업후 상환 학자금대출(생활비)은 소속 대학(원) 등록마감일로부터 약 8주 전 신청 권장. 사전신청자에 대한 대출심사는 본신청기간부터 진행.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "c3c9f0d381fa",
+    "doc_type": "공지사항",
+    "category": "기타",
+    "name": "공지사항 미입력",
+    "apply_start": null,
+    "apply_end": null,
+    "amount": "",
+    "is_open_application": false,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "",
+    "application_steps": [],
+    "notes": null,
+    "source_url": null,
+    "target_year": "2024"
+  },
+  {
+    "id": "2a270ea0e650",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 한국장학재단 국가근로장학금(1차) 학생 신청기간 안내",
+    "apply_start": "2026-05-22",
+    "apply_end": "2026-06-22",
+    "amount": "근로 시간에 따라 장학금 지급",
+    "is_open_application": true,
+    "benefit_type": "근로장학",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "복학생",
+        "재입학생"
+      ],
+      "grade_or_semester_note": "2026-2학기 정규학기 내 재학생",
+      "major_restriction": null,
+      "gpa_requirement_raw": "직전학기 성적 70점/100점 만점 이상",
+      "gpa_requirement_percent": 70.0,
+      "income_bracket_max": 9,
+      "income_bracket_priority_note": "2026-2학기 재단 산정 학자금지원구간 0구간 ~ 9구간 이내 (선발 시 2026-08-12 기준 산정 완료된 구간 적용)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "2026-2학기 학기 중 근로선발을 희망하는 학생은 반드시 1차 신청기간 내 신청 필수",
+        "복학생 및 재입학생은 등록휴학자라도 1차 신청 필수"
+      ],
+      "other_conditions": "대학원 및 학점은행 학자금대출과 대학 국가장학금 등 이중학적 동시 지원 불가"
+    },
+    "required_documents": [
+      "서류제출 대상 안내 시 관련 증빙서류",
+      "가구원(부모 또는 배우자) 정보제공 동의"
+    ],
+    "how_to_apply": "한국장학재단 1차 통합신청 및 교내 URP 희망근로지 신청 2단계를 모두 완료해야 함",
+    "application_steps": [
+      "한국장학재단 1차 통합신청: 재단 홈페이지 또는 모바일 앱 로그인 후 장학금 통합신청, 학사정보 등록, 학자금 유형 선택, 약관 동의, 신청정보 등록, e-러닝 이수",
+      "재단 서류제출 및 가구원 동의 진행 (2026-05-22 ~ 2026-06-29)",
+      "교내 URP 희망근로지 신청: 학교 URP 종합정보시스템을 통해 신청 (2026-08-06 ~ 2026-08-12 예정)"
+    ],
+    "notes": "학기 중 근로선발을 위해서는 반드시 1차 신청기간 내 신청해야 하며, 한국장학재단 신청과 교내 희망근로지 신청을 모두 완료해야 함. 학생 본인 명의로 신청 필수.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "8d1d7d824999",
+    "doc_type": "장학공지",
+    "category": "교외장학",
+    "name": "2026학년도 산학협동재단 디딤돌 장학생 신청 안내",
+    "apply_start": null,
+    "apply_end": "2026-07-08",
+    "amount": "월 80만 원 (연 960만 원)",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "신입생",
+        "재학생"
+      ],
+      "grade_or_semester_note": "국내 4년제 대학 2026학년도 1학기 기준 학부 1학년 신입생 재학생 (2~4학년, 휴학생, 편입학, 재입학생, 의학계열 등 5~6년 교육과정 학부생 불가)",
+      "major_restriction": null,
+      "gpa_requirement_raw": "2026학년도 1학기 성적우수자 우대 (재단 서류 평가 기준: 4.5 / 4.0~4.4 / 3.5~3.9 / 3.5 미만 구간별 평가)",
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "사회적 배려 대상자 우선 선발 (기초생활수급자, 차상위계층, 한부모가정 자녀, 다문화가정 자녀, 새터민 본인 또는 자녀, 자립준비청년 본인 등)",
+      "credit_requirement": null,
+      "special_conditions": [
+        "한국장학재단 국가장학금 수혜를 받는 자 (2026-1학기 등록금을 국가장학금으로 전액 감면·수혜받았으며 향후 잔여 7개 학기 등록금도 국가장학금 수혜가 가능한 자)",
+        "타 민간재단 등록금성 장학금 수혜자 중복 지원 불가"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [
+      "장학금 신청서 (재단 서식) 1부",
+      "자기소개서 (재단 서식) 1부",
+      "개인(신용)정보 수집·이용·제공 및 조회 동의서 (재단 서식, 자필 서명 필수) 1부",
+      "장학생 서약서 (재단 서식, 자필 서명 필수) 1부",
+      "2026-1학기 성적증명서 (재단 서식) 1부 (2026.07.07. 이후 발급본)",
+      "국가장학금 증명서 전체내역 (한국장학재단 발급) 1부",
+      "학자금지원구간 통지서 전체내역 (한국장학재단 발급) 1부",
+      "주민등록등본 1부 (세대주와의 관계 명시)",
+      "가족관계증명서 (부 또는 모 명의 발급) 1부",
+      "사회적 배려 대상자 증빙서류 (해당자에 한함)"
+    ],
+    "how_to_apply": "장학팀 이메일 접수 (scholar@ynu.ac.kr)",
+    "application_steps": [
+      "대학 추천 (1명)",
+      "재단 서류심사 (2배수 선발)",
+      "재단 면접평가 (대면 면접)",
+      "최종 선발 확정"
+    ],
+    "notes": "2026-1학기 성적증명서는 2026.07.07.(화) 이후 발급 가능합니다. 신청 마감(2026-07-08 17:00) 이후 추가 접수는 절대 불가합니다.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "cb19233b1cc7",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026학년도 2학기 주거안정장학금 학생 신청 안내",
+    "apply_start": "2026-05-22",
+    "apply_end": "2026-06-22",
+    "amount": "정보 없음",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "대한민국 국적 소지자",
+        "대학원생 제외",
+        "당해연도 1월 1일 기준 만 39세 이하(1985년 1월 1일 이후 출생자)",
+        "미혼"
+      ],
+      "other_conditions": null
+    },
+    "required_documents": [],
+    "how_to_apply": "온라인 신청 (한국장학재단 홈페이지 www.kosaf.go.kr)",
+    "application_steps": [
+      "한국장학재단 홈페이지(www.kosaf.go.kr) 접속 및 로그인",
+      "상단 메뉴: [장학금] > [장학금신청] > [신청서 작성]",
+      "신청 대상 장학금 중 ‘주거안정장학금’ 선택 후 신청 동의, 서약 및 절차 진행"
+    ],
+    "notes": "신청 시 전자서명수단(공동인증서, 금융인증서, 간편인증 등) 필요. 소득·재산 조사 대상 가구원의 정보제공 동의 필수. 허위 정보 입력 또는 서류 위·변조 시 전액 환수 및 최대 3년 이내 지원 제한.",
+    "source_url": null,
+    "target_year": "2026"
+  },
+  {
+    "id": "5bf1ca9b82bb",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 국가장학금 1차 신청 안내",
+    "apply_start": "2026-05-22",
+    "apply_end": "2026-06-22",
+    "amount": "학자금지원구간 등에 따라 차등 지원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생",
+        "신입생",
+        "편입생",
+        "재입학생"
+      ],
+      "grade_or_semester_note": "신입학, 편입학, 재입학생 중 2학기 진입자 포함",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "학자금지원구간 산정 결과에 따라 차등 지원",
+      "credit_requirement": null,
+      "special_conditions": [
+        "특별재난지역 내 피해가구 대학생의 경우 재난장학금 지원을 위해 국가장학금 신청 필수"
+      ],
+      "other_conditions": "본인 명의 전자서명수단 필수, 재학생은 1차 신청 원칙"
+    },
+    "required_documents": [
+      "서류제출 대상자에 한하여 파일 업로드 (해당자 개별 확인)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 또는 모바일 앱을 통한 온라인 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지 또는 모바일 앱 접속",
+      "본인 명의 전자서명수단으로 로그인 및 신청서 작성",
+      "서류제출 대상자의 경우 필수 서류 업로드",
+      "가구원 정보제공 동의 완료"
+    ],
+    "notes": "마감일은 18:00 마감됩니다. 수험번호 입력은 금지되며 본인의 8자리 학번을 확인 후 입력해야 합니다.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=229993498&article.offset=50&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "72ee41550615",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026-2학기 국가장학금 2차 신청 안내",
+    "apply_start": "2026-08-12",
+    "apply_end": "2026-09-09",
+    "amount": "소득구간 및 다자녀 여부 등에 따라 차등 지원",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": "2026년 1학기에 신입학·편입학·재입학한 학생은 이번 2학기 신청 시 반드시 학적을 [재학생]으로 선택해야 함",
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "1차 신청을 놓친 재학생은 재학 중 2회에 한하여 구제신청 자동 적용",
+        "특별재난지역 내 피해가구 대학생은 재난장학금 지원을 위해 국가장학금 신청 필수"
+      ],
+      "other_conditions": "학생 본인 명의 전자서명수단 보유 필수 및 가구원 정보제공 동의 완료 필수"
+    },
+    "required_documents": [
+      "서류제출 대상자에 한한 해당 서류",
+      "자격 증빙 서류(다자녀, 기초/차상위, 한부모 등)"
+    ],
+    "how_to_apply": "한국장학재단 홈페이지 및 모바일 앱을 통한 온라인 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지 또는 모바일 앱 접속",
+      "학생 본인 명의 전자서명수단 로그인 및 국가장학금 신청서 작성",
+      "가구원 정보제공 동의 완료",
+      "서류제출 대상자 확인 후 파일 업로드"
+    ],
+    "notes": "서류제출 및 가구원 동의 기간은 2026-08-12 09:00 ~ 2026-09-16 18:00까지. 반드시 학생 본인 명의 인증서로 신청해야 함.",
+    "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231160598&article.offset=0&articleLimit=10",
+    "target_year": "2026"
+  },
+  {
+    "id": "029e2cd56c80",
+    "doc_type": "장학공지",
+    "category": "국가장학",
+    "name": "2026학년도 2학기 주거안정장학금 학생 신청 방법 안내",
+    "apply_start": "2026-08-12",
+    "apply_end": "2026-09-09",
+    "amount": "정보 없음",
+    "is_open_application": true,
+    "benefit_type": "장학금",
+    "eligibility": {
+      "student_status": [
+        "재학생"
+      ],
+      "grade_or_semester_note": null,
+      "major_restriction": null,
+      "gpa_requirement_raw": null,
+      "gpa_requirement_percent": null,
+      "income_bracket_max": null,
+      "income_bracket_priority_note": null,
+      "credit_requirement": null,
+      "special_conditions": [
+        "대한민국 국적 소지자",
+        "당해연도 1월 1일 기준 만 39세 이하(1985년 1월 1일 이후 출생자)인 미혼자"
+      ],
+      "other_conditions": "소득·재산 조사 대상 가구원의 정보제공 동의 필요"
+    },
+    "required_documents": [],
+    "how_to_apply": "한국장학재단 홈페이지 온라인 신청",
+    "application_steps": [
+      "한국장학재단 홈페이지(www.kosaf.go.kr) 접속 및 로그인",
+      "상단 메뉴 '장학금' > '장학금신청' > '신청서 작성' 클릭",
+      "'주거안정장학금' 선택",
+      "팝업 메시지 확인 후 동의 및 서약 진행"
+    ],
+    "notes": "허위 정보 입력 및 서류 변조 시 3년 이내 장학금/학자금 대출 제한 및 환수 조치 가능. 가구원 정보제공 미동의 시 학자금 지원구간 미산정 불이익 발생 가능. 금융자산/소득 사후 확인으로 지원구간 변경 시 기지급 장학금 반환 의무 발생.",
+    "source_url": null,
+    "target_year": "2026"
+  }
+]

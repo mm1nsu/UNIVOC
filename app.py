@@ -1,0 +1,1140 @@
+"""
+웹 UI(브라우저 채팅창)로 실행하는 서버.
+실행: python3 app.py  →  http://localhost:8000
+"""
+import json
+import re
+import urllib.parse
+import uuid
+from datetime import date, datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+import bot_core
+import config
+import curriculum
+import recognition_doc
+from matching import match_scholarships
+from rules import check_dual_major_eligibility
+from schemas import (
+    CompletedCourseItem,
+    DualMajorState,
+    RecognitionApplication,
+    Scholarship,
+    SlotState,
+    dual_major_missing_slots,
+    missing_slots,
+)
+
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "data" / "scholarship_db.json"
+RECOGNITION_PATH = BASE_DIR / "data" / "recognition_applications.json"
+STATIC_DIR = BASE_DIR / "static"
+
+app = FastAPI(title="Uni-VOC 챗봇")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# 세션별 대화 상태 (데모용 — 메모리 저장, 서버 재시작하면 초기화됨)
+#
+# 통합 챗봇 구조: 하나의 세션(하나의 대화 스레드) 안에서 장학금/복수전공 두 시나리오를
+# 자연스럽게 오갈 수 있게 함 — 학생이 URL이나 탭을 안 골라도 됨. mode가 어떤 시나리오인지
+# 가리키고, 각 시나리오의 세부 상태(state/stage/등)는 그대로 분리 보관해서 서로 안 섞임
+# (예: 장학금 얘기하다 복수전공으로 넘어갔다가 다시 돌아와도 장학금 진행상황이 안 날아감).
+UNIFIED_SESSIONS: dict[str, dict] = {}
+
+
+# ---------------- DB 로드/저장 ----------------
+
+def load_db() -> list[Scholarship]:
+    if not DB_PATH.exists():
+        return []
+    raw = json.loads(DB_PATH.read_text(encoding="utf-8"))
+    return [Scholarship.model_validate(r) for r in raw]
+
+
+def save_db(db: list[Scholarship]) -> None:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DB_PATH.write_text(
+        json.dumps([s.model_dump() for s in db], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def load_recognition_apps() -> list[RecognitionApplication]:
+    if not RECOGNITION_PATH.exists():
+        return []
+    raw = json.loads(RECOGNITION_PATH.read_text(encoding="utf-8"))
+    return [RecognitionApplication.model_validate(r) for r in raw]
+
+
+def save_recognition_apps(apps: list[RecognitionApplication]) -> None:
+    RECOGNITION_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RECOGNITION_PATH.write_text(
+        json.dumps([a.model_dump() for a in apps], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+# ---------------- 세션 ----------------
+
+def _new_scholarship_state() -> dict:
+    return {
+        "state": SlotState(),
+        "stage": "slot_filling",  # slot_filling -> condition_check(조건있을때만) -> matched -> consult
+        "matches": [],
+        "selected": None,
+        "needs_income_check": False,
+        "pending_conditions": [],  # condition_check 단계에서 학생한테 직접 확인받을 특례조건 원문들
+    }
+
+
+def _new_dual_major_state() -> dict:
+    return {
+        "state": DualMajorState(),
+        # slot_filling -> done -> awaiting_home_major -> course_collect
+        # -> course_overlap_check(홈학과/목표학과 교육과정표에 겹치는데 학생이 말 안 한 과목이
+        #    있으면 먼저 확인받는 단계 — 없으면 건너뜀, 실사용자 요청: "겹치는 과목 이미
+        #    들은거같으면 미리 물어보고 신청서에 기재해줄 수 있도록")
+        # -> course_semester_check(매칭된 과목 중 실제 이수 연도/학기를 모르는 게 있으면
+        #    먼저 물어보는 단계 — 없으면 건너뜀, 실사용자 요청: "이수학기도 채워주면 좋겠는데")
+        # -> course_draft
+        # -> student_info(성명/학번/학년/소속대학 확인 — 신청서에 실제로 필요한 정보라 빠지면
+        #    신청서로서 의미가 없음, 실사용자 피드백으로 추가됨) -> student_info_confirm(최종
+        #    확인 — 잘못 입력했으면 다시 고칠 기회를 준다, 이것도 실사용자 요청으로 추가됨) -> done
+        # done 단계에서는 매 턴마다, 방금 제출한 신청서가 (a) 어딘가에서 반려됐는데 아직 학생한테
+        # 안 알려줬으면 rejection_followup으로 전환해서 반려 사유를 알려주고 수정 의향을 묻고,
+        # (b) 학생이 "파일/다운로드/양식"을 다시 달라고 하면 다운로드 탭을 다시 띄워준다
+        # (실사용자 요청: "반려되면 학생한테 알려줘서 일부수정해서 다시 제출... 수정제출할때
+        # 학생한테 수정파일이 안 보이는데... 파일 보여달라고하면 다운로드하는 탭을 보여주면").
+        # rejection_followup에서 "응"으로 답하면 course_collect로 돌아가되, 예전에 매칭됐던
+        # 과목들을 그대로 들고 가서(완전히 처음부터 다시 말 안 해도 되게) 이어서 빼거나
+        # 더할 수 있게 한다.
+        "stage": "slot_filling",
+        "result": None,
+        "completed_courses": [],  # list[CompletedCourseItem] — 2단계(이수과목 인정) 수집용
+        "matched": [],
+        "unmatched": [],
+        "overlap_candidates": [],  # course_overlap_check 단계에서 제시한 후보(list[dict])
+        "semester_pending": [],  # course_semester_check 단계에서 물어본, 아직 이수시점 모르는 과목명
+        "last_application_id": None,
+        "rejection_notified": False,  # last_application_id가 반려됐다는 걸 학생한테 이미 알렸는지
+        "student_identity": {"name": None, "student_id": None, "grade": None, "college": None},
+    }
+
+
+def _new_unified_session() -> dict:
+    return {
+        "mode": None,  # None(아직 파악 안 됨) | "scholarship" | "dual_major"
+        "history": [],  # 두 시나리오가 공유하는 대화 이력 (모드 전환해도 맥락 유지)
+        "scholarship": _new_scholarship_state(),
+        "dual_major": _new_dual_major_state(),
+    }
+
+
+def get_unified_session(session_id: str) -> dict:
+    if session_id not in UNIFIED_SESSIONS:
+        UNIFIED_SESSIONS[session_id] = _new_unified_session()
+    return UNIFIED_SESSIONS[session_id]
+
+
+# ---------------- 페이지 ----------------
+
+@app.get("/")
+def index():
+    return FileResponse(str(STATIC_DIR / "index.html"))
+
+
+@app.get("/admin")
+def admin():
+    return FileResponse(str(STATIC_DIR / "admin.html"))
+
+
+@app.get("/dualmajor")
+def dualmajor_page():
+    # 예전엔 복수전공 전용 페이지가 따로 있었는데, 이제 메인 챗봇 하나로 통합됨.
+    # 예전 링크(북마크 등)가 죽지 않게 메인으로 보내줌.
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url="/")
+
+
+@app.get("/staff")
+def staff_page():
+    return FileResponse(str(STATIC_DIR / "staff.html"))
+
+
+# ---------------- 설정(API 키) ----------------
+
+@app.get("/api/settings")
+def get_settings():
+    return {"has_api_key": config.has_api_key(), "model": config.get_model()}
+
+
+class SettingsIn(BaseModel):
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+
+
+@app.post("/api/settings")
+def set_settings(body: SettingsIn):
+    if body.api_key:
+        config.set_api_key(body.api_key)
+    if body.model:
+        config.set_model(body.model)
+    return {"ok": True, "has_api_key": config.has_api_key(), "model": config.get_model()}
+
+
+# ---------------- 장학금 DB 조회/삭제 (관리자 페이지용) ----------------
+
+@app.get("/api/scholarships")
+def list_scholarships():
+    db = load_db()
+    return [s.model_dump() for s in db]
+
+
+@app.delete("/api/scholarships/{sid}")
+def delete_scholarship(sid: str):
+    db = load_db()
+    new_db = [s for s in db if s.id != sid]
+    save_db(new_db)
+    return {"ok": True, "count": len(new_db)}
+
+
+# ---------------- RAG 자료 추가 (공지 원문 → 구조화 → 저장) ----------------
+
+class IngestParseIn(BaseModel):
+    raw_text: str
+
+
+@app.post("/api/ingest/parse")
+def ingest_parse(body: IngestParseIn):
+    try:
+        parsed = bot_core.extract_scholarship(body.raw_text)
+    except Exception as e:  # noqa: BLE001 — 데모용으로 에러 메시지 그대로 노출
+        return JSONResponse(status_code=400, content={"error": str(e)})
+    return parsed.model_dump()
+
+
+class IngestSaveIn(BaseModel):
+    record: dict
+
+
+@app.post("/api/ingest/save")
+def ingest_save(body: IngestSaveIn):
+    try:
+        record = Scholarship.model_validate(body.record)
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse(status_code=400, content={"error": f"형식이 올바르지 않아요: {e}"})
+    record.id = record.id or uuid.uuid4().hex[:12]
+    db = load_db()
+    db.append(record)
+    save_db(db)
+    return {"ok": True, "id": record.id, "count": len(db)}
+
+
+# ---------------- 채팅 (통합) ----------------
+#
+# 장학금/복수전공 두 시나리오를 한 채팅창에서 자연스럽게 오갈 수 있게 하는 라우터.
+# 1) 모드가 아직 안 정해졌으면: 키워드로 먼저 판단 -> 애매하면 LLM으로 분류 -> 그래도
+#    애매하면(unclear) 절대 추측하지 않고 학생에게 직접 물어봄.
+# 2) 모드가 이미 정해졌어도, 메시지에 다른 시나리오 키워드가 명확히 나오면 그쪽으로
+#    전환함 (예: 장학금 얘기하다가 "복수전공도 되나?" -> 자동 전환). 각 시나리오의
+#    진행상황은 따로 보관되니 전환했다 돌아와도 안 날아감.
+# 3) 실제 판단(장학금 매칭/자격요건 판정/이수과목 인정)은 예전과 동일하게 전부
+#    결정론적 규칙(matching.py/rules.py/curriculum.py)이 담당 — 라우팅이 늘었다고
+#    핵심 설계 원칙(LLM은 판단 안 함)이 바뀌는 건 아님.
+
+class ChatIn(BaseModel):
+    session_id: Optional[str] = None
+    message: str
+
+
+RESET_WORDS = {"처음부터", "다시검색", "리셋", "reset"}
+LIST_WORDS = {"목록", "리스트", "list"}
+EXIT_WORDS = {"종료", "exit", "quit"}
+
+SCHOLARSHIP_KEYWORDS = ("장학금", "장학", "학자금")
+DUAL_MAJOR_KEYWORDS = ("복수전공", "복전", "다전공", "부전공", "이수과목")
+
+
+def detect_mode_keywords(msg: str) -> Optional[str]:
+    if any(k in msg for k in DUAL_MAJOR_KEYWORDS):
+        return "dual_major"
+    if any(k in msg for k in SCHOLARSHIP_KEYWORDS):
+        return "scholarship"
+    return None
+
+
+def filter_by_soft_conditions(
+    matches: list[tuple[Scholarship, bool]], state: SlotState, convo: str
+) -> list[tuple[Scholarship, bool]]:
+    """1차 규칙필터를 통과한 후보 중, special_conditions/major_restriction/학년조건처럼
+    자유서술형이라 정확매칭이 불가능한 조건이 있는 것만 골라 LLM 보조판단(2차)을 한 번 거침.
+    (matching.py 모듈 docstring 참고 — special_conditions는 실제 DB 41건 전부에 있어서
+    이걸 예전처럼 정확매칭으로 걸렀더니 있는 장학금도 다 안 뜨는 버그가 있었음.)
+    condition_check 단계(1.5차)에서 학생한테 실제 후보 조건 원문을 직접 짚어 물어본 경우,
+    그 질문과 학생의 답은 이미 convo(대화 이력) 안에 그대로 들어있음 — soft_match_conditions
+    프롬프트 자체가 "말 안 한 건 모르는 거지 아니라는 뜻이 아니다"를 이미 규칙으로 갖고 있어서,
+    답변을 별도로 구조화해서 다시 넘길 필요 없이 convo만으로 충분히 반영됨(LLM 호출 한 번을
+    아껴서 응답 속도도 빨라짐).
+    LLM 호출이 실패해도(네트워크 등) 1차 필터 결과 자체는 그대로 살려서 반환함 —
+    보조판단 실패가 검색 자체를 막으면 안 되니까."""
+    candidates = []
+    for s, _ in matches:
+        e = s.eligibility
+        conditions = []
+        if e.special_conditions:
+            conditions.extend(e.special_conditions)
+        if e.major_restriction:
+            conditions.append(f"학과제한: {e.major_restriction}")
+        if e.grade_or_semester_note:
+            conditions.append(f"학년/학기조건: {e.grade_or_semester_note}")
+        if conditions:
+            candidates.append({"scholarship_id": s.id or s.name, "conditions": conditions})
+
+    if not candidates:
+        return matches
+
+    profile = (
+        f"- 재학상태: {state.student_status or '미상'}\n"
+        f"- 학과: {state.major or '미상'}\n"
+        f"- 학년/학기: {state.grade_or_semester or '미상'}\n"
+        f"- 평점: {state.gpa if state.gpa is not None else '미상'}\n"
+        f"- 학자금지원구간: {state.income_bracket or '미상'}\n"
+        f"- 거주지역: {state.region or '미상(학생이 말 안 함 — 지역조건은 이것만으론 배제하지 말 것)'}\n"
+        f"- 특별조건 자기신고: {', '.join(state.special_conditions) if state.special_conditions else '없음/미상'} "
+        f"(주의: 여기 없는 다른 카테고리는 '모름'이지 '해당 안 됨'이 아님)\n\n"
+        f"[학생과의 대화 참고 — condition_check 단계에서 실제 후보 조건을 직접 짚어 물어본 질문과 "
+        f"학생의 답변이 있으면 여기 포함돼 있으니 최우선으로 반영해라]\n{convo}"
+    )
+
+    try:
+        verdicts = bot_core.soft_match_conditions(profile, candidates)
+    except Exception:  # noqa: BLE001 — 보조판단 실패해도 1차 필터 결과는 유지
+        return matches
+
+    filtered = []
+    for s, needs_income in matches:
+        key = s.id or s.name
+        eligible, _reason = verdicts.get(key, (True, ""))
+        if not eligible:
+            continue
+        filtered.append((s, needs_income))
+    return filtered
+
+
+def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
+    if user_msg in LIST_WORDS and sub["matches"]:
+        reply = bot_core.generate_candidate_presentation(sub["matches"])
+        sub["stage"] = "matched"
+        return {
+            "reply": reply,
+            "stage": "matched",
+            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
+        }
+
+    stage = sub["stage"]
+
+    if stage == "slot_filling":
+        sub["state"] = bot_core.extract_slots(convo, sub["state"])
+        missing = missing_slots(sub["state"])
+        if missing:
+            reply = bot_core.generate_followup_question(convo, missing)
+            return {"reply": reply, "stage": "slot_filling", "options": []}
+
+        db = load_db()
+        matches = match_scholarships(db, sub["state"], today=date.today())
+        if not matches:
+            reply = (
+                "지금 조건으로는 매칭되는 장학금을 못 찾았어. "
+                "DB에 자료가 더 추가되면 다시 찾아볼 수 있어! "
+                "'처음부터'라고 치면 조건 다시 입력할 수 있어."
+            )
+            return {"reply": reply, "stage": "slot_filling", "options": []}
+        sub["matches"] = matches
+
+        # region 슬롯 하나 물어보는 정도로는 부족하다는 사용자 피드백 반영 — 1차로 걸러진
+        # 실제 후보들에 실제로 달려있는 special_conditions 원문 중, "한부모가정"/"다자녀"/
+        # "차상위계층"처럼 학생이 스스로 말 안 하면 놓치기 쉬운 짧고 명확한 범주형 조건만 골라
+        # "이 중에 해당되는 거 있어?"라고 직접 짚어 물어보는 단계로 감(1.5차).
+        # 사용자 피드백("이렇게 한꺼번에 물으면 안되지, 의사가 진료할 때도 증상 다 던지는 게
+        # 아니라 몇 개 추려서 초점 맞추는 거잖아")을 반영해서 두 가지로 제한함:
+        # (a) 지역요건처럼 공고일·기간까지 딸린 긴 문단형 조건은 여기서 통째로 나열하지 않음 —
+        #     그건 이미 물어본 region 슬롯 + 아래 2차 소프트매칭이 대화 맥락으로 알아서 판단할
+        #     몫으로 남겨둠(final soft-match 후보 목록엔 이런 조건도 그대로 다 들어가서 판단됨,
+        #     여기서 안 물어본다고 놓치는 게 아님).
+        # (b) 후보 개수가 몇 개든 한 번에 물어볼 조건 개수 자체를 소수로 제한함.
+        MAX_CONDITION_LEN = 16  # 이보다 길면 "짧은 범주 라벨"이 아니라 상세 조건문으로 간주
+        MAX_CONDITIONS_TO_ASK = 4
+        pending = []
+        for s, _ in matches:
+            for c in s.eligibility.special_conditions or []:
+                if c and len(c) <= MAX_CONDITION_LEN and c not in pending:
+                    pending.append(c)
+        pending = pending[:MAX_CONDITIONS_TO_ASK]
+
+        if pending:
+            sub["pending_conditions"] = pending
+            sub["stage"] = "condition_check"
+            reply = bot_core.generate_condition_check_question(convo, pending)
+            return {"reply": reply, "stage": "condition_check", "options": []}
+
+        matches = filter_by_soft_conditions(matches, sub["state"], convo)
+        sub["matches"] = matches
+        if not matches:
+            reply = (
+                "지금 조건으로는 매칭되는 장학금을 못 찾았어. "
+                "DB에 자료가 더 추가되면 다시 찾아볼 수 있어! "
+                "'처음부터'라고 치면 조건 다시 입력할 수 있어."
+            )
+            return {"reply": reply, "stage": "slot_filling", "options": []}
+
+        reply = bot_core.generate_candidate_presentation(matches)
+        sub["stage"] = "matched"
+        return {
+            "reply": reply,
+            "stage": "matched",
+            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(matches)],
+        }
+
+    if stage == "condition_check":
+        # 학생이 방금 pending_conditions(실제 후보들의 특례조건 원문)에 대해 답한 내용은
+        # 이미 convo(대화 이력) 안에 그대로 들어있고, soft_match_conditions 프롬프트 자체가
+        # "말 안 한 건 모르는 거지 아니라는 뜻이 아니다"라는 규칙을 이미 갖고 있어서, 별도로
+        # 구조화 추출을 한 번 더 거칠 필요가 없음. (원래는 extract_condition_answers로 한 번
+        # 더 구조화한 뒤 넘겼는데, 그러면 한 턴에 LLM을 3번 연달아 호출하게 돼서 체감 응답
+        # 속도가 눈에 띄게 느려짐 — 사용자 피드백으로 확인. 정확도 손해 없이 2번으로 줄임.)
+        matches = filter_by_soft_conditions(sub["matches"], sub["state"], convo)
+        sub["matches"] = matches
+        sub["pending_conditions"] = []
+        if not matches:
+            reply = (
+                "확인해보니 지금 조건으로는 매칭되는 장학금이 없어. "
+                "DB에 자료가 더 추가되면 다시 찾아볼 수 있어! "
+                "'처음부터'라고 치면 조건 다시 입력할 수 있어."
+            )
+            sub["stage"] = "slot_filling"
+            return {"reply": reply, "stage": "slot_filling", "options": []}
+
+        reply = bot_core.generate_candidate_presentation(matches)
+        sub["stage"] = "matched"
+        return {
+            "reply": reply,
+            "stage": "matched",
+            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(matches)],
+        }
+
+    if stage == "matched":
+        m = re.search(r"\d+", user_msg)
+        if not m:
+            # 예전엔 숫자가 없으면 무조건 "번호로 골라줘"만 반복해서, 학생이 "이거 나
+            # 해당 안 되는데?"처럼 후보를 반박해도 그 말을 완전히 무시하고 똑같은 문장을
+            # 계속 뱉는 무한루프 버그가 있었음. 이제는 학생이 뭐라고 했는지 실제로 읽고
+            # 반응한 다음에 다시 번호를 고를 수 있게 안내함.
+            reply = bot_core.generate_matched_stage_reply(convo, sub["matches"])
+            return {
+                "reply": reply,
+                "stage": "matched",
+                "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
+            }
+        idx = int(m.group()) - 1
+        if idx < 0 or idx >= len(sub["matches"]):
+            reply = "그 번호는 없어, 다시 골라줘!"
+            return {
+                "reply": reply,
+                "stage": "matched",
+                "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
+            }
+        selected, needs_income_check = sub["matches"][idx]
+        sub["selected"] = selected
+        sub["needs_income_check"] = needs_income_check
+        guide = bot_core.generate_action_guide(selected)
+        if needs_income_check:
+            guide += (
+                "\n\n(참고: 이 장학금은 학자금지원구간 확인이 필요해요. "
+                "한국장학재단 홈페이지에서 구간 확인하고 다시 알려주면 최종 확정해줄게.)"
+            )
+        guide += "\n\n서류 준비하면서 궁금한 거 편하게 물어봐도 돼!"
+        sub["stage"] = "consult"
+        return {"reply": guide, "stage": "consult", "options": []}
+
+    # stage == "consult"
+    reply = bot_core.generate_consult_answer(convo, sub["selected"])
+    return {"reply": reply, "stage": "consult", "options": []}
+
+
+def _match_courses(sub: dict, target: str) -> None:
+    """수집된 completed_courses(학생이 직접 말한 것 + course_overlap_check에서 확인받아
+    추가된 것)를 curriculum.match_completed_courses로 최종 매칭해서 sub['matched']/['unmatched']에
+    저장한다. course_collect(겹치는 과목이 없어서 바로 넘어올 때)와 course_overlap_check
+    (겹치는 과목 확인 마친 뒤) 양쪽에서 공유해서 쓴다."""
+    matched, unmatched = curriculum.match_completed_courses(target, sub["completed_courses"])
+    sub["matched"] = matched
+    sub["unmatched"] = unmatched
+
+
+def _proceed_after_matching(sub: dict, target: str) -> dict:
+    """매칭이 끝난 뒤 다음 단계를 정한다. 공식 양식엔 과목별 '이수학기(연도/학기)' 칸이
+    있는데, 매칭된 과목 중 학생이 실제로 언제 들었는지 아직 말 안 한 게 있으면 그 칸이
+    빈칸으로 남으니 먼저 한 번 물어보고(실사용자 요청: "이수학기도 채워주면 좋겠는데"),
+    없으면(또는 이미 다 확인됐으면) 바로 course_draft로 간다. 교육과정표의 편성 학년/학기를
+    대신 채우지 않는 이유는 curriculum.match_completed_courses의 taken_year/taken_semester
+    주석 참고 — 실제 이수 시점은 학생마다 다를 수 있는 별개의 사실이라 지어내면 안 됨."""
+    missing = [m.course_name for m in sub["matched"] if not m.taken_year and not m.taken_semester]
+    if missing:
+        sub["stage"] = "course_semester_check"
+        sub["semester_pending"] = missing
+        listing = "\n".join(f"- {n}" for n in missing)
+        reply = (
+            f"하나만 더 물어볼게! 아래 과목은 실제로 몇 년도/몇 학기에 들었는지 몰라서 신청서 "
+            f"'이수학기' 칸이 비어있게 돼:\n{listing}\n\n"
+            "알고 있으면 알려줘 (예: \"C프로그래밍은 2024년 1학기, 자료구조는 2학년 2학기\"), "
+            "기억 안 나면 '몰라'라고 말해줘 — 그럼 그 칸은 비워두고 넘어갈게!"
+        )
+        return {"reply": reply, "stage": "course_semester_check"}
+
+    reply = _build_course_draft_reply(sub, target)
+    return {"reply": reply, "stage": "course_draft", "matched_count": len(sub["matched"])}
+
+
+def _build_course_draft_reply(sub: dict, target: str) -> str:
+    """course_draft 단계 진입 안내 메시지를 만든다(매칭·이수학기 확인은 이미 끝났다고 가정)."""
+    sub["stage"] = "course_draft"
+    reply = bot_core.generate_recognition_draft_message(target, sub["matched"], sub["unmatched"])
+    # "파일은 못 만들어주고 네가 손으로 옮겨 적어" 같은 안내는 LLM이 자기 능력을 과소평가해서
+    # (텍스트 생성기인 자신은 파일을 못 만든다고 여기고) 프롬프트 지시를 무시하고 즉흥적으로
+    # 지어낼 수 있음 — 실사용자 리포트로 확인됨("옮겨적으라해도 파일 만들기는 못한다던데?").
+    # 이건 이 프로젝트의 핵심 설계원칙과 같은 이유로 LLM 재량에 맡기면 안 되는 부분이라
+    # (돈/자격요건 판단을 LLM에 안 맡기듯, 이 안내문구도) 고정 문구를 덧붙여서 무조건 보장함.
+    if sub["matched"]:
+        reply += (
+            "\n\n(참고: '제출하기' 누르면 이름/학번/학년/소속 단과대학만 몇 개 확인하고 바로 "
+            "공식 양식(.docx) 파일에 과목까지 전부 채워서 다운로드 버튼으로 줄게 — 손으로 옮겨 "
+            "적을 거 없어!)"
+        )
+    return reply
+
+
+def _rejection_reason(app: RecognitionApplication) -> str:
+    """신청서가 반려됐을 때(status == "rejected") 어느 단계에서 왜 반려됐는지 학생한테
+    보여줄 문장을 만든다. 3단계(학과장/복수전공학과장/행정처) 중 실제로 반려 처리된 단계를
+    찾아서 그 기록(decided_by/note)만 그대로 옮긴다 — 지어내지 않음. 3단계 승인 기능이
+    생기기 전의 구버전 기록(레거시 decision_note)만 있는 경우를 대비해 그쪽도 대체 경로로
+    확인한다(STAGE_LABELS/decide 라우트의 레거시 호환 주석과 동일한 이유)."""
+    stages = [
+        ("학과장", app.home_chair_approval),
+        ("복수전공학과장", app.dual_chair_approval),
+        ("행정처", app.admin_approval),
+    ]
+    for label, step in stages:
+        if step.status == "rejected":
+            who = step.decided_by or label
+            if step.note:
+                return f"{label}({who})이 반려했어. 사유: {step.note}"
+            return f"{label}({who})이 반려했어(별도로 남긴 사유는 없어)."
+    # 레거시(구버전 1단계 승인) 기록만 있는 경우
+    if app.decision_note:
+        return f"반려됐어. 사유: {app.decision_note}"
+    return "반려됐는데, 구체적인 사유는 따로 남아있지 않아."
+
+
+def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str) -> dict:
+    stage = sub["stage"]
+
+    if stage == "slot_filling":
+        sub["state"] = bot_core.extract_dual_major_slots(convo, sub["state"])
+        missing = dual_major_missing_slots(sub["state"])
+        if missing:
+            reply = bot_core.generate_dual_major_followup_question(convo, missing)
+            return {"reply": reply, "stage": "slot_filling"}
+
+        # 슬롯 다 채워짐 -> 결정론적 규칙으로 판정 (LLM 아님)
+        result = check_dual_major_eligibility(sub["state"])
+        sub["result"] = result
+        reply = bot_core.generate_dual_major_verdict_message(result)
+        sub["stage"] = "done"
+        return {"reply": reply, "stage": "done", "eligible": result.eligible}
+
+    if stage == "done":
+        # (0) 방금 제출한 신청서(sub["last_application_id"])가 그 사이 어딘가에서 반려됐는데
+        # 아직 학생한테 못 알려줬으면, 다른 무엇보다 먼저 그것부터 알려준다(실사용자 요청:
+        # "어떤 단계에서 반려되면 학생한테 알려줘서 일부수정해서 다시 제출할 수 있는 단계를
+        # 만들어주면 좋겠어"). rejection_notified 플래그로 한 번만 알리고, 학생이 뭐라고
+        # 말했든(인사든 다른 질문이든) 이 알림이 먼저 나가야 놓치지 않는다.
+        if sub.get("last_application_id") and not sub.get("rejection_notified"):
+            apps = load_recognition_apps()
+            application = next((a for a in apps if a.id == sub["last_application_id"]), None)
+            if application and application.status == "rejected":
+                sub["rejection_notified"] = True
+                sub["stage"] = "rejection_followup"
+                reason = _rejection_reason(application)
+                reply = (
+                    f"어! 저번에 낸 인정신청서가 반려됐어. {reason}\n\n"
+                    "일부만 수정해서 다시 제출할 수 있어 — 지금 바로 수정해서 다시 낼까? "
+                    "('응'이라고 하면 저번에 확인됐던 과목 그대로 들고 이어서 빼거나 더할 수 있게 해줄게, "
+                    "'아니'라고 하면 나중에 다시 얘기하자)"
+                )
+                return {"reply": reply, "stage": "rejection_followup"}
+
+        # (0-1) "파일/다운로드/양식" 요청 -> 이미 제출한 신청서가 있으면 다운로드 탭을 다시
+        # 띄워준다. 원래는 제출 직후 그 한 턴에만 application_id가 응답에 실려서 프론트가
+        # 다운로드 버튼을 보여줬는데, 그 뒤로는 다시 안 보였음(실사용자 요청: "수정제출할때
+        # 학생한테 수정파일이 안 보이는데 학생이 파일 보여달라고하면 다운로드하는 탭을
+        # 보여주면 좋겠어") — 그래서 학생이 명시적으로 다시 요청하면 다시 실어서 보내준다.
+        FILE_REQUEST_WORDS = ("파일", "다운로드", "양식")
+        if sub.get("last_application_id") and any(w in user_msg for w in FILE_REQUEST_WORDS):
+            reply = "여기! 아까 제출한 신청서 파일이야 — 위에 뜬 다운로드 버튼 눌러줘."
+            result = sub["result"]
+            return {
+                "reply": reply,
+                "stage": "done",
+                "eligible": result.eligible if result else None,
+                "application_id": sub["last_application_id"],
+            }
+
+        # "이미 들은 과목 인정받고 싶어" 류의 요청 -> 2단계(이수과목 인정) 진입.
+        # 자격 충족 + 실제로 데이터가 준비된 학과 조합일 때만 지원 (데모 범위).
+        result = sub["result"]
+        wants_recognition = "인정" in user_msg
+        if wants_recognition and result and result.eligible:
+            sub["state"] = bot_core.extract_dual_major_slots(convo, sub["state"])
+            home = sub["state"].home_college
+            target = sub["state"].target_major
+
+            if not curriculum.resolve_major(home):
+                sub["stage"] = "awaiting_home_major"
+                reply = "인정신청서 만들어보자! 근데 소속 학과를 아직 몰라서 — 무슨 학과 소속이야?"
+                return {"reply": reply, "stage": "awaiting_home_major", "eligible": result.eligible}
+
+            if not curriculum.is_supported_pair(home, target):
+                reply = (
+                    "오 좋은 질문인데, 이수과목 인정신청 데모는 지금 "
+                    "'미래자동차공학과 → 컴퓨터공학전공' 조합 교육과정표만 준비돼 있어. "
+                    "다른 학과 조합은 아직 데이터가 없어서 정확하게 확인 못 해줘, 미안!"
+                )
+                return {"reply": reply, "stage": "done", "eligible": result.eligible}
+
+            sub["stage"] = "course_collect"
+            sub["completed_courses"] = []
+            extraction = bot_core.extract_completed_courses(convo, [])
+            for c in extraction.courses:
+                sub["completed_courses"].append(c)
+            reply = bot_core.generate_course_ask_more_message(
+                convo, [c.course_name for c in sub["completed_courses"]]
+            )
+            return {"reply": reply, "stage": "course_collect", "eligible": result.eligible}
+
+        reply = bot_core.generate_dual_major_consult_answer(convo, result)
+        return {"reply": reply, "stage": "done", "eligible": result.eligible if result else None}
+
+    if stage == "rejection_followup":
+        # done 단계에서 반려 사실을 알린 직후 나오는 예/아니오 확인. "응"이면 예전에 이미
+        # 확인/매칭됐던 과목들을 그대로 들고 course_collect로 돌아가서, 학생이 처음부터 다시
+        # 다 말 안 해도 빼거나("~~ 빼줘") 더할 수 있게 한다(실사용자 요청: "일부수정해서
+        # 다시 제출"). "아니"면 그냥 done으로 돌아가고 신청서는 반려 상태로 남는다.
+        YES_WORDS = {"응", "어", "그래", "네", "좋아", "수정", "다시제출", "yes", "오케이", "ㅇㅋ", "ㅇㅇ"}
+        NO_WORDS = {"아니", "아니요", "안할래", "no", "나중에", "됐어"}
+        norm = user_msg.replace(" ", "")
+
+        if norm in NO_WORDS:
+            sub["stage"] = "done"
+            reply = "알겠어, 나중에 준비되면 다시 얘기해줘! 그때 다시 도와줄게."
+            result = sub["result"]
+            return {"reply": reply, "stage": "done", "eligible": result.eligible if result else None}
+
+        if norm not in YES_WORDS:
+            reply = "지금 바로 수정해서 다시 낼지 알려줄래? ('응' 또는 '아니'로 답해줘)"
+            return {"reply": reply, "stage": "rejection_followup"}
+
+        apps = load_recognition_apps()
+        old_app = next((a for a in apps if a.id == sub["last_application_id"]), None)
+        carried = [
+            CompletedCourseItem(
+                course_name=m.course_name,
+                course_code=m.course_code,
+                taken_year=m.taken_year,
+                taken_semester=m.taken_semester,
+            )
+            for m in (old_app.matched_courses if old_app else [])
+        ]
+        sub["completed_courses"] = carried
+        sub["matched"] = []
+        sub["unmatched"] = []
+        sub["overlap_candidates"] = []
+        sub["semester_pending"] = []
+        sub["stage"] = "course_collect"
+        names = ", ".join(c.course_name for c in carried) or "(없음)"
+        reply = (
+            f"좋아, 저번에 확인됐던 과목 그대로 이어서 할게: {names}\n\n"
+            "여기서 뺄 과목 있으면 \"OO 빼줘\"라고 말해주고, 더 추가할 과목 있으면 이름 알려줘. "
+            "다 됐으면 '다 말했어'라고 해줘!"
+        )
+        return {"reply": reply, "stage": "course_collect"}
+
+    if stage == "awaiting_home_major":
+        sub["state"] = bot_core.extract_dual_major_slots(convo, sub["state"])
+        home = sub["state"].home_college
+        target = sub["state"].target_major
+
+        if not curriculum.resolve_major(home):
+            reply = "음, 학과 이름을 정확히 못 알아들었어. 예를 들면 '미래자동차공학과'처럼 정식 학과명으로 말해줄래?"
+            return {"reply": reply, "stage": "awaiting_home_major"}
+
+        if not curriculum.is_supported_pair(home, target):
+            reply = (
+                f"'{home} → {target}' 조합은 아직 교육과정표 데이터가 준비 안 됐어. "
+                "데모는 지금 '미래자동차공학과 → 컴퓨터공학전공' 조합만 지원해, 미안!"
+            )
+            sub["stage"] = "done"
+            return {"reply": reply, "stage": "done", "eligible": sub["result"].eligible if sub["result"] else None}
+
+        sub["stage"] = "course_collect"
+        sub["completed_courses"] = []
+        reply = bot_core.generate_course_ask_more_message(convo, [])
+        return {"reply": reply, "stage": "course_collect"}
+
+    if stage == "course_collect":
+        FINISH_WORDS = {"다말했어", "다했어", "그만", "완료", "done", "없어", "그게다야", "끝"}
+        already = [c.course_name for c in sub["completed_courses"]]
+        extraction = bot_core.extract_completed_courses(convo, already)
+        for c in extraction.courses:
+            if c.course_name not in already:
+                sub["completed_courses"].append(c)
+                already.append(c.course_name)
+
+        # 반려된 신청서를 일부수정해서 다시 낼 때(rejection_followup에서 이 단계로 돌아온
+        # 경우) 예전에 확인됐던 과목이 미리 들어와 있는데, 그중 일부를 빼달라고 할 수 있음
+        # (실사용자 요청: "일부수정해서 다시 제출"). LLM이 지어낸 이름을 빼는 걸 막기 위해
+        # 실제로 completed_courses 안에 있는 이름인지 한 번 더 검증한다(이중 안전장치,
+        # course_overlap_check/course_semester_check와 동일한 패턴).
+        current_names = {c.course_name for c in sub["completed_courses"]}
+        for name in extraction.removed_course_names:
+            if name in current_names:
+                sub["completed_courses"] = [c for c in sub["completed_courses"] if c.course_name != name]
+                current_names.discard(name)
+        already = [c.course_name for c in sub["completed_courses"]]  # 제거 반영해서 다시 계산
+
+        finished = extraction.done or user_msg.replace(" ", "") in FINISH_WORDS
+        if not finished:
+            reply = bot_core.generate_course_ask_more_message(convo, already)
+            return {"reply": reply, "stage": "course_collect"}
+
+        # 수집 종료 -> 최종 매칭 전에, 홈학과·목표학과 교육과정표에 둘 다 편성돼 있는데
+        # 학생이 아직 말 안 한 과목이 있는지 먼저 확인한다(실사용자 요청: "학생이 만약에
+        # 들었는데 까먹고 이야기 안 했을 수도 있으니까, 비교해서 겹치는 과목 이미 들은거같으면
+        # 미리 물어보고 신청서에 기재해줄 수 있도록"). 겹치는 과목이 없으면 바로 매칭으로 넘어감.
+        target = sub["state"].target_major
+        home = sub["state"].home_college
+        already_names = [c.course_name for c in sub["completed_courses"]]
+        overlap = curriculum.find_potential_overlap(home, target, already_names)
+        if overlap:
+            sub["overlap_candidates"] = overlap
+            sub["stage"] = "course_overlap_check"
+            listing = "\n".join(f"{i + 1}. {o['name']}" for i, o in enumerate(overlap))
+            reply = (
+                f"잠깐, 하나만 더 확인해볼게! {home}이랑 {target} 교육과정표에 둘 다 편성돼 있는데 "
+                f"네가 아직 말 안 한 과목이 있어:\n{listing}\n\n"
+                "혹시 이 중에 이미 들은 과목 있어? 있으면 번호나 과목명으로 알려주고, 없으면 "
+                "'없어'라고 말해줘!"
+            )
+            return {"reply": reply, "stage": "course_overlap_check"}
+
+        _match_courses(sub, target)
+        return _proceed_after_matching(sub, target)
+
+    if stage == "course_overlap_check":
+        # 결정론적으로 뽑아둔 후보(sub["overlap_candidates"])에 대해 학생이 뭐라고 답했는지만
+        # LLM으로 구조화하고("들었다"고 확인한 과목이 어떤 건지), 그 과목을 실제로 이수과목
+        # 목록에 추가할지는 여기 코드가 최종 결정함 — LLM이 후보 목록 밖 과목명을 지어냈을
+        # 가능성에 대비해 candidate_names 안에 있는지 한 번 더 검증(이중 안전장치).
+        NONE_WORDS = {"없어", "없음", "아니", "no", "none", "안들었어", "안들었음", "못들었어"}
+        norm = user_msg.replace(" ", "")
+        candidates = sub.get("overlap_candidates") or []
+        candidate_names = [c["name"] for c in candidates]
+
+        if norm not in NONE_WORDS and candidate_names:
+            try:
+                confirmation = bot_core.extract_overlap_confirmation(candidate_names, user_msg)
+            except Exception:  # noqa: BLE001 — 추출 실패해도 진행은 막지 않고 그냥 추가 없이 넘어감
+                confirmation = None
+            if confirmation:
+                already = {c.course_name for c in sub["completed_courses"]}
+                by_name = {c["name"]: c for c in candidates}
+                for name in confirmation.confirmed_course_names:
+                    if name not in by_name or name in already:
+                        continue
+                    row = by_name[name]
+                    sub["completed_courses"].append(
+                        CompletedCourseItem(course_name=row["name"], course_code=row["code"])
+                    )
+                    already.add(name)
+
+        sub["overlap_candidates"] = []
+        target = sub["state"].target_major
+        _match_courses(sub, target)
+        return _proceed_after_matching(sub, target)
+
+    if stage == "course_semester_check":
+        # 매칭된 과목 중 실제 이수 연도/학기를 몰랐던 것들(sub["semester_pending"])에 대해
+        # 학생이 뭐라고 답했는지만 LLM으로 구조화하고, 그 값을 실제로 반영할지는 여기 코드가
+        # 최종 결정함 — LLM이 후보 목록 밖 과목명을 지어냈을 가능성에 대비해 semester_pending
+        # 안에 있는지 한 번 더 검증(이중 안전장치, course_overlap_check와 동일한 패턴).
+        SKIP_WORDS = {"몰라", "모름", "모르겠어", "없어", "패스", "skip", "기억안나", "기억안남"}
+        norm = user_msg.replace(" ", "")
+        pending = sub.get("semester_pending") or []
+
+        if norm not in SKIP_WORDS and pending:
+            try:
+                extraction = bot_core.extract_course_semesters(pending, user_msg)
+            except Exception:  # noqa: BLE001 — 추출 실패해도 진행은 막지 않고 빈칸인 채로 넘어감
+                extraction = None
+            if extraction:
+                by_name = {m.course_name: m for m in sub["matched"]}
+                for item in extraction.items:
+                    if item.course_name not in pending:
+                        continue
+                    target_course = by_name.get(item.course_name)
+                    if not target_course:
+                        continue
+                    if item.taken_year:
+                        target_course.taken_year = item.taken_year
+                    if item.taken_semester:
+                        target_course.taken_semester = item.taken_semester
+
+        sub["semester_pending"] = []
+        target = sub["state"].target_major
+        reply = _build_course_draft_reply(sub, target)
+        return {"reply": reply, "stage": "course_draft", "matched_count": len(sub["matched"])}
+
+    if stage == "course_draft":
+        CONFIRM_WORDS = {"제출", "응", "어", "그래", "네", "좋아", "submit", "yes", "오케이", "ㅇㅋ", "ㅇㅇ"}
+        CANCEL_WORDS = {"취소", "아니", "안할래", "no", "그만할게", "됐어"}
+        norm = user_msg.replace(" ", "")
+
+        if norm in CONFIRM_WORDS:
+            if not sub["matched"]:
+                reply = "지금은 인정 가능한 과목이 없어서 제출할 신청서가 없어. 다른 과목 알려주고 싶으면 말해줘!"
+                sub["stage"] = "done"
+                return {"reply": reply, "stage": "done", "eligible": sub["result"].eligible if sub["result"] else None}
+            # 과목표만 채워진 빈 서류는 직원한테 올려도 의미가 없다는 피드백("개인정보도 없고 ...
+            # 이걸 전산화 한다는데에 의의가 있어야지", "모든 개인정보를 채워넣을 수 있도록")에
+            # 따라, 실제 신청서에 필요한 성명/학번/학년/소속 단과대학을 확인받고 나서야
+            # 신청서를 생성함(바로 만들지 않음).
+            sub["stage"] = "student_info"
+            reply = (
+                "좋아, 마지막으로 신청서에 넣을 정보만 확인할게! "
+                "이름, 학번, 학년, 소속 단과대학 알려줄래? (예: 이민수 20231234 3학년 공과대학)"
+            )
+            return {"reply": reply, "stage": "student_info"}
+
+        if norm in CANCEL_WORDS:
+            reply = "알겠어, 신청 안 할게! 다른 거 궁금한 거 있으면 편하게 물어봐."
+            sub["stage"] = "done"
+            return {"reply": reply, "stage": "done", "eligible": sub["result"].eligible if sub["result"] else None}
+
+        reply = "이대로 인정신청서 제출할지 알려줄래? ('제출' 또는 '취소'라고 말해줘)"
+        return {"reply": reply, "stage": "course_draft"}
+
+    if stage == "student_info":
+        CANCEL_WORDS = {"취소", "아니", "안할래", "no", "그만할게", "됐어"}
+        if user_msg.replace(" ", "") in CANCEL_WORDS:
+            reply = "알겠어, 신청 안 할게! 다른 거 궁금한 거 있으면 편하게 물어봐."
+            sub["stage"] = "done"
+            return {"reply": reply, "stage": "done", "eligible": sub["result"].eligible if sub["result"] else None}
+
+        identity = sub["student_identity"]
+        try:
+            extracted = bot_core.extract_student_identity(user_msg)
+            if extracted.name:
+                identity["name"] = extracted.name
+            if extracted.student_id:
+                identity["student_id"] = extracted.student_id
+            if extracted.grade:
+                identity["grade"] = extracted.grade
+            if extracted.college:
+                identity["college"] = extracted.college
+        except Exception:  # noqa: BLE001
+            pass  # 추출 실패해도 아래에서 부족한 항목 다시 물어보면 되니 신청 자체는 안 막음
+
+        missing_labels = []
+        if not identity["name"]:
+            missing_labels.append("이름")
+        if not identity["student_id"]:
+            missing_labels.append("학번")
+        if not identity["grade"]:
+            missing_labels.append("학년")
+        if not identity["college"]:
+            missing_labels.append("소속 단과대학")
+
+        if missing_labels:
+            reply = f"{', '.join(missing_labels)}을(를) 아직 못 알아들었어. 다시 한번 알려줄래?"
+            return {"reply": reply, "stage": "student_info"}
+
+        # 다 모였다고 바로 신청서를 만들지 않고, 학생한테 한 번 더 확인받고 나서 제출함
+        # (실사용자 요청: "채우고 난 다음에 학생에게 confirm을 받아서 제출할 수 있도록") —
+        # 잘못 알아들은 정보가 있으면 여기서 고칠 기회를 준다.
+        sub["stage"] = "student_info_confirm"
+        reply = (
+            f"확인할게! 이름: {identity['name']} / 학번: {identity['student_id']} / "
+            f"학년: {identity['grade']} / 소속: {identity['college']} — 맞으면 '제출', "
+            f"틀린 게 있으면 '다시입력'이라고 알려줘!"
+        )
+        return {"reply": reply, "stage": "student_info_confirm"}
+
+    if stage == "student_info_confirm":
+        CONFIRM_WORDS = {"제출", "응", "어", "그래", "네", "좋아", "맞아", "submit", "yes", "오케이", "ㅇㅋ", "ㅇㅇ"}
+        RETRY_WORDS = {"다시입력", "다시", "수정", "틀렸어", "아니"}
+        CANCEL_WORDS = {"취소", "안할래", "no", "그만할게", "됐어"}
+        norm = user_msg.replace(" ", "")
+
+        if norm in RETRY_WORDS:
+            sub["student_identity"] = {"name": None, "student_id": None, "grade": None, "college": None}
+            sub["stage"] = "student_info"
+            reply = "알겠어, 다시 알려줄래? 이름, 학번, 학년, 소속 단과대학 (예: 이민수 20231234 3학년 공과대학)"
+            return {"reply": reply, "stage": "student_info"}
+
+        if norm in CANCEL_WORDS:
+            reply = "알겠어, 신청 안 할게! 다른 거 궁금한 거 있으면 편하게 물어봐."
+            sub["stage"] = "done"
+            return {"reply": reply, "stage": "done", "eligible": sub["result"].eligible if sub["result"] else None}
+
+        if norm not in CONFIRM_WORDS:
+            reply = "이대로 제출할지 알려줄래? ('제출' 또는 정보가 틀렸으면 '다시입력'이라고 말해줘)"
+            return {"reply": reply, "stage": "student_info_confirm"}
+
+        identity = sub["student_identity"]
+        application = RecognitionApplication(
+            id=uuid.uuid4().hex[:12],
+            session_id=session_id,
+            student_name=identity["name"],
+            student_id=identity["student_id"],
+            student_grade=identity["grade"],
+            student_college=identity["college"],
+            home_major=sub["state"].home_college,
+            target_major=sub["state"].target_major,
+            matched_courses=sub["matched"],
+            unmatched_course_names=sub["unmatched"],
+            status="pending",
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        apps = load_recognition_apps()
+        apps.append(application)
+        save_recognition_apps(apps)
+        sub["last_application_id"] = application.id
+        sub["rejection_notified"] = False  # 새 신청서니까, 이게 나중에 반려되면 그때 다시 알려줘야 함
+        reply = bot_core.generate_recognition_submitted_message(application)
+        # course_draft 단계와 같은 이유로 고정 문구 보장(LLM 즉흥 안내에 맡기지 않음) — 특히
+        # "학과장 찾아가서 서명 받아와" 같은 예전 방식 안내는 이 3단계 전산승인 기능이 없애려는
+        # 바로 그 수고라서, 프롬프트만 믿지 않고 여기서도 3단계 승인 흐름을 한 번 더 명시함.
+        reply += (
+            "\n\n(위에 뜬 '신청서 양식(.docx)으로 다운로드' 버튼 눌러서 파일 받아! "
+            "과목이랑 개인정보까지 이미 다 채워져 있어. 이제부터는 학과장 → 복수전공학과장"
+            "(이 둘은 순서 상관없이 동시에 진행돼) → 행정처 순으로 전산 승인이 진행되고, "
+            "셋 다 승인되면 자동으로 전산 반영돼 — 서명 받으러 직접 찾아다닐 필요 없어!)"
+        )
+        sub["stage"] = "done"
+        return {
+            "reply": reply,
+            "stage": "done",
+            "eligible": sub["result"].eligible if sub["result"] else None,
+            "application_id": sub["last_application_id"],
+        }
+
+    # 알 수 없는 stage로 빠졌을 때를 위한 안전장치
+    reply = "잠깐 흐름이 꼬였나봐. '처음부터'라고 입력해서 다시 시작해줘!"
+    return {"reply": reply, "stage": stage}
+
+
+@app.post("/api/chat")
+def chat(body: ChatIn):
+    session_id = body.session_id or uuid.uuid4().hex
+    sess = get_unified_session(session_id)
+    user_msg = body.message.strip()
+
+    if not config.has_api_key():
+        return {
+            "session_id": session_id,
+            "reply": "아직 Gemini API 키가 설정 안 됐어요. 관리자(/admin) 페이지에서 먼저 등록해주세요.",
+            "stage": "intent",
+            "mode": sess["mode"],
+            "options": [],
+        }
+
+    if user_msg in RESET_WORDS:
+        sess["history"] = []
+        if sess["mode"] == "scholarship":
+            sess["scholarship"] = _new_scholarship_state()
+            reply = "처음부터 다시 시작할게! 몇 학년이야?"
+        elif sess["mode"] == "dual_major":
+            sess["dual_major"] = _new_dual_major_state()
+            reply = "처음부터 다시 확인해볼게! 지금 재학 중이야, 아니면 휴학/복학예정이야?"
+        else:
+            sess["scholarship"] = _new_scholarship_state()
+            sess["dual_major"] = _new_dual_major_state()
+            reply = "좋아, 처음부터! 장학금이 궁금해, 아니면 복수전공/이수과목 인정이 궁금해?"
+        return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": sess["mode"], "options": []}
+
+    if user_msg in EXIT_WORDS:
+        reply = "여기까지 도와줄게! 필요하면 언제든 다시 시작해줘."
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {reply}")
+        return {"session_id": session_id, "reply": reply, "stage": "exit", "mode": sess["mode"], "options": []}
+
+    sess["history"].append(f"학생: {user_msg}")
+    convo = "\n".join(sess["history"])
+
+    detected = detect_mode_keywords(user_msg)
+    if sess["mode"] is None:
+        mode = detected
+        if mode is None:
+            classified = bot_core.classify_intent(user_msg)
+            mode = classified if classified in ("scholarship", "dual_major") else None
+        if mode is None:
+            # 예전엔 여기서 고정 문구("장학금이 궁금한 거야, ...")를 무조건 그대로 반복해서,
+            # 학생이 인사("안녕")를 하거나 "왜 같은 말만 반복하냐"고 항의해도 그 말을 전혀
+            # 못 알아듣고 계속 똑같은 문장만 뱉는 앵무새 버그가 있었음(실사용자 리포트로 확인).
+            # 이제는 실제 대화 내용을 읽고 자연스럽게 반응한 다음에 물어보게 함.
+            reply = bot_core.generate_intent_clarify_reply(convo)
+            sess["history"].append(f"AI: {reply}")
+            return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": None, "options": []}
+        sess["mode"] = mode
+    elif detected and detected != sess["mode"]:
+        sess["mode"] = detected
+
+    mode = sess["mode"]
+    if mode == "scholarship":
+        result = handle_scholarship_turn(sess["scholarship"], convo, user_msg)
+    else:
+        result = handle_dual_major_turn(session_id, sess["dual_major"], convo, user_msg)
+
+    sess["history"].append(f"AI: {result['reply']}")
+    result["session_id"] = session_id
+    result["mode"] = mode
+    result.setdefault("options", [])
+    return result
+
+
+# ---------------- 이수과목 인정신청서 승인 (직원용, HITL) ----------------
+
+@app.get("/api/recognition/applications")
+def list_recognition_applications(status: Optional[str] = None):
+    apps = load_recognition_apps()
+    if status:
+        apps = [a for a in apps if a.status == status]
+    apps_sorted = sorted(apps, key=lambda a: a.created_at, reverse=True)
+    return [a.model_dump() for a in apps_sorted]
+
+
+@app.get("/api/recognition/applications/{app_id}/docx")
+def download_recognition_application_docx(app_id: str):
+    """공식 '부(복수)전공 이수과목 인정신청서' 양식에 맞춰 채운 .docx 다운로드.
+    과목뿐 아니라 성명/학번/학년/소속 단과대학까지 student_info/student_info_confirm
+    단계에서 이미 학생 본인 확인을 받아 채워둔 상태. 실제 승인은 학생이 이 파일을 들고
+    학과장을 찾아다니는 게 아니라 /staff에서 학과장 -> 복수전공학과장(둘은 순서 무관) ->
+    행정처 순으로 3단계 전산승인이 진행되며, 이 파일은 그 진행상황이 그대로 반영되는
+    참고·보관용 문서임 — AI는 초안 작성까지만, 최종 승인 3단계는 전부 사람(HITL, /staff)."""
+    apps = load_recognition_apps()
+    target = next((a for a in apps if a.id == app_id), None)
+    if target is None:
+        return JSONResponse(status_code=404, content={"error": "신청서를 찾을 수 없어요"})
+    docx_bytes = recognition_doc.build_recognition_docx(target)
+    filename = f"이수과목인정신청서_{target.id}.docx"
+    # 파일명에 한글이 들어가서 그냥 filename="..."만 주면 일부 브라우저/클라이언트에서
+    # 깨질 수 있음 -> RFC 6266대로 filename*(UTF-8 인코딩)도 같이 내려줌
+    quoted = urllib.parse.quote(filename)
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="recognition_{target.id}.docx"; '
+                f"filename*=UTF-8''{quoted}"
+            )
+        },
+    )
+
+
+# 3단계 승인 — 실사용자 요청: "학과장/복수전공학과장 승인 -> 행정처 최종승인, 총 세 번의
+# 승인이 되면 전산에 반영". 학과장 2명은 순서 무관(병렬), 행정처는 반드시 그 둘이 전부
+# 승인된 뒤에만 처리 가능 — 이 순서는 화면(staff.html)에서 버튼을 숨기는 것만으로 끝내지
+# 않고 여기 서버에서도 다시 확인함(화면 조작/직접 API 호출로 순서를 건너뛸 수 없게).
+STAGE_FIELDS = {
+    "home_chair": "home_chair_approval",
+    "dual_chair": "dual_chair_approval",
+    "admin": "admin_approval",
+}
+STAGE_LABELS = {"home_chair": "학과장", "dual_chair": "복수전공학과장", "admin": "행정처"}
+
+
+class DecisionIn(BaseModel):
+    stage: str  # "home_chair" | "dual_chair" | "admin"
+    decision: str  # "approved" | "rejected"
+    decided_by: Optional[str] = None
+    note: Optional[str] = None
+
+
+@app.post("/api/recognition/applications/{app_id}/decide")
+def decide_recognition_application(app_id: str, body: DecisionIn):
+    if body.stage not in STAGE_FIELDS:
+        return JSONResponse(
+            status_code=400, content={"error": "stage는 home_chair/dual_chair/admin 중 하나여야 해요"}
+        )
+    if body.decision not in ("approved", "rejected"):
+        return JSONResponse(status_code=400, content={"error": "decision은 approved 또는 rejected여야 해요"})
+
+    apps = load_recognition_apps()
+    target = next((a for a in apps if a.id == app_id), None)
+    if target is None:
+        return JSONResponse(status_code=404, content={"error": "신청서를 찾을 수 없어요"})
+
+    if target.status in ("approved", "rejected"):
+        return JSONResponse(status_code=400, content={"error": "이미 최종 처리(승인/반려)된 신청서예요"})
+
+    step = getattr(target, STAGE_FIELDS[body.stage])
+    if step.status != "pending":
+        return JSONResponse(
+            status_code=400, content={"error": f"{STAGE_LABELS[body.stage]} 단계는 이미 처리됐어요"}
+        )
+
+    # 행정처는 학과장·복수전공학과장이 둘 다 승인된 뒤에만 처리 가능 — 순서를 건너뛰려는
+    # 시도는 여기서 막음(화면에서 버튼을 숨겨도 API를 직접 호출하면 뚫릴 수 있어서 이중 검증).
+    if body.stage == "admin":
+        if target.home_chair_approval.status != "approved" or target.dual_chair_approval.status != "approved":
+            return JSONResponse(
+                status_code=400,
+                content={"error": "학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리가 가능해요"},
+            )
+
+    step.status = body.decision
+    step.decided_by = body.decided_by or STAGE_LABELS[body.stage]
+    step.decided_at = datetime.now(timezone.utc).isoformat()
+    step.note = body.note
+
+    if body.decision == "rejected":
+        # 어느 단계에서든 반려되면 그 즉시 전체 신청서가 반려로 확정됨 — 이미 승인됐던
+        # 다른 단계의 기록은 지우지 않고 그대로 남겨둠(실제로 있었던 일이니까). 학생은
+        # 반려 사유(note)를 보고 수정해서 챗봇으로 다시 신청하면 됨(새 신청서로 재제출).
+        target.status = "rejected"
+    elif (
+        target.home_chair_approval.status == "approved"
+        and target.dual_chair_approval.status == "approved"
+        and target.admin_approval.status == "approved"
+    ):
+        # 세 단계 전부 승인돼야만 전산 반영(최종 승인) 처리됨
+        target.status = "approved"
+    # 셋 중 일부만 승인된 상태면 status는 계속 "pending"으로 남음(아직 전산 반영 전)
+
+    save_recognition_apps(apps)
+    return target.model_dump()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    print(f"[시스템] {len(load_db())}개 장학금 로드 완료 (data/scholarship_db.json)")
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,0 +1,247 @@
+"""
+데이터 구조 정의 — 건드릴 필요 없음
+(uni_voc_장학금챗봇_MVP설계.md 2장·5장 스키마 그대로)
+"""
+from typing import Optional
+from pydantic import BaseModel
+
+
+class Eligibility(BaseModel):
+    student_status: list[str] = []
+    grade_or_semester_note: Optional[str] = None
+    major_restriction: Optional[str] = None
+    gpa_requirement_raw: Optional[str] = None
+    gpa_requirement_percent: Optional[float] = None
+    income_bracket_max: Optional[int] = None
+    income_bracket_priority_note: Optional[str] = None
+    credit_requirement: Optional[str] = None
+    special_conditions: list[str] = []
+    other_conditions: Optional[str] = None
+
+
+class Scholarship(BaseModel):
+    id: Optional[str] = None  # 저장 시 서버가 uuid 부여
+    doc_type: str = "장학공지"          # DOCUMENT_TYPE 그대로 (장학공지/기타공지)
+    category: str = "교내장학"          # CATEGORY 그대로
+    name: str
+    apply_start: Optional[str] = None
+    apply_end: Optional[str] = None
+    amount: str = "정보 없음"
+    is_open_application: bool = True
+    benefit_type: str = "장학금"        # 장학금/근로장학/대출/이자지원/등록금지원
+    eligibility: Eligibility = Eligibility()
+    required_documents: list[str] = ["없음"]
+    how_to_apply: str = "정보 없음"
+    application_steps: list[str] = []
+    notes: Optional[str] = None
+    source_url: Optional[str] = None
+    target_year: str = "2026"
+
+
+class IntentClassification(BaseModel):
+    """학생 메시지가 어떤 상담 종류인지 분류 — 통합 챗봇 진입 라우팅용.
+    이것도 최종 판단은 아니고(상담 종류일 뿐 돈/졸업요건과 무관), 애매하면
+    unclear로 두고 사람에게 직접 물어보게 한다."""
+    intent: str  # "scholarship" | "dual_major" | "unclear"
+
+
+class SlotState(BaseModel):
+    student_status: Optional[str] = None
+    major: Optional[str] = None
+    grade_or_semester: Optional[str] = None
+    gpa: Optional[float] = None                  # 4.5 만점 기준
+    income_bracket: Optional[str] = None          # "3구간" 또는 "모름"
+    special_conditions: Optional[list[str]] = None
+    region: Optional[str] = None                  # 거주지역(본인 또는 부모) — 지역장학금 매칭용
+
+
+# major/grade_or_semester/region도 필수로 물어봄 — 실제 DB(68건) 조사해보니 학과제한(6건)뿐
+# 아니라 학년/이수학기 조건(28건, 68%!), 거주지역 조건(15건, 37%! 대전/인천/포항/경주 등
+# 지자체 장학재단이 특히 이럼)이 특례조건만큼이나 흔했는데 기존엔 아예 안 물어봐서 매칭
+# 정확도에 못 쓰이고 있었음. "대충 답하면 대충 찾아준다"는 문제의 핵심 원인 중 하나.
+# 특히 region은 안 물어보면 AI가 "영남대생이니까 아마 대구/경산이겠지" 식으로 근거 없이
+# 짐작하게 되는데, 그게 바로 자유서술형 조건 소프트매칭(soft_match_conditions)에서
+# 애먼 지역장학금을 잘못 배제하는 원인이 될 수 있어서 명시적으로 확보해둠.
+REQUIRED_SLOTS = [
+    "student_status",
+    "major",
+    "grade_or_semester",
+    "gpa",
+    "income_bracket",
+    "special_conditions",
+    "region",
+]
+
+
+class SoftMatchItem(BaseModel):
+    """규칙만으로 판단 못 하는(자유서술형) 특례조건 하나에 대한 보조판단 결과.
+    최종 배제 여부가 아니라 "이 후보를 계속 보여줘도 되는지"에 대한 판단이고,
+    애매하면 반드시 eligible=true(배제 안 함)로 두게 프롬프트에서 강제함 —
+    장학금 매칭은 최종 확정이 아니라 후보 탐색이라 과소매칭이 과다매칭보다 더 나쁨."""
+    scholarship_id: str
+    eligible: bool
+    reason: str
+
+
+class SoftMatchBatch(BaseModel):
+    results: list[SoftMatchItem] = []
+
+
+def missing_slots(state: SlotState) -> list[str]:
+    return [s for s in REQUIRED_SLOTS if getattr(state, s) in (None, [], "")]
+
+
+# ---------------- 시나리오2: 복수전공 자격요건 판정 ----------------
+
+class DualMajorState(BaseModel):
+    """복수전공 자격요건 판정을 위해 필요한 슬롯.
+    판정 자체(eligible 여부)는 LLM이 아니라 rules.py의 결정론적 규칙으로 계산함 —
+    돈/졸업 여부에 영향 주는 판단이라 AI가 혼자 판정하지 않는다는 설계 원칙."""
+
+    student_status: Optional[str] = None       # 재학 / 복학예정 / 휴학 / 졸업예정 / 제적예정
+    completed_semesters: Optional[int] = None    # 지금까지 이수한 학기 수
+    earned_credits: Optional[float] = None        # 지금까지 취득한 총 학점
+    grad_credit_basis: Optional[int] = None       # 소속 학과 졸업학점 기준 (120/130/140/150/160)
+    home_college: Optional[str] = None            # 소속 단과대학 (예외 판정용, 선택)
+    target_major: Optional[str] = None            # 목표 복수전공 학과
+
+
+DUAL_MAJOR_REQUIRED_SLOTS = [
+    "student_status",
+    "completed_semesters",
+    "earned_credits",
+    "grad_credit_basis",
+    "target_major",
+]
+
+
+def dual_major_missing_slots(state: DualMajorState) -> list[str]:
+    return [s for s in DUAL_MAJOR_REQUIRED_SLOTS if getattr(state, s) in (None, "")]
+
+
+class EligibilityResult(BaseModel):
+    eligible: bool
+    passed: list[str] = []
+    failed: list[str] = []
+    notes: list[str] = []
+
+
+# ---------------- 시나리오2 2단계: 이수과목 인정신청서 자동 초안 ----------------
+# (근거: 이수지침 II장 6.차 — "복수전공 선발 이전에 복수전공 교육과정에 편성된
+#  교과목을 미리 이수한 경우, 이수과목 인정 신청서 제출 시 인정 가능")
+#
+# 설계 원칙 동일 적용: "이 과목이 인정 대상인지"는 절대 LLM이 판단하지 않음.
+# curriculum.py의 결정론적 매칭(학수번호/과목명 완전일치)만 판단 근거로 쓰고,
+# 최종 승인/반려는 반드시 사람(직원)이 함 — 이게 이 시나리오의 진짜 HITL 지점.
+
+class CompletedCourseItem(BaseModel):
+    """학생이 '이미 들었다'고 말한 과목 한 건.
+    taken_year/taken_semester: 신청서 양식의 '이수학기(연도/학기)' 칸에 실제로 들어가는
+    정보 — 학생이 명시적으로 말했을 때만 채우고, 교육과정표의 편성 학년/학기(언제
+    배정돼 있는 과목인지)를 추측해서 채우면 안 된다(그건 사람마다 다를 수 있는 실제
+    이수 시점과 다른 정보라 지어내면 안 됨). 연도만 알거나 학기만 아는 등 부분적으로만
+    말했어도 아는 만큼만 채운다."""
+    course_name: str
+    course_code: Optional[str] = None
+    taken_year: Optional[str] = None       # 예: "2024" — 실제로 이수한 연도
+    taken_semester: Optional[str] = None   # 예: "1", "2", "여름학기" — 실제로 이수한 학기
+
+
+class CompletedCoursesExtraction(BaseModel):
+    """자연어 대화에서 추출한, 학생이 언급한 이수과목 목록.
+    LLM은 여기까지만 — 이 과목이 인정되는지 여부는 절대 판단하지 않음."""
+    courses: list[CompletedCourseItem] = []
+    removed_course_names: list[str] = []  # 학생이 이미 말한 과목 중 빼달라고 한 것 — 반드시 이미 추출된(대화에 등장한) 과목명 중에서만, 절대 지어내면 안 됨
+    done: bool = False  # 학생이 "더 없어" 등으로 입력을 마쳤다고 볼 수 있으면 true
+
+
+class CourseSemesterItem(BaseModel):
+    """course_semester_check 단계 전용 — 제시한 후보 과목명 중 하나에 대해 학생이 답해준
+    실제 이수 연도/학기. course_name은 반드시 제시된 후보 목록의 과목명 그대로여야 한다
+    (호출부에서 후보 목록에 실제로 있는지 한 번 더 검증함 — LLM이 과목명을 지어내거나
+    살짝 바꿔 쓰는 걸 막기 위한 이중 안전장치)."""
+    course_name: str
+    taken_year: Optional[str] = None
+    taken_semester: Optional[str] = None
+
+
+class CourseSemesterExtraction(BaseModel):
+    items: list[CourseSemesterItem] = []
+
+
+class MatchedCourse(BaseModel):
+    """목표 학과 교육과정표와 대조해 실제로 일치가 확인된 과목 — 결정론적 매칭 결과."""
+    course_code: str
+    course_name: str
+    credit: float
+    year_semester: Optional[str] = None  # 교육과정표상 편성 학년/학기(참고용 — 실제 이수 시점 아님)
+    matched_note: Optional[str] = None  # 예: "타전공인정 미래자동차공학과"
+    taken_year: Optional[str] = None       # 학생이 실제로 이수한 연도(신청서 '연도' 칸)
+    taken_semester: Optional[str] = None   # 학생이 실제로 이수한 학기(신청서 '학기' 칸)
+
+
+class OverlapConfirmation(BaseModel):
+    """홈학과·목표학과 교육과정표에 겹치는데 학생이 아직 말 안 한 과목 후보들 중,
+    학생이 실제로 이수했다고 확인한 과목명 목록. LLM은 반드시 제시된 후보 목록
+    안에서만 골라야 하고, 후보에 없는 과목명을 새로 지어내면 절대 안 된다 — 애매하면
+    빈 리스트로 둔다(호출부에서도 후보 목록에 있는지 한 번 더 검증함, 이중 안전장치)."""
+    confirmed_course_names: list[str] = []
+
+
+class StudentIdentity(BaseModel):
+    """자연어에서 추출한 학생 본인 정보(성명/학번/학년/소속 단과대학) — 신청서에 실제로
+    들어가야 "표만 채워주는" 빈 서류가 아니라 제출 가능한 신청서가 됨(실사용자 피드백:
+    "개인정보도 없고 ... 이걸 전산화 한다는데에 의의가 있어야지", "모든 개인정보를
+    채워넣을 수 있도록"). LLM은 여기까지만 — 학생이 말한 걸 그대로 파싱만 하고 지어내지
+    않는다. college는 공식 양식의 "소속 : ___대학 ___학부(과) ___전공" 중 "대학"
+    (단과대학) 칸 — 학과(학부)는 이미 앞 단계에서 확보한 home_college로 채워지므로
+    별도로 묻지 않는다."""
+    name: Optional[str] = None
+    student_id: Optional[str] = None
+    grade: Optional[str] = None
+    college: Optional[str] = None
+
+
+class ApprovalStep(BaseModel):
+    """세 번의 승인(학과장/복수전공학과장/행정처) 중 하나의 처리 기록 — 위조된 서명 이미지가
+    아니라, 실제로 시스템에서 벌어진 사실(누가 언제 전산으로 승인/반려했는지)만 텍스트로
+    남긴다(기존 단일승인 감사기록 설계 원칙과 동일하게 3단계로 확장). 한 번 승인/반려된
+    단계는 그 사실 자체를 절대 덮어쓰지 않는다 — 나중에 다른 단계가 반려돼도 이미 승인했던
+    단계의 기록은 그대로 남아있어야 진짜 감사기록임."""
+    status: str = "pending"  # pending / approved / rejected
+    decided_by: Optional[str] = None
+    decided_at: Optional[str] = None
+    note: Optional[str] = None
+
+
+class RecognitionApplication(BaseModel):
+    """이수과목 인정신청서 — AI가 초안만 작성하고, 최종 승인/반려는 사람이 함(HITL).
+
+    실사용자 요청으로 승인이 1단계(수업학적팀 단일승인)에서 3단계로 바뀜:
+    (1) 학과장, (2) 복수전공학과장 — 이 둘은 순서 상관없이 병렬로 처리 가능, (3) 행정처 —
+    반드시 학과장·복수전공학과장 둘 다 승인된 뒤에만 처리 가능(서버가 강제, UI가 아니라
+    코드로 순서를 보장 — 이 프로젝트의 "중요한 규칙은 LLM/화면이 아니라 코드가 강제한다"는
+    설계 원칙과 같은 이유). 셋 중 어느 단계에서든 반려되면 그 즉시 전체 신청서가 반려로
+    확정되고(status="rejected"), 반려 사유는 학생이 다시 수정해서 재신청할 수 있도록
+    문서/직원 화면에 그대로 남는다."""
+    id: str
+    session_id: str
+    student_name: Optional[str] = None
+    student_id: Optional[str] = None
+    student_grade: Optional[str] = None
+    student_college: Optional[str] = None  # 소속 단과대학(예: 공과대학) — 양식의 "대학" 칸
+    home_major: Optional[str] = None
+    target_major: str
+    matched_courses: list[MatchedCourse] = []
+    unmatched_course_names: list[str] = []
+    status: str = "pending"  # pending / approved(3단계 전부 승인 = 전산 반영) / rejected(어느 단계든 하나라도 반려)
+    created_at: str
+    home_chair_approval: ApprovalStep = ApprovalStep()  # 학과장(소속 학과)
+    dual_chair_approval: ApprovalStep = ApprovalStep()  # 복수전공(목표 학과) 학과장
+    admin_approval: ApprovalStep = ApprovalStep()  # 행정처(사무처) 최종승인 — 위 둘 다 승인 후에만
+    # --- 레거시(구버전 1단계 승인) 데이터 호환용 — 새 코드는 더 이상 이 3개를 쓰지 않고
+    # 위 3단계 필드만 씀. 예전에 저장된 신청서를 읽을 때 깨지지 않게, 그리고 그 예전 기록의
+    # 문서 감사기록을 그대로 보여주기 위해서만 남겨둠(recognition_doc.py 참고).
+    decided_at: Optional[str] = None
+    decided_by: Optional[str] = None
+    decision_note: Optional[str] = None

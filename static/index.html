@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Uni-VOC 챗봇</title>
+<link rel="icon" href="/static/assets/yu-mark.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --yu-blue:#153974;
+    --yu-blue-dark:#0e2850;
+    --yu-sky:#00aaca;
+    --yu-gray:#9d9d9c;
+    --yu-beige:#eae3d2;
+    --bg:#f2f5f8;
+    --panel:#fffefc;
+    --border:#e7e5df;
+    --text:#1c2530;
+    --muted:#8a8f98;
+    --ok:#0f7a52;
+    --ok-bg:#eaf7f1;
+    --no:#c0392b;
+    --no-bg:#fdf0ee;
+    /* 영남대 공식 컬러(네이비 YU블루 · 스카이블루 · 베이지 · 그레이)에서 파생한 톤 —
+       브랜드와 무관한 색은 쓰지 않고, 같은 4색을 옅게/진하게만 변주함 */
+    --pastel-navy:#e6eaf3;
+    --pastel-navy-border:#ccd4e6;
+    --pastel-sky:#e1f6fa;
+    --pastel-sky-border:#bfeaf1;
+    --pastel-beige:#f8f4ea;
+    --pastel-beige-border:#eae3d2;
+    --pastel-gray:#f2f2f1;
+    --pastel-gray-border:#e2e2e0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg);
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    color:var(--text);
+  }
+  .app{
+    width:100%;
+    max-width:460px;
+    height:100vh;
+    background:var(--panel);
+    display:flex;
+    flex-direction:column;
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+  }
+
+  header{
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(120deg, var(--pastel-navy), var(--pastel-sky) 70%);
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:4px;
+    background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
+    box-shadow:0 1px 6px rgba(21,57,116,.25);
+  }
+  header .brand{display:flex;align-items:center;gap:10px;}
+  header img.logo{height:22px;display:block;}
+  header .divider{width:1px;height:18px;background:var(--border);}
+  header .name{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-0.2px;}
+  header .name small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:1px;}
+  header nav{display:flex;gap:6px;}
+  header nav a{
+    font-size:11.5px;
+    color:var(--yu-blue);
+    text-decoration:none;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:5px 11px;
+  }
+  header nav a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  #banner{
+    display:none;
+    background:#fff8ea;
+    color:#8a5a00;
+    font-size:12px;
+    padding:9px 20px;
+    border-bottom:1px solid #f3e2b8;
+  }
+  #banner a{color:#8a5a00;font-weight:700;}
+
+  #verdictBanner{
+    display:none;
+    margin:14px 18px 0;
+    padding:12px 14px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+  }
+  #verdictBanner.ok{background:var(--ok-bg);color:var(--ok);display:block;}
+  #verdictBanner.no{background:var(--no-bg);color:var(--no);display:block;}
+
+  #messages{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 18px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    background:
+      radial-gradient(circle at 8% 5%, rgba(21,57,116,.07), transparent 32%),
+      radial-gradient(circle at 95% 15%, rgba(0,170,202,.12), transparent 34%),
+      radial-gradient(circle at 90% 60%, rgba(234,227,210,.55), transparent 32%),
+      radial-gradient(circle at 10% 65%, rgba(0,170,202,.07), transparent 30%),
+      radial-gradient(circle at 75% 95%, rgba(21,57,116,.05), transparent 30%),
+      var(--bg);
+  }
+  .msg{max-width:82%;display:flex;flex-direction:column;}
+  .msg.ai{align-self:flex-start;}
+  .msg.user{align-self:flex-end;align-items:flex-end;}
+  .avatar-row{display:flex;align-items:flex-end;gap:8px;}
+  .avatar{
+    width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(135deg, var(--yu-blue), var(--yu-sky));
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .avatar img{width:14px;}
+  .bubble{
+    padding:11px 15px;
+    border-radius:14px;
+    font-size:14px;
+    line-height:1.6;
+    white-space:pre-wrap;
+    word-break:break-word;
+    letter-spacing:-0.1px;
+    box-shadow:0 2px 8px rgba(60,70,120,.06);
+  }
+  .msg.ai .bubble{
+    background:var(--pastel-sky);
+    border:1px solid var(--pastel-sky-border);
+    border-top-left-radius:4px;
+    color:var(--text);
+  }
+  .msg.user .bubble{
+    background:linear-gradient(135deg, var(--yu-blue), var(--yu-blue-dark));
+    color:#fff;
+    border-top-right-radius:4px;
+  }
+
+  #options{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    padding:0 18px 10px;
+  }
+  #options button{
+    background:var(--pastel-navy);
+    border:1px solid var(--pastel-navy-border);
+    border-radius:20px;
+    padding:8px 14px;
+    font-size:12.5px;
+    font-family:inherit;
+    color:var(--yu-blue);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  #options button:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}
+
+  #draftActions{
+    display:none;
+    gap:8px;
+    padding:0 18px 12px;
+  }
+  #draftActions[data-show="1"]{display:flex;}
+  #draftActions button{
+    flex:1;
+    border-radius:10px;
+    padding:10px 4px;
+    font-size:13px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  #draftActions .btn-submit{
+    background:linear-gradient(135deg, var(--yu-blue), var(--yu-blue-dark));
+    border:1px solid var(--yu-blue-dark);
+    color:#fff;
+  }
+  #draftActions .btn-submit:hover{filter:brightness(1.1);}
+  #draftActions .btn-cancel{
+    background:var(--panel);
+    border:1px solid var(--pastel-gray-border);
+    color:#5a5a59;
+  }
+  #draftActions .btn-cancel:hover{background:var(--pastel-gray);}
+
+  #appDownload{
+    padding:0 18px 12px;
+  }
+  #appDownload[hidden]{display:none;}
+  #appDownload a{
+    display:inline-block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--yu-blue);
+    background:var(--pastel-sky);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:8px;
+    padding:7px 14px;
+    text-decoration:none;
+  }
+  #appDownload a:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}
+
+  .quickbar{
+    display:flex;
+    gap:8px;
+    padding:0 18px 12px;
+  }
+  .quickbar button{
+    flex:1;
+    background:var(--pastel-sky);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:10px;
+    padding:8px 4px;
+    font-size:11.5px;
+    font-family:inherit;
+    color:#0d7182;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .quickbar button:nth-child(2){background:var(--pastel-beige);border-color:var(--pastel-beige-border);color:#8a6d33;}
+  .quickbar button:nth-child(3){background:var(--pastel-navy);border-color:var(--pastel-navy-border);color:var(--yu-blue);}
+  .quickbar button:nth-child(4){background:var(--pastel-gray);border-color:var(--pastel-gray-border);color:#5a5a59;}
+  .quickbar button:hover{filter:brightness(0.94);}
+  .quickbar button[hidden]{display:none;}
+
+  form#composer{
+    display:flex;
+    gap:8px;
+    padding:14px 18px 20px;
+    border-top:1px solid var(--border);
+    background:var(--panel);
+  }
+  #composer input{
+    flex:1;
+    border:1px solid var(--pastel-sky-border);
+    background:var(--pastel-sky);
+    border-radius:22px;
+    padding:12px 16px;
+    font-size:13.5px;
+    font-family:inherit;
+    outline:none;
+    color:var(--text);
+  }
+  #composer input:focus{border-color:var(--yu-sky);background:#fff;}
+  #composer button{
+    background:linear-gradient(135deg, var(--yu-blue), var(--yu-blue-dark));
+    color:#fff;
+    border:none;
+    border-radius:22px;
+    padding:0 20px;
+    font-size:13px;
+    font-family:inherit;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  #composer button:hover{background:var(--yu-blue-dark);}
+  #composer button:disabled{background:#c9ccd1;cursor:default;}
+
+  .typing{
+    font-size:11.5px;
+    color:var(--muted);
+    padding:0 18px 6px;
+    display:none;
+  }
+
+  .disclaimer{
+    display:none;
+    font-size:10.5px;
+    color:var(--muted);
+    padding:0 18px 10px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
+      <div class="divider"></div>
+      <div class="name">Uni-VOC<small>장학금 · 복수전공 상담 AI</small></div>
+    </div>
+    <nav>
+      <a href="/staff">직원승인</a>
+      <a href="/admin">관리자</a>
+    </nav>
+  </header>
+
+  <div id="banner">
+    아직 Gemini API 키가 설정되지 않았어요. <a href="/admin">관리자 페이지</a>에서 먼저 등록해주세요.
+  </div>
+  <div id="verdictBanner"></div>
+
+  <div id="messages"></div>
+  <div id="typing" class="typing">AI가 입력 중...</div>
+  <div id="options"></div>
+  <div id="draftActions">
+    <button type="button" id="btnDraftSubmit" class="btn-submit" data-cmd="제출">제출하기</button>
+    <button type="button" id="btnDraftSecondary" class="btn-cancel" data-cmd="취소">신청 취소</button>
+  </div>
+  <div id="appDownload" hidden>
+    <a id="appDownloadLink" href="#" target="_blank">📄 신청서 양식(.docx)으로 다운로드</a>
+  </div>
+
+  <div class="quickbar">
+    <button type="button" id="btnList" data-cmd="목록" hidden>후보 목록</button>
+    <button type="button" id="btnRecognition" data-cmd="이미 들은 과목 인정받고 싶어" hidden>이수과목 인정받기</button>
+    <button type="button" data-cmd="처음부터">처음부터</button>
+    <button type="button" data-cmd="종료">종료</button>
+  </div>
+  <div id="disclaimer" class="disclaimer">
+    ※ 자격요건은 규정에 따라 자동 계산된 참고용 결과이며, 실제 신청 가능 여부는 수업학적팀(☎ 053-810-1095) 확인이 필요해요.
+    이수과목 인정신청서는 제출 후 직원 승인이 필요해요 (<a href="/staff" style="color:inherit;">승인 화면 보기</a>).
+  </div>
+
+  <form id="composer">
+    <input id="input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" />
+    <button type="submit">전송</button>
+  </form>
+</div>
+
+<script>
+let sessionId = null;
+let currentMode = null;  // null | "scholarship" | "dual_major"
+
+const messagesEl = document.getElementById('messages');
+const optionsEl = document.getElementById('options');
+const typingEl = document.getElementById('typing');
+const form = document.getElementById('composer');
+const input = document.getElementById('input');
+const banner = document.getElementById('banner');
+const verdictBanner = document.getElementById('verdictBanner');
+const disclaimerEl = document.getElementById('disclaimer');
+const btnList = document.getElementById('btnList');
+const btnRecognition = document.getElementById('btnRecognition');
+const draftActionsEl = document.getElementById('draftActions');
+const btnDraftSubmit = document.getElementById('btnDraftSubmit');
+const btnDraftSecondary = document.getElementById('btnDraftSecondary');
+const appDownloadEl = document.getElementById('appDownload');
+const appDownloadLink = document.getElementById('appDownloadLink');
+
+function addMessage(role, text){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+
+  if(role === 'ai'){
+    const row = document.createElement('div');
+    row.className = 'avatar-row';
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.innerHTML = '<img src="/static/assets/yu-mark.png" alt="" />';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    wrap.appendChild(row);
+  }else{
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+  }
+
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderOptions(options){
+  optionsEl.innerHTML = '';
+  (options || []).forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = `${opt.index}. ${opt.label}`;
+    btn.onclick = () => sendMessage(String(opt.index));
+    optionsEl.appendChild(btn);
+  });
+}
+
+function setVerdict(eligible){
+  if(eligible === undefined || eligible === null){
+    verdictBanner.style.display = 'none';
+    verdictBanner.className = '';
+    return;
+  }
+  verdictBanner.textContent = eligible ? '판정 결과: 신청 자격 충족' : '판정 결과: 자격 미충족 항목 있음';
+  verdictBanner.className = eligible ? 'ok' : 'no';
+}
+
+function updateStageUI(data){
+  // course_draft(과목 초안 확인) / student_info_confirm(개인정보 확인) 단계일 때만
+  // 확인 버튼을 보여줌 — 원래는 "제출"/"취소"를 직접 타이핑해야 했는데, 장학금 후보 선택처럼
+  // 버튼으로 누를 수 있게 해서 "학생 컨펌"이 명확한 UI 액션이 되게 함. 두 단계는 확인 내용이
+  // 다르므로(과목 vs 개인정보) 버튼 문구/명령어도 단계에 맞게 바꿔준다.
+  if(data.stage === 'course_draft'){
+    draftActionsEl.dataset.show = '1';
+    btnDraftSubmit.textContent = '제출하기';
+    btnDraftSubmit.dataset.cmd = '제출';
+    btnDraftSecondary.textContent = '신청 취소';
+    btnDraftSecondary.dataset.cmd = '취소';
+  }else if(data.stage === 'student_info_confirm'){
+    draftActionsEl.dataset.show = '1';
+    btnDraftSubmit.textContent = '이대로 제출';
+    btnDraftSubmit.dataset.cmd = '제출';
+    btnDraftSecondary.textContent = '다시 입력';
+    btnDraftSecondary.dataset.cmd = '다시입력';
+  }else{
+    draftActionsEl.dataset.show = '0';
+  }
+
+  // 제출 직후 응답에만 application_id가 실려옴 -> 공식 양식(.docx) 다운로드 링크 노출
+  if(data.application_id){
+    appDownloadLink.href = `/api/recognition/applications/${data.application_id}/docx`;
+    appDownloadEl.hidden = false;
+  }else{
+    appDownloadEl.hidden = true;
+  }
+}
+
+function updateModeUI(data){
+  currentMode = data.mode || null;
+
+  // 장학금 모드가 아니면 후보 목록 버튼 숨김
+  btnList.hidden = currentMode !== 'scholarship';
+
+  // 복수전공 모드가 아니면 검증배너/인정받기 버튼/안내문구 전부 숨김
+  if(currentMode === 'dual_major'){
+    disclaimerEl.style.display = 'block';
+    btnRecognition.hidden = false;
+    if('eligible' in data) setVerdict(data.eligible);
+  }else{
+    disclaimerEl.style.display = 'none';
+    btnRecognition.hidden = true;
+    setVerdict(null);
+  }
+}
+
+async function checkSettings(){
+  try{
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    banner.style.display = data.has_api_key ? 'none' : 'block';
+  }catch(e){ /* 무시 */ }
+}
+
+async function sendMessage(text){
+  addMessage('user', text);
+  input.value = '';
+  typingEl.style.display = 'block';
+  optionsEl.innerHTML = '';
+  if(text === '처음부터'){
+    setVerdict(null);
+    draftActionsEl.dataset.show = '0';
+    appDownloadEl.hidden = true;
+  }
+  try{
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({session_id: sessionId, message: text})
+    });
+    const data = await res.json();
+    sessionId = data.session_id;
+    typingEl.style.display = 'none';
+    addMessage('ai', data.reply);
+    renderOptions(data.options);
+    updateModeUI(data);
+    updateStageUI(data);
+    checkSettings();
+  }catch(e){
+    typingEl.style.display = 'none';
+    addMessage('ai', '앗, 서버랑 통신 중 오류가 났어. 잠시 후 다시 시도해줘.');
+  }
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if(!text) return;
+  sendMessage(text);
+});
+
+document.querySelectorAll('.quickbar [data-cmd], #draftActions [data-cmd]').forEach(btn => {
+  btn.addEventListener('click', () => sendMessage(btn.dataset.cmd));
+});
+
+checkSettings();
+addMessage('ai', '안녕! 나는 영남대 학생상담 AI Uni-VOC야. 장학금 찾는 거 도와줄까, 아니면 복수전공 자격이나 이수과목 인정 관련이야? 편하게 물어봐!');
+</script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Uni-VOC 직원 승인</title>
+<link rel="icon" href="/static/assets/yu-mark.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --yu-blue:#153974;
+    --yu-blue-dark:#0e2850;
+    --yu-sky:#00aaca;
+    --yu-gray:#9d9d9c;
+    --yu-beige:#eae3d2;
+    --bg:#f7f7f5;
+    --panel:#ffffff;
+    --border:#e7e5df;
+    --text:#1c2530;
+    --muted:#8a8f98;
+    --ok:#0f7a52;
+    --ok-bg:#eaf7f1;
+    --no:#c0392b;
+    --no-bg:#fdf0ee;
+    --pending:#8a5a00;
+    --pending-bg:#fff8ea;
+    /* 영남대 공식 컬러(네이비 YU블루 · 스카이블루 · 베이지 · 그레이)에서 파생한 톤 —
+       브랜드와 무관한 색은 쓰지 않고, 같은 4색을 옅게/진하게만 변주함 */
+    --pastel-navy:#e6eaf3;
+    --pastel-navy-border:#ccd4e6;
+    --pastel-sky:#e1f6fa;
+    --pastel-sky-border:#bfeaf1;
+    --pastel-beige:#f8f4ea;
+    --pastel-beige-border:#eae3d2;
+    --pastel-gray:#f2f2f1;
+    --pastel-gray-border:#e2e2e0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0,170,202,.06), transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(21,57,116,.05), transparent 35%),
+      var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(120deg, var(--pastel-navy), var(--pastel-sky) 70%);
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:4px;
+    background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
+    box-shadow:0 1px 6px rgba(21,57,116,.25);
+  }
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img.logo{height:24px;}
+  header .divider{width:1px;height:20px;background:var(--border);}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
+  header .title small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
+  header nav{display:flex;gap:8px;}
+  header a{
+    color:var(--yu-blue);
+    text-decoration:none;
+    font-size:12px;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:6px 13px;
+  }
+  header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  main{
+    max-width:900px;
+    margin:0 auto;
+    padding:24px 20px 70px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .toolbar .tab{
+    font-size:12.5px;
+    color:var(--yu-blue);
+    border:1px solid var(--pastel-navy-border);
+    background:var(--pastel-navy);
+    border-radius:20px;
+    padding:7px 14px;
+    cursor:pointer;
+  }
+  .toolbar .tab.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+  .toolbar .refresh{
+    margin-left:auto;
+    font-size:12px;
+    color:var(--muted);
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:20px;
+    padding:7px 14px;
+    cursor:pointer;
+  }
+  .toolbar .refresh:hover{color:var(--yu-blue);border-color:var(--yu-blue);}
+  .staff-name{
+    margin-left:auto;
+    font-size:12px;
+    color:var(--muted);
+    cursor:pointer;
+    text-decoration:underline dotted;
+  }
+  /* 3단계 승인(학과장/복수전공학과장/행정처) — 실사용자 요청으로 기존 단일승인(수업학적팀)에서
+     확장됨. 승인자가 여기서 자기 역할을 고르면 그 역할이 처리할 수 있는 신청서만 승인/반려
+     버튼이 뜨고, 나머지는 진행상황만 보임(행정처는 학과장 둘 다 끝나기 전까진 버튼 자체가 없음
+     — 순서는 서버에서도 다시 검증하지만, 화면에서도 애초에 헷갈리지 않게 숨겨둠). */
+  .toolbar-role{margin-top:-6px;}
+  .role-label{font-size:12px;color:var(--muted);margin-right:2px;}
+  .role-chip{
+    font-size:12px;
+    color:var(--yu-blue);
+    border:1px solid var(--pastel-navy-border);
+    background:var(--pastel-navy);
+    border-radius:20px;
+    padding:6px 13px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .role-chip.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  .stage-track{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+  .stage-chip{
+    flex:1;
+    min-width:150px;
+    border-radius:10px;
+    padding:8px 10px;
+    border:1px solid var(--pastel-beige-border);
+    background:var(--pastel-beige);
+  }
+  .stage-chip.approved{background:var(--ok-bg);border-color:var(--ok);}
+  .stage-chip.rejected{background:var(--no-bg);border-color:var(--no);}
+  .stage-chip-label{font-size:11px;font-weight:700;color:var(--pending);}
+  .stage-chip.approved .stage-chip-label{color:var(--ok);}
+  .stage-chip.rejected .stage-chip-label{color:var(--no);}
+  .stage-chip-detail{font-size:11.5px;margin-top:3px;color:var(--text);word-break:break-word;}
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:60px 20px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-top:3px solid var(--pastel-sky-border);
+    border-radius:14px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .card-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .card-head .route{
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:-0.2px;
+  }
+  .card-head .route .arrow{color:var(--yu-sky);margin:0 6px;}
+  .card-head .meta{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:3px;
+  }
+  .status-badge{
+    font-size:11px;
+    font-weight:700;
+    border-radius:20px;
+    padding:4px 11px;
+    white-space:nowrap;
+  }
+  .status-badge.pending{color:var(--pending);background:var(--pending-bg);}
+  .status-badge.approved{color:var(--ok);background:var(--ok-bg);}
+  .status-badge.rejected{color:var(--no);background:var(--no-bg);}
+
+  .section-label{
+    font-size:11px;
+    color:var(--muted);
+    font-weight:700;
+    margin:12px 0 6px;
+  }
+  .form-download{
+    margin-top:10px;
+  }
+  .form-download a{
+    display:inline-block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--yu-blue);
+    background:var(--pastel-sky);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:8px;
+    padding:6px 12px;
+    text-decoration:none;
+  }
+  .form-download a:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}
+  .form-download-hint{
+    display:inline-block;
+    margin-left:8px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .student-info{
+    margin-top:8px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--yu-blue);
+  }
+  .student-info-missing{
+    color:var(--muted);
+    font-weight:400;
+  }
+  table.courses{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+  }
+  table.courses th, table.courses td{
+    text-align:left;
+    padding:7px 8px;
+    border-bottom:1px solid var(--border);
+  }
+  table.courses th{color:var(--muted);font-weight:600;font-size:11px;}
+  table.courses td.code{font-family:monospace;color:var(--yu-blue);font-weight:600;}
+  table.courses td.note{color:var(--yu-sky);font-size:11.5px;}
+
+  .unmatched-list{
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.7;
+  }
+  .unmatched-list span{
+    display:inline-block;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:2px 8px;
+    margin:2px 4px 2px 0;
+  }
+
+  .decision-row{
+    display:flex;
+    gap:8px;
+    margin-top:16px;
+  }
+  .decision-row button{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:10px 0;
+    font-size:13px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    transition:opacity .15s ease;
+  }
+  .decision-row button:hover{opacity:0.88;}
+  .btn-approve{background:var(--ok);color:#fff;}
+  .btn-reject{background:var(--no-bg);color:var(--no);border:1px solid var(--no) !important;}
+
+  .decided-note{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--muted);
+    background:var(--bg);
+    border-radius:10px;
+    padding:9px 12px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
+    <div class="divider"></div>
+    <div class="title">이수과목 인정신청서 승인<small>학과장 · 복수전공학과장 · 행정처 3단계 승인 — Human-in-the-Loop</small></div>
+  </div>
+  <nav>
+    <a href="/">메인 챗봇</a>
+    <a href="/admin">관리자</a>
+  </nav>
+</header>
+
+<main>
+  <div class="toolbar">
+    <button class="tab active" data-status="pending">승인대기</button>
+    <button class="tab" data-status="approved">승인됨</button>
+    <button class="tab" data-status="rejected">반려됨</button>
+    <button class="tab" data-status="">전체</button>
+    <button class="refresh" id="refreshBtn">↻ 새로고침</button>
+  </div>
+  <div class="toolbar toolbar-role">
+    <span class="role-label">내 역할:</span>
+    <button class="role-chip" data-role="home_chair">학과장</button>
+    <button class="role-chip" data-role="dual_chair">복수전공학과장</button>
+    <button class="role-chip" data-role="admin">행정처</button>
+    <span class="staff-name" id="staffNameLabel"></span>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script>
+let currentStatus = "pending";
+const listEl = document.getElementById('list');
+const staffNameLabel = document.getElementById('staffNameLabel');
+
+// 승인/반려 기록에 남는 "처리자" 이름 — 예전엔 무조건 '수업학적팀'으로 고정돼 있었는데,
+// 실제로 누가 처리했는지 신청서(및 다운로드 양식)에 남아야 의미가 있어서 실제 이름을 받음.
+// 브라우저에 저장해두고 재방문 시 다시 안 물어보되, 라벨 클릭하면 언제든 바꿀 수 있음.
+function getStaffName(promptAlways){
+  let name = localStorage.getItem('univoc_staff_name') || '';
+  if(promptAlways || !name){
+    const input = prompt('처리자 이름(또는 소속)을 입력해줘 — 승인/반려 기록에 남아!', name || '수업학적팀');
+    if(input && input.trim()){
+      name = input.trim();
+      localStorage.setItem('univoc_staff_name', name);
+    }else if(!name){
+      name = '수업학적팀';
+    }
+  }
+  staffNameLabel.textContent = `처리자: ${name} (변경)`;
+  return name;
+}
+staffNameLabel.addEventListener('click', () => getStaffName(true));
+getStaffName(false);
+
+// 3단계 승인 — 이 브라우저(탭)에서 내가 어떤 역할로 처리하는지 선택. 역할에 따라 카드마다
+// 뜨는 승인/반려 버튼이 달라짐(내 역할이 처리할 차례인 신청서만 버튼이 뜸).
+const ROLE_LABELS = {home_chair: '학과장', dual_chair: '복수전공학과장', admin: '행정처'};
+let currentRole = localStorage.getItem('univoc_staff_role') || '';
+
+function applyRoleChipState(){
+  document.querySelectorAll('.role-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.role === currentRole);
+  });
+}
+function setRole(role){
+  currentRole = role;
+  localStorage.setItem('univoc_staff_role', role);
+  applyRoleChipState();
+  loadList();
+}
+document.querySelectorAll('.role-chip').forEach(chip => {
+  chip.addEventListener('click', () => setRole(chip.dataset.role));
+});
+applyRoleChipState();
+
+function fmtDate(iso){
+  if(!iso) return '';
+  try{
+    const d = new Date(iso);
+    return d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }catch(e){ return iso; }
+}
+
+function statusLabel(s){
+  return {pending:'승인대기', approved:'승인됨', rejected:'반려됨'}[s] || s;
+}
+
+// 3단계 승인 진행상황을 칩 3개로 보여줌. 3단계 승인 기능이 생기기 전에 이미 처리된
+// 구버전(단일승인) 신청서는 단계별 기록이 아예 없으니(전부 pending), 그걸 그대로 "대기중"
+// 이라고 보여주면 실제로 이미 승인/반려됐는데도 거짓으로 보이게 됨 — 그런 경우만 옛날
+// 방식(한 줄 요약)으로 대신 보여줌(recognition_doc.py의 레거시 폴백과 동일한 로직).
+const STAGE_META = {
+  home_chair: {label: '학과장', field: 'home_chair_approval'},
+  dual_chair: {label: '복수전공학과장', field: 'dual_chair_approval'},
+  admin: {label: '행정처', field: 'admin_approval'},
+};
+
+function stageChip(label, step){
+  let detail = '대기중';
+  if(step.status === 'approved'){
+    detail = `${step.decided_by || '-'} · ${fmtDate(step.decided_at)}`;
+  }else if(step.status === 'rejected'){
+    detail = `${step.decided_by || '-'} · ${fmtDate(step.decided_at)}${step.note ? ' · ' + step.note : ''}`;
+  }
+  return `<div class="stage-chip ${step.status}">
+      <div class="stage-chip-label">${label}</div>
+      <div class="stage-chip-detail">${statusLabel(step.status)} · ${detail}</div>
+    </div>`;
+}
+
+function stageTrackHtml(app){
+  const stages = Object.values(STAGE_META).map(m => [m.label, app[m.field]]);
+  const hasStagedRecord = stages.some(([, step]) => step.status !== 'pending');
+  if(!hasStagedRecord && app.status !== 'pending'){
+    return `<div class="decided-note">(구버전 단일승인 기록) ${statusLabel(app.status)} · ${fmtDate(app.decided_at)}${app.decided_by ? ' · ' + app.decided_by : ''}${app.decision_note ? ' · ' + app.decision_note : ''}</div>`;
+  }
+  return `<div class="stage-track">${stages.map(([label, step]) => stageChip(label, step)).join('')}</div>`;
+}
+
+// 지금 이 브라우저에서 선택된 역할(currentRole)이 이 신청서에서 승인/반려 버튼을 낼 차례인지
+// 판단. 최종 처리(승인/반려)된 신청서, 역할 미선택, 이미 처리된 단계, 행정처인데 학과장
+// 둘이 아직 안 끝난 경우엔 버튼 대신 안내 문구만 보여줌 — 순서는 서버에서도 다시
+// 검증하지만(app.py), 화면에서도 애초에 순서를 못 건너뛰게 안내함.
+function decisionSectionHtml(app){
+  if(app.status !== 'pending') return '';
+  if(!currentRole){
+    return `<div class="decided-note">위에서 내 역할(학과장/복수전공학과장/행정처)을 먼저 고르면 승인/반려할 수 있어요.</div>`;
+  }
+  const meta = STAGE_META[currentRole];
+  const step = app[meta.field];
+  if(step.status !== 'pending'){
+    return `<div class="decided-note">${meta.label} 단계는 이미 ${statusLabel(step.status)} 처리됐어요. 다른 단계 진행을 기다리는 중이에요.</div>`;
+  }
+  if(currentRole === 'admin' && (app.home_chair_approval.status !== 'approved' || app.dual_chair_approval.status !== 'approved')){
+    return `<div class="decided-note">학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리를 할 수 있어요.</div>`;
+  }
+  return `<div class="decision-row">
+       <button class="btn-approve" data-action="approved" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 승인</button>
+       <button class="btn-reject" data-action="rejected" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 반려</button>
+     </div>`;
+}
+
+function renderCard(app){
+  const div = document.createElement('div');
+  div.className = 'card';
+
+  const matchedRows = (app.matched_courses || []).map(c => `
+    <tr>
+      <td class="code">${c.course_code}</td>
+      <td>${c.course_name}</td>
+      <td>${c.credit}학점</td>
+      <td>${c.year_semester || ''}</td>
+      <td class="note">${c.matched_note || '교육과정표 동일과목'}</td>
+    </tr>
+  `).join('');
+
+  const matchedTable = (app.matched_courses && app.matched_courses.length)
+    ? `<table class="courses">
+         <thead><tr><th>학수번호</th><th>과목명</th><th>학점</th><th>편성 학년/학기</th><th>인정 근거</th></tr></thead>
+         <tbody>${matchedRows}</tbody>
+       </table>`
+    : `<div class="unmatched-list" style="color:var(--no)">AI가 대조했지만 목표 학과 교육과정표와 정확히 일치하는 과목이 없었어요.</div>`;
+
+  const unmatchedHtml = (app.unmatched_course_names && app.unmatched_course_names.length)
+    ? `<div class="section-label">학생이 말했지만 자동 매칭 안 된 과목 (참고용, 필요시 직접 확인)</div>
+       <div class="unmatched-list">${app.unmatched_course_names.map(n => `<span>${n}</span>`).join('')}</div>`
+    : '';
+
+  const stageSectionHtml = stageTrackHtml(app);
+  const decisionHtml = decisionSectionHtml(app);
+
+  const studentHtml = (app.student_name || app.student_id)
+    ? `<div class="student-info">
+         👤 ${app.student_name || '(이름 미확인)'}
+         ${app.student_id ? ' · 학번 ' + app.student_id : ''}
+         ${app.student_grade ? ' · ' + app.student_grade : ''}
+         ${app.student_college ? ' · ' + app.student_college : ''}
+       </div>`
+    : `<div class="student-info student-info-missing">👤 학생 개인정보 미확인(신청서 초안 단계에서 아직 안 채워짐)</div>`;
+
+  div.innerHTML = `
+    <div class="card-head">
+      <div>
+        <div class="route">${app.home_major || '(소속 미확인)'}<span class="arrow">→</span>${app.target_major}</div>
+        <div class="meta">신청 ID ${app.id} · 세션 ${app.session_id.slice(0,8)}… · ${fmtDate(app.created_at)} 제출</div>
+      </div>
+      <div class="status-badge ${app.status}">${statusLabel(app.status)}</div>
+    </div>
+    ${studentHtml}
+    ${stageSectionHtml}
+    <div class="form-download">
+      <a href="/api/recognition/applications/${app.id}/docx">📄 공식 양식(.docx)으로 다운로드</a>
+      ${app.status !== 'pending' ? '<span class="form-download-hint">승인/반려 처리 결과가 파일 하단에 자동으로 반영돼요</span>' : ''}
+    </div>
+    <div class="section-label">인정 가능 과목 (교육과정표 대조 완료)</div>
+    ${matchedTable}
+    ${unmatchedHtml}
+    ${decisionHtml}
+  `;
+
+  div.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => decide(app.id, btn.dataset.action, btn.dataset.stage));
+  });
+  return div;
+}
+
+async function decide(id, action, stage){
+  const meta = STAGE_META[stage];
+  const label = action === 'approved' ? '승인' : '반려';
+  let note = null;
+  if(action === 'rejected'){
+    // 반려 사유는 학생이 뭘 고쳐서 다시 신청해야 하는지 알아야 하니 필수로 받음 — 취소하면
+    // 반려 자체를 하지 않음(사유 없이 그냥 반려 눌러버리는 실수 방지).
+    const typed = prompt(`반려 사유를 입력해줘 (학생이 확인하고 수정해서 다시 신청할 수 있어) — ${meta.label} 단계 반려`, '');
+    if(typed === null) return;
+    note = typed.trim() || null;
+  }
+  if(!confirm(`${meta.label} 단계에서 이 신청서를 ${label}할까?`)) return;
+  const decidedBy = getStaffName(false);
+  try{
+    const res = await fetch(`/api/recognition/applications/${id}/decide`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stage, decision: action, decided_by: decidedBy, note})
+    });
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || '처리 중 오류가 났어요.');
+      return;
+    }
+    loadList();
+  }catch(e){
+    alert('서버랑 통신 중 오류가 났어요.');
+  }
+}
+
+async function loadList(){
+  listEl.innerHTML = '<div class="empty">불러오는 중...</div>';
+  try{
+    const url = currentStatus ? `/api/recognition/applications?status=${currentStatus}` : '/api/recognition/applications';
+    const res = await fetch(url);
+    const apps = await res.json();
+    if(!apps.length){
+      listEl.innerHTML = '<div class="empty">해당하는 신청서가 없어요.</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    apps.forEach(app => listEl.appendChild(renderCard(app)));
+  }catch(e){
+    listEl.innerHTML = '<div class="empty">목록을 불러오지 못했어요.</div>';
+  }
+}
+
+document.querySelectorAll('.toolbar .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.toolbar .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentStatus = tab.dataset.status;
+    loadList();
+  });
+});
+document.getElementById('refreshBtn').addEventListener('click', loadList);
+
+loadList();
+</script>
+</body>
+</html>

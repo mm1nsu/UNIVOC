@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Uni-VOC 관리자</title>
+<link rel="icon" href="/static/assets/yu-mark.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --yu-blue:#153974;
+    --yu-blue-dark:#0e2850;
+    --yu-sky:#00aaca;
+    --yu-gray:#9d9d9c;
+    --yu-beige:#eae3d2;
+    --bg:#f7f7f5;
+    --panel:#ffffff;
+    --border:#e7e5df;
+    --text:#1c2530;
+    --muted:#8a8f98;
+    --danger:#c0392b;
+    --ok:#0f7a52;
+    /* 영남대 공식 컬러(네이비 YU블루 · 스카이블루 · 베이지 · 그레이)에서 파생한 톤 —
+       브랜드와 무관한 색은 쓰지 않고, 같은 4색을 옅게/진하게만 변주함 */
+    --pastel-navy:#e6eaf3;
+    --pastel-navy-border:#ccd4e6;
+    --pastel-sky:#e1f6fa;
+    --pastel-sky-border:#bfeaf1;
+    --pastel-beige:#f8f4ea;
+    --pastel-beige-border:#eae3d2;
+    --pastel-gray:#f2f2f1;
+    --pastel-gray-border:#e2e2e0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0,170,202,.06), transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(21,57,116,.05), transparent 35%),
+      var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(120deg, var(--pastel-navy), var(--pastel-sky) 70%);
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:4px;
+    background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
+    box-shadow:0 1px 6px rgba(21,57,116,.25);
+  }
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img.logo{height:24px;}
+  header .divider{width:1px;height:20px;background:var(--border);}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
+  header .title small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
+  header nav{display:flex;gap:8px;}
+  header a{
+    color:var(--yu-blue);
+    text-decoration:none;
+    font-size:12px;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:6px 13px;
+  }
+  header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  main{
+    max-width:860px;
+    margin:0 auto;
+    padding:28px 20px 70px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-top:3px solid var(--pastel-sky-border);
+    border-radius:16px;
+    padding:24px 26px;
+  }
+  .card:nth-of-type(2){border-top-color:var(--pastel-beige-border);}
+  .card:nth-of-type(3){border-top-color:var(--pastel-navy-border);}
+  .card .eyebrow{
+    font-size:11px;
+    font-weight:700;
+    color:var(--yu-sky);
+    letter-spacing:.4px;
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .card h2{margin:0 0 4px;font-size:16px;letter-spacing:-0.2px;color:var(--yu-blue);}
+  .card .desc{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:500;}
+  input[type=text], input[type=password], textarea{
+    width:100%;
+    border:1px solid var(--border);
+    background:var(--bg);
+    border-radius:10px;
+    padding:10px 13px;
+    font-size:13.5px;
+    font-family:inherit;
+    outline:none;
+    color:var(--text);
+  }
+  input:focus, textarea:focus{border-color:var(--yu-sky);background:#fff;}
+  textarea{min-height:180px;resize:vertical;line-height:1.6;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .row > div{flex:1;min-width:170px;}
+  button{
+    background:var(--yu-blue);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:10px 18px;
+    font-size:13px;
+    font-family:inherit;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  button:hover{background:var(--yu-blue-dark);}
+  button.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border);}
+  button.secondary:hover{background:#eee;border-color:var(--muted);}
+  button.danger{background:#fdf0ee;color:var(--danger);}
+  button.danger:hover{background:#fadedb;}
+  button:disabled{background:#c9ccd1;cursor:default;}
+  .status{font-size:12.5px;margin-top:10px;}
+  .status.ok{color:var(--ok);}
+  .status.err{color:var(--danger);}
+  .file-input-btn{
+    display:inline-flex;
+    align-items:center;
+    font-size:12.5px;
+    color:var(--yu-blue);
+    cursor:pointer;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:9px 14px;
+  }
+  .file-input-btn:hover{border-color:var(--yu-blue);}
+  pre.preview{
+    background:#0e1726;
+    color:#cfe3ff;
+    padding:16px;
+    border-radius:12px;
+    font-size:11.5px;
+    overflow-x:auto;
+    max-height:340px;
+    line-height:1.6;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th, td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+  .tag{
+    display:inline-block;
+    background:#eef7f9;
+    color:#0a7a92;
+    border-radius:6px;
+    padding:2px 8px;
+    font-size:11px;
+    margin:0 4px 4px 0;
+  }
+  .empty{color:var(--muted);font-size:13px;padding:16px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
+    <div class="divider"></div>
+    <div class="title">Uni-VOC 관리자<small>API 설정 · 장학금 자료 관리</small></div>
+  </div>
+  <nav>
+    <a href="/">← 메인 챗봇</a>
+    <a href="/staff">인정신청서 승인</a>
+  </nav>
+</header>
+
+<main>
+  <div class="card">
+    <div class="eyebrow">Step 1</div>
+    <h2>Gemini API 설정</h2>
+    <div class="desc">여기서 등록하면 서버 재시작 없이 바로 챗봇에 반영돼요.</div>
+    <div class="row">
+      <div>
+        <label>Gemini API Key</label>
+        <input id="apiKey" type="password" placeholder="AIza..." />
+      </div>
+      <div>
+        <label>모델명 (기본값 gemini-2.5-flash)</label>
+        <input id="modelName" type="text" placeholder="gemini-2.5-flash" />
+      </div>
+      <div style="flex:0;">
+        <button onclick="saveSettings()">저장</button>
+      </div>
+    </div>
+    <div id="settingsStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Step 2</div>
+    <h2>장학금 공지 추가</h2>
+    <div class="desc">크롤링한 공지 원문(markdown/텍스트)을 붙여넣거나 파일을 올리면 AI가 구조화해서 미리보기를 보여줘요. 확인 후 저장을 눌러야 실제 DB에 반영됩니다.</div>
+    <label>공지 원문</label>
+    <textarea id="rawText" placeholder="여기에 공지 원문(마크다운/텍스트)을 붙여넣으세요..."></textarea>
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:0;">
+        <label class="file-input-btn">파일에서 불러오기
+          <input type="file" id="fileInput" accept=".md,.txt" style="display:none;" />
+        </label>
+      </div>
+      <div style="flex:0;">
+        <button onclick="parseNotice()" id="parseBtn">AI로 분석하기</button>
+      </div>
+    </div>
+    <div id="parseStatus" class="status"></div>
+
+    <div id="previewWrap" style="display:none;margin-top:16px;">
+      <label>구조화 결과 미리보기 (저장 전 확인)</label>
+      <pre class="preview" id="previewJson"></pre>
+      <div class="row" style="margin-top:10px;">
+        <div style="flex:0;"><button onclick="saveParsed()">이 내용으로 저장</button></div>
+        <div style="flex:0;"><button class="secondary" onclick="discardPreview()">취소</button></div>
+      </div>
+      <div id="saveStatus" class="status"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Step 3</div>
+    <h2>등록된 장학금 (<span id="dbCount">0</span>건)</h2>
+    <div id="dbTableWrap"><div class="empty">불러오는 중...</div></div>
+  </div>
+</main>
+
+<script>
+let lastParsed = null;
+
+async function loadSettings(){
+  const res = await fetch('/api/settings');
+  const data = await res.json();
+  document.getElementById('modelName').value = data.model || '';
+  document.getElementById('apiKey').placeholder = data.has_api_key ? '저장된 키가 있어요 (변경하려면 새로 입력)' : 'AIza...';
+}
+
+async function saveSettings(){
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const model = document.getElementById('modelName').value.trim();
+  const statusEl = document.getElementById('settingsStatus');
+  statusEl.textContent = '저장 중...';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({api_key: apiKey || null, model: model || null})
+    });
+    const data = await res.json();
+    statusEl.textContent = data.has_api_key ? '저장됐어요 (모델: ' + data.model + ')' : '키가 비어있어요';
+    statusEl.className = 'status ok';
+    document.getElementById('apiKey').value = '';
+    loadSettings();
+  }catch(e){
+    statusEl.textContent = '저장 실패: ' + e;
+    statusEl.className = 'status err';
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('rawText').value = reader.result; };
+  reader.readAsText(file, 'utf-8');
+});
+
+async function parseNotice(){
+  const raw = document.getElementById('rawText').value.trim();
+  const statusEl = document.getElementById('parseStatus');
+  if(!raw){ statusEl.textContent = '원문을 먼저 붙여넣어주세요'; statusEl.className='status err'; return; }
+  statusEl.textContent = 'AI가 분석 중... (몇 초 걸릴 수 있어요)';
+  statusEl.className = 'status';
+  document.getElementById('parseBtn').disabled = true;
+  try{
+    const res = await fetch('/api/ingest/parse', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({raw_text: raw})
+    });
+    const data = await res.json();
+    if(data.error){
+      statusEl.textContent = data.error;
+      statusEl.className = 'status err';
+    }else{
+      lastParsed = data;
+      document.getElementById('previewJson').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('previewWrap').style.display = 'block';
+      statusEl.textContent = '분석 완료. 아래 내용 확인하고 저장해주세요.';
+      statusEl.className = 'status ok';
+    }
+  }catch(e){
+    statusEl.textContent = '분석 실패: ' + e;
+    statusEl.className = 'status err';
+  }
+  document.getElementById('parseBtn').disabled = false;
+}
+
+async function saveParsed(){
+  if(!lastParsed) return;
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = '저장 중...';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/ingest/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({record: lastParsed})
+    });
+    const data = await res.json();
+    if(data.error){
+      statusEl.textContent = data.error;
+      statusEl.className = 'status err';
+    }else{
+      statusEl.textContent = `저장 완료 (전체 ${data.count}건)`;
+      statusEl.className = 'status ok';
+      discardPreview();
+      document.getElementById('rawText').value = '';
+      loadDb();
+    }
+  }catch(e){
+    statusEl.textContent = '저장 실패: ' + e;
+    statusEl.className = 'status err';
+  }
+}
+
+function discardPreview(){
+  lastParsed = null;
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('previewJson').textContent = '';
+}
+
+async function loadDb(){
+  const wrap = document.getElementById('dbTableWrap');
+  try{
+    const res = await fetch('/api/scholarships');
+    const list = await res.json();
+    document.getElementById('dbCount').textContent = list.length;
+    if(list.length === 0){
+      wrap.innerHTML = '<div class="empty">아직 등록된 장학금이 없어요. 위에서 공지를 추가해보세요.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>이름</th><th>마감일</th><th>조건</th><th>상태</th><th></th></tr></thead><tbody>';
+    list.forEach(s => {
+      const tags = [];
+      if(s.eligibility?.income_bracket_max) tags.push(`소득 ${s.eligibility.income_bracket_max}구간 이하`);
+      if(s.eligibility?.gpa_requirement_raw) tags.push(`성적 ${s.eligibility.gpa_requirement_raw}`);
+      (s.eligibility?.special_conditions || []).forEach(c => tags.push(c));
+      html += `<tr>
+        <td><b>${s.name}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px;">${s.benefit_type || ''}</div></td>
+        <td>${s.apply_end || '상시/정보없음'}</td>
+        <td>${tags.map(t => `<span class="tag">${t}</span>`).join('') || '-'}</td>
+        <td>${s.is_open_application ? '🟢 신청가능' : '⚪ 비활성'}</td>
+        <td><button class="danger" onclick="deleteScholarship('${s.id}')">삭제</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">불러오기 실패</div>';
+  }
+}
+
+async function deleteScholarship(id){
+  if(!confirm('정말 삭제할까요?')) return;
+  await fetch('/api/scholarships/' + id, {method: 'DELETE'});
+  loadDb();
+}
+
+loadSettings();
+loadDb();
+</script>
+</body>
+</html>

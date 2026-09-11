@@ -384,11 +384,16 @@ def filter_by_soft_conditions(
             )
             return matches
 
+    # 실사용자 리포트: 조건 맞는 장학금이 2차 소프트매칭에서 조용히 사라지는 문제를 진단할
+    # 방법이 없었음(왜 빠졌는지 서버 로그에 아무 흔적도 안 남음). LLM이 eligible=false를 준
+    # 항목은 무조건 로그에 남겨서, 다음에 똑같은 문제가 재현되면 터미널에서 바로 "무슨 조건
+    # 때문에 어떤 판단을 했는지" 확인 가능하게 함(동작 자체는 그대로, 진단용 로그만 추가).
     filtered = []
     for s, needs_income in matches:
         key = s.id or s.name
-        eligible, _reason = verdicts.get(key, (True, ""))
+        eligible, reason = verdicts.get(key, (True, ""))
         if not eligible:
+            print(f"[filter_by_soft_conditions] 제외됨: {s.name} (id={key}) — 이유: {reason}")
             continue
         filtered.append((s, needs_income))
     return filtered

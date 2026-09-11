@@ -4,6 +4,7 @@
 """
 import json
 import re
+import threading
 import urllib.parse
 import uuid
 from datetime import date, datetime, timezone
@@ -46,6 +47,25 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # 가리키고, 각 시나리오의 세부 상태(state/stage/등)는 그대로 분리 보관해서 서로 안 섞임
 # (예: 장학금 얘기하다 복수전공으로 넘어갔다가 다시 돌아와도 장학금 진행상황이 안 날아감).
 UNIFIED_SESSIONS: dict[str, dict] = {}
+
+# 동시요청 방지용 락 — 프론트에서 버튼을 안 잠가도(더블클릭/느린 응답 중 재전송 등) 같은
+# 세션의 요청 두 개가 동시에 처리되면서 신청서가 2개 만들어지거나, 승인/반려 파일 저장이
+# 서로 덮어쓰기 되는 문제를 막기 위함. 세션별 락(같은 학생의 중복 클릭)과, 신청서 파일
+# 자체에 대한 전역 락(여러 세션/직원승인화면이 동시에 같은 JSON 파일을 읽고-고치고-쓰는
+# 것 자체를 막음)을 따로 둔다. 락은 요청 처리 시간(대부분 수 ms~수백 ms) 동안만 잡혀
+# 있으니 정상 사용에는 영향 없음 — 오직 "거의 동시에 들어온 중복 요청"만 순서대로 처리됨.
+_SESSION_LOCKS: dict[str, threading.Lock] = {}
+_SESSION_LOCKS_GUARD = threading.Lock()
+RECOGNITION_APPS_LOCK = threading.Lock()
+
+
+def _get_session_lock(session_id: str) -> threading.Lock:
+    with _SESSION_LOCKS_GUARD:
+        lock = _SESSION_LOCKS.get(session_id)
+        if lock is None:
+            lock = threading.Lock()
+            _SESSION_LOCKS[session_id] = lock
+        return lock
 
 
 # ---------------- DB 로드/저장 ----------------
@@ -922,9 +942,12 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             status="pending",
             created_at=datetime.now(timezone.utc).isoformat(),
         )
-        apps = load_recognition_apps()
-        apps.append(application)
-        save_recognition_apps(apps)
+        # 신청서 파일은 다른 세션의 제출/직원 승인화면의 승인·반려·삭제와 같은 파일을
+        # 공유하니, 읽고-고치고-쓰는 구간 전체를 전역 락으로 감싸서 서로 덮어쓰지 않게 함.
+        with RECOGNITION_APPS_LOCK:
+            apps = load_recognition_apps()
+            apps.append(application)
+            save_recognition_apps(apps)
         sub["last_application_id"] = application.id
         sub["rejection_notified"] = False  # 새 신청서니까, 이게 나중에 반려되면 그때 다시 알려줘야 함
         reply = bot_core.generate_recognition_submitted_message(application)
@@ -952,7 +975,15 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
 
 @app.post("/api/chat")
 def chat(body: ChatIn):
+    # 같은 세션(같은 학생)에서 거의 동시에 요청이 두 번 들어와도(더블클릭, 응답 느릴 때
+    # 재전송 등) 반드시 순서대로 하나씩 처리되게 세션별 락을 건다 — 특히 신청서 제출
+    # 단계에서 "제출"이 두 번 겹치면 신청서가 2개로 접수되는 걸 막기 위함.
     session_id = body.session_id or uuid.uuid4().hex
+    with _get_session_lock(session_id):
+        return _chat_impl(session_id, body)
+
+
+def _chat_impl(session_id: str, body: ChatIn):
     sess = get_unified_session(session_id)
     user_msg = body.message.strip()
 
@@ -1087,50 +1118,53 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
     if body.decision not in ("approved", "rejected"):
         return JSONResponse(status_code=400, content={"error": "decision은 approved 또는 rejected여야 해요"})
 
-    apps = load_recognition_apps()
-    target = next((a for a in apps if a.id == app_id), None)
-    if target is None:
-        return JSONResponse(status_code=404, content={"error": "신청서를 찾을 수 없어요"})
+    # 읽기부터 쓰기까지 전역 락으로 감싸서, 다른 직원이 동시에 처리하거나 학생이 동시에
+    # 새 신청서를 제출해도 파일 저장이 서로 덮어쓰지 않게 함.
+    with RECOGNITION_APPS_LOCK:
+        apps = load_recognition_apps()
+        target = next((a for a in apps if a.id == app_id), None)
+        if target is None:
+            return JSONResponse(status_code=404, content={"error": "신청서를 찾을 수 없어요"})
 
-    if target.status in ("approved", "rejected"):
-        return JSONResponse(status_code=400, content={"error": "이미 최종 처리(승인/반려)된 신청서예요"})
+        if target.status in ("approved", "rejected"):
+            return JSONResponse(status_code=400, content={"error": "이미 최종 처리(승인/반려)된 신청서예요"})
 
-    step = getattr(target, STAGE_FIELDS[body.stage])
-    if step.status != "pending":
-        return JSONResponse(
-            status_code=400, content={"error": f"{STAGE_LABELS[body.stage]} 단계는 이미 처리됐어요"}
-        )
-
-    # 행정처는 학과장·복수전공학과장이 둘 다 승인된 뒤에만 처리 가능 — 순서를 건너뛰려는
-    # 시도는 여기서 막음(화면에서 버튼을 숨겨도 API를 직접 호출하면 뚫릴 수 있어서 이중 검증).
-    if body.stage == "admin":
-        if target.home_chair_approval.status != "approved" or target.dual_chair_approval.status != "approved":
+        step = getattr(target, STAGE_FIELDS[body.stage])
+        if step.status != "pending":
             return JSONResponse(
-                status_code=400,
-                content={"error": "학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리가 가능해요"},
+                status_code=400, content={"error": f"{STAGE_LABELS[body.stage]} 단계는 이미 처리됐어요"}
             )
 
-    step.status = body.decision
-    step.decided_by = body.decided_by or STAGE_LABELS[body.stage]
-    step.decided_at = datetime.now(timezone.utc).isoformat()
-    step.note = body.note
+        # 행정처는 학과장·복수전공학과장이 둘 다 승인된 뒤에만 처리 가능 — 순서를 건너뛰려는
+        # 시도는 여기서 막음(화면에서 버튼을 숨겨도 API를 직접 호출하면 뚫릴 수 있어서 이중 검증).
+        if body.stage == "admin":
+            if target.home_chair_approval.status != "approved" or target.dual_chair_approval.status != "approved":
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리가 가능해요"},
+                )
 
-    if body.decision == "rejected":
-        # 어느 단계에서든 반려되면 그 즉시 전체 신청서가 반려로 확정됨 — 이미 승인됐던
-        # 다른 단계의 기록은 지우지 않고 그대로 남겨둠(실제로 있었던 일이니까). 학생은
-        # 반려 사유(note)를 보고 수정해서 챗봇으로 다시 신청하면 됨(새 신청서로 재제출).
-        target.status = "rejected"
-    elif (
-        target.home_chair_approval.status == "approved"
-        and target.dual_chair_approval.status == "approved"
-        and target.admin_approval.status == "approved"
-    ):
-        # 세 단계 전부 승인돼야만 전산 반영(최종 승인) 처리됨
-        target.status = "approved"
-    # 셋 중 일부만 승인된 상태면 status는 계속 "pending"으로 남음(아직 전산 반영 전)
+        step.status = body.decision
+        step.decided_by = body.decided_by or STAGE_LABELS[body.stage]
+        step.decided_at = datetime.now(timezone.utc).isoformat()
+        step.note = body.note
 
-    save_recognition_apps(apps)
-    return target.model_dump()
+        if body.decision == "rejected":
+            # 어느 단계에서든 반려되면 그 즉시 전체 신청서가 반려로 확정됨 — 이미 승인됐던
+            # 다른 단계의 기록은 지우지 않고 그대로 남겨둠(실제로 있었던 일이니까). 학생은
+            # 반려 사유(note)를 보고 수정해서 챗봇으로 다시 신청하면 됨(새 신청서로 재제출).
+            target.status = "rejected"
+        elif (
+            target.home_chair_approval.status == "approved"
+            and target.dual_chair_approval.status == "approved"
+            and target.admin_approval.status == "approved"
+        ):
+            # 세 단계 전부 승인돼야만 전산 반영(최종 승인) 처리됨
+            target.status = "approved"
+        # 셋 중 일부만 승인된 상태면 status는 계속 "pending"으로 남음(아직 전산 반영 전)
+
+        save_recognition_apps(apps)
+        return target.model_dump()
 
 
 # 직원 화면(staff.html)에서 여러 신청서를 체크박스로 골라 한 번에 지우는 기능 — 실사용자
@@ -1144,11 +1178,12 @@ class DeleteApplicationsIn(BaseModel):
 def delete_recognition_applications(body: DeleteApplicationsIn):
     if not body.ids:
         return JSONResponse(status_code=400, content={"error": "삭제할 신청서를 선택해줘"})
-    apps = load_recognition_apps()
-    ids_set = set(body.ids)
-    remaining = [a for a in apps if a.id not in ids_set]
-    deleted_count = len(apps) - len(remaining)
-    save_recognition_apps(remaining)
+    with RECOGNITION_APPS_LOCK:
+        apps = load_recognition_apps()
+        ids_set = set(body.ids)
+        remaining = [a for a in apps if a.id not in ids_set]
+        deleted_count = len(apps) - len(remaining)
+        save_recognition_apps(remaining)
     return {"deleted": deleted_count}
 
 

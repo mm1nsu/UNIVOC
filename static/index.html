@@ -181,6 +181,11 @@
     transition:all .15s ease;
   }
   #options button:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}
+  #options button:disabled, .quickbar button:disabled, #draftActions button:disabled{
+    opacity:.5;
+    cursor:default;
+    pointer-events:none;
+  }
 
   #draftActions{
     display:none;
@@ -270,6 +275,7 @@
     color:var(--text);
   }
   #composer input:focus{border-color:var(--yu-sky);background:#fff;box-shadow:0 0 0 3px rgba(0,170,202,.2);}
+  #composer input:disabled{background:#f2f2f1;color:var(--muted);}
   #composer button{
     background:linear-gradient(135deg, var(--yu-blue), var(--yu-blue-dark));
     color:#fff;
@@ -363,8 +369,17 @@
 </div>
 
 <script>
-let sessionId = null;
+// 새로고침/탭 재진입 시 대화가 통째로 날아가는 문제 방지 — sessionStorage에 세션ID와
+// 지금까지의 대화 로그를 같이 저장해둠. localStorage가 아니라 sessionStorage를 쓰는 건
+// "탭 닫으면 새 세션"이라는 원래 설계(동시 데모 시 탭마다 독립 세션)는 그대로 유지하면서,
+// 새로고침 한 번에 신청서 작성 중이던 내용이 날아가는 것만 막기 위함.
+let sessionId = sessionStorage.getItem('univoc_session_id') || null;
+let savedMessages = [];
+try{
+  savedMessages = JSON.parse(sessionStorage.getItem('univoc_messages') || '[]');
+}catch(e){ savedMessages = []; }
 let currentMode = null;  // null | "scholarship" | "dual_major"
+let isSending = false;  // 응답 기다리는 중 중복 전송(더블클릭 등) 방지
 
 const messagesEl = document.getElementById('messages');
 const optionsEl = document.getElementById('options');
@@ -382,7 +397,18 @@ const btnDraftSecondary = document.getElementById('btnDraftSecondary');
 const appDownloadEl = document.getElementById('appDownload');
 const appDownloadLink = document.getElementById('appDownloadLink');
 
-function addMessage(role, text){
+function persistSession(){
+  try{
+    if(sessionId) sessionStorage.setItem('univoc_session_id', sessionId);
+    sessionStorage.setItem('univoc_messages', JSON.stringify(savedMessages));
+  }catch(e){ /* 저장 실패해도 대화 자체는 계속 진행 가능하니 무시 */ }
+}
+
+function addMessage(role, text, skipSave){
+  if(!skipSave){
+    savedMessages.push({role, text});
+    persistSession();
+  }
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + role;
 
@@ -485,7 +511,24 @@ async function checkSettings(){
   }catch(e){ /* 무시 */ }
 }
 
+// 응답 기다리는 동안 입력창/전송버튼/옵션·퀵바·초안확인 버튼을 다 잠가서, 응답이 느릴 때
+// (특히 Render 무료 플랜 콜드스타트로 30~50초 걸릴 때) 답답해서 두 번 누르는 것 때문에
+// 같은 메시지가 두 번 전송되거나 신청서가 중복 제출되는 걸 막음. sendMessage() 맨 앞의
+// isSending 체크가 실제 중복 요청을 막는 핵심이고, 버튼 비활성화는 "지금 처리 중"이라는
+// 걸 눈으로 보여주는 역할(둘 다 있어야 안전 + 답답함 둘 다 해결됨).
+function setBusy(busy){
+  isSending = busy;
+  input.disabled = busy;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if(submitBtn) submitBtn.disabled = busy;
+  document.querySelectorAll('#options button, .quickbar button, #draftActions button').forEach(b => {
+    b.disabled = busy;
+  });
+}
+
 async function sendMessage(text){
+  if(isSending) return;  // 이미 처리 중이면 무시 — 중복 전송 방지
+  setBusy(true);
   addMessage('user', text);
   input.value = '';
   typingEl.style.display = 'flex';
@@ -512,6 +555,9 @@ async function sendMessage(text){
   }catch(e){
     typingEl.style.display = 'none';
     addMessage('ai', '앗, 서버랑 통신 중 오류가 났어. 잠시 후 다시 시도해줘.');
+  }finally{
+    setBusy(false);
+    input.focus();  // 답장 온 뒤 입력창에 자동 포커스 — 매번 다시 탭 안 해도 바로 이어서 타이핑 가능
   }
 }
 
@@ -527,7 +573,16 @@ document.querySelectorAll('.quickbar [data-cmd], #draftActions [data-cmd]').forE
 });
 
 checkSettings();
-addMessage('ai', '안녕! 나는 영남대학교 행정 챗봇 Uni-VOC야. 무슨 일로 왔어? 편하게 말해봐, 도와줄게!');
+
+// 새로고침으로 돌아온 경우 저장해둔 대화 로그를 그대로 다시 그려줌(세션ID도 이미 위에서
+// sessionStorage로 복원됨) — 없으면 처음 방문이니 인사말부터 시작. addMessage에 skipSave=true를
+// 줘서 복원 중에 같은 메시지가 배열에 중복으로 다시 쌓이지 않게 함.
+if(savedMessages.length){
+  savedMessages.forEach(m => addMessage(m.role, m.text, true));
+}else{
+  addMessage('ai', '안녕! 나는 영남대학교 행정 챗봇 Uni-VOC야. 무슨 일로 왔어? 편하게 말해봐, 도와줄게!');
+}
+input.focus();
 </script>
 </body>
 </html>

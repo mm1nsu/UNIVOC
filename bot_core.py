@@ -19,7 +19,9 @@ from schemas import (
     MatchedCourse,
     OverlapConfirmation,
     RecognitionApplication,
+    REQUIRED_SLOTS,
     Scholarship,
+    SlotExtractionResult,
     SlotState,
     SoftMatchBatch,
     StudentIdentity,
@@ -86,19 +88,25 @@ def _thinking_config_for(model: str) -> dict:
     return {"thinking_budget": 0}
 
 
-def _generate_json(prompt: str, schema, temperature: float = 0.0):
+def _generate_json(prompt: str, schema, temperature: float = 0.0, system_instruction: str | None = None):
     client = get_client()
     model = config.get_model()
     t0 = time.perf_counter()
+    gen_config = {
+        "response_mime_type": "application/json",
+        "response_schema": schema,
+        "temperature": temperature,
+        "thinking_config": _thinking_config_for(model),
+    }
+    # JSON 모드(구조화 추출)여도 system_instruction은 같이 줄 수 있음 — 호출 합치기
+    # (extract_slots_with_followup)에서 "추출"과 "다정한 말투로 다음 질문 생성"을 한 번에
+    # 하려면 CHAT_SYSTEM_PROMPT의 성격/말투 규칙이 같이 필요해서 옵션으로 추가함.
+    if system_instruction:
+        gen_config["system_instruction"] = system_instruction
     response = client.models.generate_content(
         model=model,
         contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": schema,
-            "temperature": temperature,
-            "thinking_config": _thinking_config_for(model),
-        },
+        config=gen_config,
     )
     # 응답이 느리다는 리포트가 있어서, 실제로 Gemini 호출 자체가 얼마나 걸리는지 터미널에
     # 바로 보이게 함(한 턴에 이 호출이 여러 번 겹쳐서 체감 속도가 더 느려지는 구조라, 콜드
@@ -192,6 +200,58 @@ def extract_slots(conversation_history: str, current_state: SlotState) -> SlotSt
 """
     text = _generate_json(prompt, SlotState)
     return SlotState.model_validate_json(text)
+
+
+# extract_slots() + generate_followup_question()를 순서대로 호출 2번 하던 걸 하나로 합침
+# (실사용자 리포트: "답장 너무 오래 걸림" — 이 둘이 한 턴에 순서대로 나가느라 응답이
+# 거의 2배로 느려지고 있었음). 추출 규칙은 extract_slots()랑 완전히 동일하게 유지하고,
+# 거기에 "그 추출 결과 기준으로 아직 빈 게 있으면 다음 질문도 같이 만들어라"만 추가함.
+# CHAT_SYSTEM_PROMPT을 system_instruction으로 같이 줘서 질문 말투/성격은 그대로 유지되게 함.
+#
+# 안전장치: 여기서 나온 followup_question은 참고용일 뿐, 실제로 뭘 물어봐야 하는지는
+# app.py에서 항상 missing_slots(state)로 다시 결정론적으로 계산해서 검증함. LLM이 자기가
+# 채운 슬롯을 헷갈려서 이미 채워진 걸 또 묻거나 빈 필드를 안 묻는 드문 경우엔, 호출을
+# 한 번 더 해서(generate_followup_question) 예전 방식으로 자동 폴백함 — 최악의 경우에도
+# 지금보다 느려지지 않고, 맞아떨어지는 대부분의 경우엔 호출 1번으로 끝나서 빨라짐.
+def extract_slots_with_followup(
+    conversation_history: str, current_state: SlotState
+) -> tuple[SlotState, str | None]:
+    prompt = f"""아래는 학생과 장학금 안내 챗봇의 대화 이력이다.
+[1단계: 정보 추출]
+대화에서 "구체적이고 명확하게" 언급된 정보만 추출해서 state에 채워라. 애매하거나 두루뭉술한
+답변에서 값을 추측/어림잡아 채우면 절대 안 된다 — 그런 경우엔 null로 남겨서 다시 물어보게
+해야 한다.
+- gpa: 학생이 실제 숫자를 말했을 때만 채워라 (예: "3.8", "4.0 만점에 3.5"). "좋아요"/"보통이에요"
+  같은 말만으로는 절대 숫자를 지어내지 마라 — null로 둬라.
+- income_bracket: "3구간"처럼 정확한 구간 번호를 말했거나, 학생이 "모른다"고 명시했을 때만 채워라
+  (모른다고 명시한 경우엔 "모름"으로 채워서 다음 질문으로 안 넘어가게 해라). 애매하면 null.
+- special_conditions: 학생이 실제로 언급한 특례조건들을 리스트로 담거나, "없다"고 명시했으면
+  ["없음"]으로 채워라. 아무 말도 안 했으면 null로 둬라(있는지 없는지 자체를 추측하지 마라).
+  주의: 학생이 특례조건 하나만 말했다고 해서(예: "다자녀야") 다른 조건은 해당 없다는 뜻이
+  아니다 — 말한 것만 그대로 담아라(예: ["다자녀"]), 언급 안 된 다른 카테고리를 "없음"으로
+  단정하지 마라.
+- region: 본인(또는 부모) 거주지역을 실제로 말했을 때만 채워라(예: "대구", "경산"). 지역
+  장학금이 은근히 많아서 물어보는 거니, 안 물어봤으면 null로 둬라.
+- student_status/major/grade_or_semester도 마찬가지로 실제로 말한 내용만, 추측 금지.
+이미 알고 있는 정보는 그대로 유지하고, 이번 대화에서 새로 "명확하게" 언급된 정보만 채워라.
+
+[2단계: 다음 질문 생성]
+위에서 채운 state를 기준으로, 아래 필수 항목({REQUIRED_SLOTS}) 중 여전히 null/빈 값으로
+남아있는 게 있으면, 그중 자연스럽게 이어서 물어볼 다음 질문 하나를 만들어서
+followup_question에 담아라(이미 채워진 항목은 절대 다시 묻지 마라). 바로 직전 학생 답변이
+애매/두루뭉술했다면(예: "좋아요", "그냥 그래요", "잘 몰라요") 그 항목을 그냥 넘어가지 말고
+구체적인 형식 예시를 들어서 다시 한번 명확하게 되물어라. 필수 항목이 전부 채워졌으면
+followup_question은 null로 둬라.
+
+[현재까지 알고 있는 정보]
+{current_state.model_dump_json()}
+
+[대화 이력]
+{conversation_history}
+"""
+    text = _generate_json(prompt, SlotExtractionResult, temperature=0.3, system_instruction=CHAT_SYSTEM_PROMPT)
+    result = SlotExtractionResult.model_validate_json(text)
+    return result.state, result.followup_question
 
 
 def generate_followup_question(conversation_history: str, missing: list[str]) -> str:

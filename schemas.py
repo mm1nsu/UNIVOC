@@ -91,6 +91,19 @@ def missing_slots(state: SlotState) -> list[str]:
     return [s for s in REQUIRED_SLOTS if getattr(state, s) in (None, [], "")]
 
 
+class SlotExtractionResult(BaseModel):
+    """슬롯추출 + 다음 질문 생성을 한 번의 LLM 호출로 합치기 위한 응답 스키마
+    (실사용자 리포트: "답장 너무 오래 걸림" — 이 둘이 원래 순서대로 호출 2번이라 응답속도가
+    거의 2배로 느려지고 있었음). state는 extract_slots()랑 동일한 추출 결과, followup_question은
+    모델이 자기가 방금 채운 state 기준으로 REQUIRED_SLOTS 중 여전히 비어있는 게 있으면 그걸
+    자연스럽게 물어보는 질문 — 다 채워졌으면 null.
+    주의: missing_slots(state) 최종 판단은 항상 여기(Python)가 결정론적으로 다시 하고,
+    followup_question은 "그 판단과 맞아떨어질 때만" 참고용으로 씀 — 모델이 뭘 비웠다고
+    착각하거나 헷갈려도(드물지만 가능) 실제 빈 슬롯 판정 자체는 절대 흔들리지 않게 함."""
+    state: SlotState
+    followup_question: Optional[str] = None
+
+
 # ---------------- 시나리오2: 복수전공 자격요건 판정 ----------------
 
 class DualMajorState(BaseModel):

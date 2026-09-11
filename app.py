@@ -375,10 +375,17 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
     stage = sub["stage"]
 
     if stage == "slot_filling":
-        sub["state"] = bot_core.extract_slots(convo, sub["state"])
+        # 실사용자 리포트("답장 너무 오래 걸림") 대응: 원래 추출(extract_slots) + 다음질문
+        # 생성(generate_followup_question)이 순서대로 호출 2번이라 응답이 거의 2배로
+        # 느려지고 있었음. 이제 한 번에 합쳐서(extract_slots_with_followup) 대부분은 호출
+        # 1번으로 끝냄 — 근데 "뭐가 비었는지" 최종 판단은 항상 여기서 missing_slots()로
+        # 다시 결정론적으로 계산해서 검증하고, LLM이 준 질문이 그 판단과 안 맞으면(드물게
+        # 헷갈렸을 때) 예전 방식(generate_followup_question, 호출 1번 더)으로 자동
+        # 폴백함 — 최악의 경우에도 예전 속도 그대로, 맞아떨어지는 대부분은 훨씬 빠름.
+        sub["state"], followup = bot_core.extract_slots_with_followup(convo, sub["state"])
         missing = missing_slots(sub["state"])
         if missing:
-            reply = bot_core.generate_followup_question(convo, missing)
+            reply = followup if followup and followup.strip() else bot_core.generate_followup_question(convo, missing)
             return {"reply": reply, "stage": "slot_filling", "options": []}
 
         db = load_db()

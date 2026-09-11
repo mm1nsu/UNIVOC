@@ -333,10 +333,24 @@ def filter_by_soft_conditions(
         f"학생의 답변이 있으면 여기 포함돼 있으니 최우선으로 반영해라]\n{convo}"
     )
 
+    # 실사용자 리포트로 확인된 문제: 이 LLM 호출이 실패하면(네트워크 순단, API 키/모델명
+    # 오류 등) 조용히 1차 필터 결과를 그대로 다 보여주는 폴백이 있어서, 실패가 나도 화면상
+    # 티가 안 나고 "왜 이상한 장학금이 계속 나오지"라는 증상으로만 보임 — 원인 진단이
+    # 불가능했음. 그래서 (1) 순단성 오류를 대비해 한 번 재시도하고, (2) 그래도 실패하면
+    # 최소한 서버 로그에는 남겨서 "지금 소프트매칭이 실제로 작동은 하는지"를 직접 확인할 수
+    # 있게 함(터미널에서 이 문구가 계속 보이면 API 키/모델명을 점검해봐야 한다는 뜻).
     try:
         verdicts = bot_core.soft_match_conditions(profile, candidates)
-    except Exception:  # noqa: BLE001 — 보조판단 실패해도 1차 필터 결과는 유지
-        return matches
+    except Exception as e1:  # noqa: BLE001
+        print(f"[filter_by_soft_conditions] 1차 호출 실패, 1회 재시도: {e1!r}")
+        try:
+            verdicts = bot_core.soft_match_conditions(profile, candidates)
+        except Exception as e2:  # noqa: BLE001 — 재시도도 실패하면 1차 필터 결과는 그대로 유지
+            print(
+                f"[filter_by_soft_conditions] 재시도도 실패 — 소프트매칭 없이 1차 필터 결과만 "
+                f"보여줌(학과/학년/특례조건 등은 검증되지 않은 상태): {e2!r}"
+            )
+            return matches
 
     filtered = []
     for s, needs_income in matches:

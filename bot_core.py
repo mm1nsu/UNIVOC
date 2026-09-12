@@ -15,6 +15,7 @@ from schemas import (
     DualMajorState,
     Eligibility,
     EligibilityResult,
+    IncidentReportExtraction,
     IntentClassification,
     MatchedCourse,
     OverlapConfirmation,
@@ -161,20 +162,55 @@ def _generate_text(prompt: str, system_instruction: str, temperature: float = 0.
 # unclear로 던져서 사람한테 직접 물어보게 만듦 — 오분류 리스크를 최대한 줄이는 설계.
 
 INTENT_SYSTEM_PROMPT = """너는 대학 행정봇의 라우터다. 학생의 메시지 하나만 보고
-아래 셋 중 하나로 분류한다:
+아래 넷 중 하나로 분류한다:
 - "scholarship": 장학금, 학자금지원구간, 근로장학, 등록금지원, 장학사정 등 장학 관련
 - "dual_major": 복수전공, 부전공, 다전공, 이수과목 인정, 전공 이수학점 관련
-- "unclear": 위 둘 다 아니거나, 인사말/잡담처럼 애매해서 판단 못하는 경우
+- "incident_report": 캠퍼스에서 목격한 안전/시설 문제를 알리는 경우(예: 수상한 사람,
+  포교/신천지 같은 종교단체 캠퍼스 내 활동, 사고, 시설 고장·파손·누수 등) — 학생이 딱히
+  "신고"라는 단어를 안 써도, 캠퍼스에서 있었던 문제 상황을 알리려는 의도가 분명하면 이걸로
+- "unclear": 위 셋 다 아니거나, 인사말/잡담처럼 애매해서 판단 못하는 경우
 확신 없으면 반드시 unclear로 답해라 — 지어내서 단정하지 마라."""
 
 
 def classify_intent(message: str) -> str:
+    # 이 함수가 원래 INTENT_SYSTEM_PROMPT(분류 기준 설명)를 정의만 해두고 실제 호출에는
+    # 넘기지 않던 버그가 있었음 — 그동안은 response_schema(IntentClassification)만으로
+    # 모델이 "intent: str" 필드가 있다는 것만 알고 무슨 기준으로 채워야 하는지는 전혀
+    # 모르는 채로 호출되고 있었다는 뜻. incident_report 분류를 새로 추가하면서 이 누락을
+    # 발견해서 같이 고침(system_instruction을 실제로 전달).
     prompt = f"학생 메시지: {message}"
-    text = _generate_json(prompt, IntentClassification, temperature=0.0)
+    text = _generate_json(prompt, IntentClassification, temperature=0.0, system_instruction=INTENT_SYSTEM_PROMPT)
     result = IntentClassification.model_validate_json(text)
-    if result.intent not in ("scholarship", "dual_major"):
+    if result.intent not in ("scholarship", "dual_major", "incident_report"):
         return "unclear"
     return result.intent
+
+
+# ---------- 0-1. 캠퍼스 안전/시설 신고 감지 + 추출 ----------
+# 실사용자 요청: "안전신고 탭을 안 들어가고 메인 챗봇에서 신고할 수 있도록" — 장학금/복수전공
+# 상담 중이든 아니든, 학생이 카톡하듯 툭 던진 메시지가 캠퍼스 신고인지 판단하고 맞으면
+# 카테고리/내용/장소까지 한 번에 뽑아낸다. app.py에서 값싼 키워드 사전필터를 통과한
+# 메시지에 대해서만 호출됨(모든 메시지마다 호출하면 비용·응답속도가 늘어나서).
+
+INCIDENT_SYSTEM_PROMPT = """너는 대학 캠퍼스 안전/시설 신고를 접수하는 라우터다. 학생 메시지
+하나를 보고, 이게 진짜로 캠퍼스에서 있었던 안전/시설 문제를 알리는 신고인지 최종 판단한다.
+- 진짜 신고면 is_incident_report=true로 하고, category를 아래 중 가장 알맞은 걸로 고른다:
+  "보안"(수상한 사람, 포교/신천지 등 종교단체 활동, 절도, 폭행, 성희롱 등 치안 문제),
+  "시설"(고장, 파손, 누수, 정전 등 시설물 문제), "기타"(위 둘에 안 맞는 나머지 문제).
+- description에는 학생이 말한 상황을 한두 문장으로 간결하게 정리해서 담아라 — 존댓말로 써라
+  (담당 직원이 보는 공식 신고 내용이다). 학생이 말한 내용만 담고 지어내지 마라.
+- location은 학생이 장소를 명시적으로 언급했을 때만 채우고, 언급 안 했으면 null로 둬라.
+- 신고와 무관한 잡담이나 다른 맥락(예: "나 오늘 게임하다 신고당함ㅋㅋ", "저기 계단 몇 개야"
+  같은 단순 질문)이면 is_incident_report=false로 하고 나머지 필드는 채우지 마라(기본값 사용).
+확신 없으면 false로 답해라 — 애매한 잡담을 신고로 잘못 접수시키면 안 된다."""
+
+
+def extract_incident_report(message: str) -> IncidentReportExtraction:
+    prompt = f"학생 메시지: {message}"
+    text = _generate_json(
+        prompt, IncidentReportExtraction, temperature=0.0, system_instruction=INCIDENT_SYSTEM_PROMPT
+    )
+    return IncidentReportExtraction.model_validate_json(text)
 
 
 INTENT_CLARIFY_PROMPT = """너는 대학 학생상담 AI Uni-VOC다. 지금은 학생이 장학금 상담을 원하는지

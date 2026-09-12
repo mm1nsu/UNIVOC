@@ -380,6 +380,62 @@ def detect_mode_keywords(msg: str) -> Optional[str]:
     return None
 
 
+# 실사용자 요청: "안전신고 탭을 안 들어가고 메인 챗봇에서 신고할 수 있도록" — 처음엔
+# 완전히 독립된 /report 폼만 만들었는데, "각 잡고 폼을 만들면 오히려 신고율이 떨어지지
+# 않냐, 카톡하듯이 편하게 던지는 게 낫지 않냐"는 재지적을 받고 추가함. 매 메시지마다
+# LLM을 불러서 "이거 신고인가?"를 판단하면 모든 상담 턴의 응답속도·비용이 늘어나므로,
+# 이 키워드 목록으로 값싸게 1차로 거른 메시지에 대해서만 LLM 최종확인(extract_incident_report)
+# 을 호출함. 완전히 무관한 단어로만 이루어진, 목록에 없는 표현의 암묵적 신고는(예: 아래
+# 어떤 단어도 안 들어간 창의적인 문장) 놓칠 수 있음 — 이건 "모든 턴마다 LLM 호출" 비용과
+# 맞바꾼 의도적인 트레이드오프. 대신 대화 첫 메시지(모드 미정 상태)는 classify_intent가
+# 이미 LLM을 호출하는 지점이라 거기서도 "incident_report"로 분류되면 한 번 더 커버함.
+INCIDENT_TRIGGER_KEYWORDS = (
+    "신고", "제보",
+    "위험해", "위험한", "위험함", "수상한", "수상해",
+    "사고", "화재", "불났", "불나서", "다쳤", "다친", "쓰러져",
+    "고장", "누수", "정전", "파손", "깨졌", "부서졌",
+    "도둑", "절도", "폭행", "치한", "성희롱",
+    "신천지", "포교", "전도",
+)
+
+
+def _looks_like_incident(msg: str) -> bool:
+    return any(k in msg for k in INCIDENT_TRIGGER_KEYWORDS)
+
+
+def _try_handle_incident_report(user_msg: str) -> Optional[dict]:
+    """user_msg가 실제로 캠퍼스 안전/시설 신고인지 LLM(bot_core.extract_incident_report)로
+    최종 확인하고, 맞으면 그 자리에서 바로 접수까지 끝낸 뒤 학생에게 보여줄 응답을 만들어
+    반환한다. 신고가 아니라고 판단되거나(오탐) LLM 호출 자체가 실패하면 None을 반환해서
+    호출부가 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리하게 한다 — 신고 오판정이
+    진행 중이던 상담을 끊어버리면 안 되니까 항상 "확실할 때만 가로채기" 원칙."""
+    try:
+        extraction = bot_core.extract_incident_report(user_msg)
+    except Exception:  # noqa: BLE001 — LLM 실패 시 신고 아님으로 안전하게 처리, 원래 흐름 계속
+        return None
+    if not extraction.is_incident_report or not extraction.description.strip():
+        return None
+
+    category = extraction.category if extraction.category in INCIDENT_CATEGORIES else "기타"
+    report = _save_new_incident_report(
+        category=category,
+        description=extraction.description.strip(),
+        location=(extraction.location or "").strip() or None,
+    )
+    # 학생용 챗봇이라 100% 반말 유지 — 존댓말 규칙은 이메일/직원화면(staff.html/incidents.html)에만
+    # 적용된다는 기존 원칙 그대로.
+    reply = (
+        f"신고 접수했어! ({category}) 담당팀 화면에 바로 전달됐어 — 알려줘서 고마워. "
+        "하던 얘기 있으면 이어서 계속해도 돼!"
+    )
+    return {
+        "reply": reply,
+        "stage": "incident_reported",
+        "options": [],
+        "incident_report_id": report.id,
+    }
+
+
 def filter_by_soft_conditions(
     matches: list[tuple[Scholarship, bool]], state: SlotState, convo: str
 ) -> list[tuple[Scholarship, bool]]:
@@ -1283,6 +1339,21 @@ def _chat_impl(session_id: str, body: ChatIn):
         return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": sess["mode"], "options": []}
 
     sess["history"].append(f"학생: {user_msg}")
+
+    # 실사용자 요청: "안전신고 탭을 안 들어가고 메인 챗봇에서 신고할 수 있도록" — 진행 중인
+    # 상담(모드 None/scholarship/dual_major 무엇이든)을 방해하지 않고 아무 때나 툭 던진
+    # 신고를 그 자리에서 바로 접수함. 값싼 키워드 사전필터를 통과했을 때만 LLM으로 최종
+    # 확인하고(_try_handle_incident_report), 신고가 아니라고 판정되면(None 반환) 아래로
+    # 그대로 흘러내려가서 원래 하던 라우팅/상담을 이어감 — 신고 감지가 sess["mode"]를 절대
+    # 건드리지 않으므로 신고 후에도 하던 상담을 정확히 그대로 이어갈 수 있음.
+    if _looks_like_incident(user_msg):
+        incident_result = _try_handle_incident_report(user_msg)
+        if incident_result is not None:
+            sess["history"].append(f"AI: {incident_result['reply']}")
+            incident_result["session_id"] = session_id
+            incident_result["mode"] = sess["mode"]
+            return incident_result
+
     convo = "\n".join(sess["history"])
 
     detected = detect_mode_keywords(user_msg)
@@ -1290,7 +1361,19 @@ def _chat_impl(session_id: str, body: ChatIn):
         mode = detected
         if mode is None:
             classified = bot_core.classify_intent(user_msg)
-            mode = classified if classified in ("scholarship", "dual_major") else None
+            if classified == "incident_report":
+                # 키워드 사전필터에 안 걸린 창의적인 표현(예: "복도에 누가 쓰러져있어요")도
+                # 첫 메시지라면 classify_intent가 한 번 더 잡아줄 수 있음 — 여기서도 최종
+                # 확인은 반드시 _try_handle_incident_report(LLM 재확인)를 거쳐야 접수됨.
+                incident_result = _try_handle_incident_report(user_msg)
+                if incident_result is not None:
+                    sess["history"].append(f"AI: {incident_result['reply']}")
+                    incident_result["session_id"] = session_id
+                    incident_result["mode"] = None
+                    return incident_result
+                mode = None
+            else:
+                mode = classified if classified in ("scholarship", "dual_major") else None
         if mode is None:
             # 예전엔 여기서 고정 문구("장학금이 궁금한 거야, ...")를 무조건 그대로 반복해서,
             # 학생이 인사("안녕")를 하거나 "왜 같은 말만 반복하냐"고 항의해도 그 말을 전혀
@@ -1484,6 +1567,32 @@ def delete_recognition_applications(body: DeleteApplicationsIn):
 # 보안/시설/기타 탭으로 나눠보는 직원 대시보드(/incidents, 실시간 폴링 갱신).
 
 
+# `/api/incidents`(독립 신고 폼 `/report`용)와 메인 챗봇 대화 중 감지된 신고(아래
+# `_try_handle_incident_report`) 둘 다 결국 "신고 한 건을 저장한다"는 같은 일을 하므로
+# 저장 로직을 여기 하나로 합쳐서 공유함 — 검증 규칙이나 저장 방식이 바뀌면 한 곳만 고치면 됨.
+def _save_new_incident_report(
+    category: str,
+    description: str,
+    location: Optional[str] = None,
+    reporter_name: Optional[str] = None,
+    reporter_contact: Optional[str] = None,
+) -> IncidentReport:
+    report = IncidentReport(
+        id=uuid.uuid4().hex[:12],
+        category=category,
+        description=description,
+        location=location or None,
+        reporter_name=reporter_name or None,
+        reporter_contact=reporter_contact or None,
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        reports.append(report)
+        save_incident_reports(reports)
+    return report
+
+
 class IncidentReportIn(BaseModel):
     category: str
     description: str
@@ -1504,19 +1613,13 @@ def create_incident_report(body: IncidentReportIn):
     if not description:
         return JSONResponse(status_code=400, content={"error": "신고 내용을 입력해주세요"})
 
-    report = IncidentReport(
-        id=uuid.uuid4().hex[:12],
+    report = _save_new_incident_report(
         category=category,
         description=description,
         location=(body.location or "").strip() or None,
         reporter_name=(body.reporter_name or "").strip() or None,
         reporter_contact=(body.reporter_contact or "").strip() or None,
-        created_at=datetime.now(timezone.utc).isoformat(),
     )
-    with INCIDENT_REPORTS_LOCK:
-        reports = load_incident_reports()
-        reports.append(report)
-        save_incident_reports(reports)
     return report.model_dump()
 
 

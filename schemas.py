@@ -271,9 +271,14 @@ INCIDENT_CATEGORIES = ["보안", "시설", "기타"]
 
 class IncidentReport(BaseModel):
     """캠퍼스 안전/시설 신고 — 실사용자 요청: "정문에 신천지 돌아다녀요 이렇게 레포트하면
-    즉각적으로 보안팀이나 다른 행정팀에 레포트가 간다던가". 챗봇 흐름에 끼워넣지 않고
-    완전히 독립된 간단 신고 폼으로 만듦(실사용자가 AskUserQuestion에서 "독립된 간단 신고
-    폼"을 선택) — 급한 신고인데 챗봇 대화 흐름을 몇 단계씩 거쳐야 하면 오히려 방해가 됨.
+    즉각적으로 보안팀이나 다른 행정팀에 레포트가 간다던가". 처음엔 완전히 독립된 신고 폼
+    (`/report`)으로만 만들었는데, 사용자가 다시 "각 잡고 폼을 만들면 오히려 신고율이
+    떨어지지 않냐, 카톡하듯이 편하게 던지는 게 낫지 않냐"고 재지적 → "안전신고 탭을 안
+    들어가고 메인 챗봇에서 신고할 수 있도록" 요청함. 그래서 `/report` 폼은 그대로 남겨두고
+    (원하면 차분히 채워도 됨), 학생용 메인 챗봇 대화 중 아무 때나(진행 중인 장학금/복수전공
+    상담을 방해하지 않고) "야 정문에 신천지 있음ㅡㅡ"처럼 툭 던지면 그 자리에서 바로
+    접수되는 경로를 추가함(app.py의 `_looks_like_incident`/`_try_handle_incident_report`
+    참고) — 급한 신고인데 몇 단계를 거쳐야 하면 오히려 방해가 된다는 원칙은 동일.
 
     신고자 정보(이름/연락처)는 선택 입력 — 완전 익명도 아니고 필수 입력도 아님(실사용자가
     "선택 입력"을 선택). 신원 확인보다 "일단 신고 자체가 쉽게 되는 것"이 우선이라는 판단.
@@ -291,3 +296,17 @@ class IncidentReport(BaseModel):
     resolved_by: Optional[str] = None
     resolved_at: Optional[str] = None
     resolved_note: Optional[str] = None
+
+
+class IncidentReportExtraction(BaseModel):
+    """메인 챗봇 대화 중 학생이 툭 던진 메시지(예: "야 정문에 신천지 있음ㅡㅡ")가 실제로
+    캠퍼스 안전/시설 신고인지, 아니면 그냥 잡담/다른 상담 중 나온 무관한 말인지 LLM이
+    최종 확인하는 스키마. app.py의 키워드 사전필터(INCIDENT_TRIGGER_KEYWORDS)는 어디까지나
+    "이 정도면 LLM한테 한 번 물어볼 가치가 있다"는 값싼 1차 필터일 뿐이라 오탐(false
+    positive)이 섞일 수 있음 — 예: "나 오늘 롤하다가 신고당함ㅋㅋ"에도 "신고"가 들어있지만
+    캠퍼스 신고가 아님. is_incident_report가 최종 판단이고, false면 나머지 필드는 안 써도
+    되며 호출부는 이 메시지를 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리한다."""
+    is_incident_report: bool
+    category: str = "기타"  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
+    description: str = ""  # 신고 내용 요약(존댓말, 담당팀이 보는 공식 신고 내용)
+    location: Optional[str] = None  # 학생이 장소를 명시했을 때만

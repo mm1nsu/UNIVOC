@@ -554,7 +554,7 @@ function showPrompt(message, defaultValue){
 async function getStaffName(promptAlways){
   let name = localStorage.getItem('univoc_staff_name') || '';
   if(promptAlways || !name){
-    const input = await showPrompt('처리자 이름(또는 소속)을 입력해줘 — 승인/반려 기록에 남아!', name || '수업학적팀');
+    const input = await showPrompt('처리자 이름(또는 소속)을 입력해 주세요 — 승인/반려 기록에 남습니다!', name || '수업학적팀');
     if(input && input.trim()){
       name = input.trim();
       localStorage.setItem('univoc_staff_name', name);
@@ -640,15 +640,15 @@ function stageTrackHtml(app){
 function decisionSectionHtml(app){
   if(app.status !== 'pending') return '';
   if(!currentRole){
-    return `<div class="decided-note">위에서 내 역할(학과장/복수전공학과장/행정처)을 먼저 고르면 승인/반려할 수 있어요.</div>`;
+    return `<div class="decided-note">위에서 내 역할(학과장/복수전공학과장/행정처)을 먼저 선택하시면 승인/반려하실 수 있습니다.</div>`;
   }
   const meta = STAGE_META[currentRole];
   const step = app[meta.field];
   if(step.status !== 'pending'){
-    return `<div class="decided-note">${meta.label} 단계는 이미 ${statusLabel(step.status)} 처리됐어요. 다른 단계 진행을 기다리는 중이에요.</div>`;
+    return `<div class="decided-note">${meta.label} 단계는 이미 ${statusLabel(step.status)} 처리되었습니다. 다른 단계 진행을 기다리는 중입니다.</div>`;
   }
   if(currentRole === 'admin' && (app.home_chair_approval.status !== 'approved' || app.dual_chair_approval.status !== 'approved')){
-    return `<div class="decided-note">학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리를 할 수 있어요.</div>`;
+    return `<div class="decided-note">학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리를 하실 수 있습니다.</div>`;
   }
   // 반려는 어느 단계에서든 그 즉시 전체 신청서가 최종 반려로 확정되지만, 승인은 3단계
   // (학과장/복수전공학과장/행정처)가 전부 끝나야만 최종 승인이 확정됨 — 이메일도 그 확정
@@ -659,8 +659,8 @@ function decisionSectionHtml(app){
     .filter(m => m.field !== meta.field)
     .every(m => app[m.field].status === 'approved');
   const emailHint = app.student_email
-    ? `<div class="decision-hint">📧 반려하면 즉시, 승인하면 ${otherStagesApproved ? '지금이 마지막 단계라 바로' : '남은 단계까지 다 끝나야'} <b>${app.student_email}</b>로 알림 메일이 자동 발송돼요.</div>`
-    : `<div class="decision-hint decision-hint-missing">📧 학생 이메일이 없어서 승인/반려해도 알림 메일은 안 나가요.</div>`;
+    ? `<div class="decision-hint">📧 반려하시면 즉시, 승인하시면 ${otherStagesApproved ? '지금이 마지막 단계라 바로' : '남은 단계까지 다 끝나야'} <b>${app.student_email}</b>로 알림 메일이 자동 발송됩니다.</div>`
+    : `<div class="decision-hint decision-hint-missing">📧 학생 이메일이 없어서 승인/반려하셔도 알림 메일은 발송되지 않습니다.</div>`;
   return `<div class="decision-row">
        <button class="btn-approve" data-action="approved" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 승인</button>
        <button class="btn-reject" data-action="rejected" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 반려</button>
@@ -687,7 +687,7 @@ function renderCard(app){
          <thead><tr><th>학수번호</th><th>과목명</th><th>학점</th><th>편성 학년/학기</th><th>인정 근거</th></tr></thead>
          <tbody>${matchedRows}</tbody>
        </table>`
-    : `<div class="unmatched-list" style="color:var(--no)">AI가 대조했지만 목표 학과 교육과정표와 정확히 일치하는 과목이 없었어요.</div>`;
+    : `<div class="unmatched-list" style="color:var(--no)">AI가 대조했지만 목표 학과 교육과정표와 정확히 일치하는 과목이 없었습니다.</div>`;
 
   const unmatchedHtml = (app.unmatched_course_names && app.unmatched_course_names.length)
     ? `<div class="section-label">학생이 말했지만 자동 매칭 안 된 과목 (참고용, 필요시 직접 확인)</div>
@@ -705,9 +705,9 @@ function renderCard(app){
          ${app.student_college ? ' · ' + app.student_college : ''}
          ${app.student_email
            ? ' · 📧 ' + app.student_email
-           : ' · <span style="color:var(--no)">📧 이메일 미확인(승인/반려해도 알림 안 감)</span>'}
+           : ' · <span style="color:var(--no)">📧 이메일 미확인(승인/반려하셔도 알림이 발송되지 않습니다)</span>'}
        </div>`
-    : `<div class="student-info student-info-missing">👤 학생 개인정보 미확인(신청서 초안 단계에서 아직 안 채워짐)</div>`;
+    : `<div class="student-info student-info-missing">👤 학생 개인정보 미확인(신청서 초안 단계에서 아직 입력되지 않았습니다)</div>`;
 
   div.innerHTML = `
     <div class="card-head">
@@ -726,7 +726,7 @@ function renderCard(app){
     ${stageSectionHtml}
     <div class="form-download">
       <a href="/api/recognition/applications/${app.id}/docx">📄 공식 양식(.docx)으로 다운로드</a>
-      ${app.status !== 'pending' ? '<span class="form-download-hint">승인/반려 처리 결과가 파일 하단에 자동으로 반영돼요</span>' : ''}
+      ${app.status !== 'pending' ? '<span class="form-download-hint">승인/반려 처리 결과가 파일 하단에 자동으로 반영됩니다</span>' : ''}
     </div>
     <div class="section-label">인정 가능 과목 (교육과정표 대조 완료)</div>
     ${matchedTable}
@@ -774,7 +774,7 @@ selectAllBox.addEventListener('change', (e) => {
 
 deleteSelectedBtn.addEventListener('click', async () => {
   if(selectedIds.size === 0) return;
-  const ok = await showConfirm(`선택한 신청서 ${selectedIds.size}건을 삭제할까? 승인/반려 기록까지 전부 지워지고 되돌릴 수 없어!`);
+  const ok = await showConfirm(`선택한 신청서 ${selectedIds.size}건을 삭제하시겠습니까? 승인/반려 기록까지 전부 지워지며 되돌릴 수 없습니다!`);
   if(!ok) return;
   try{
     const res = await fetch('/api/recognition/applications/delete', {
@@ -784,13 +784,13 @@ deleteSelectedBtn.addEventListener('click', async () => {
     });
     if(!res.ok){
       const err = await res.json().catch(() => ({}));
-      await showAlert(err.error || '삭제 중 오류가 났어요.');
+      await showAlert(err.error || '삭제 중 오류가 발생했습니다.');
       return;
     }
     selectedIds.clear();
     loadList();
   }catch(e){
-    await showAlert('서버랑 통신 중 오류가 났어요.');
+    await showAlert('서버와 통신 중 오류가 발생했습니다.');
   }
 });
 
@@ -801,11 +801,11 @@ async function decide(id, action, stage){
   if(action === 'rejected'){
     // 반려 사유는 학생이 뭘 고쳐서 다시 신청해야 하는지 알아야 하니 필수로 받음 — 취소하면
     // 반려 자체를 하지 않음(사유 없이 그냥 반려 눌러버리는 실수 방지).
-    const typed = await showPrompt(`반려 사유를 입력해줘 (학생이 확인하고 수정해서 다시 신청할 수 있어) — ${meta.label} 단계 반려`, '');
+    const typed = await showPrompt(`반려 사유를 입력해 주세요 (학생이 확인하고 수정하여 다시 신청할 수 있습니다) — ${meta.label} 단계 반려`, '');
     if(typed === null) return;
     note = typed.trim() || null;
   }
-  const ok = await showConfirm(`${meta.label} 단계에서 이 신청서를 ${label}할까?`);
+  const ok = await showConfirm(`${meta.label} 단계에서 이 신청서를 ${label}하시겠습니까?`);
   if(!ok) return;
   const decidedBy = await getStaffName(false);
   try{
@@ -816,12 +816,12 @@ async function decide(id, action, stage){
     });
     if(!res.ok){
       const err = await res.json().catch(() => ({}));
-      await showAlert(err.error || '처리 중 오류가 났어요.');
+      await showAlert(err.error || '처리 중 오류가 발생했습니다.');
       return;
     }
     loadList();
   }catch(e){
-    await showAlert('서버랑 통신 중 오류가 났어요.');
+    await showAlert('서버와 통신 중 오류가 발생했습니다.');
   }
 }
 
@@ -833,7 +833,7 @@ async function loadList(){
     const res = await fetch(url);
     const apps = await res.json();
     if(!apps.length){
-      listEl.innerHTML = '<div class="empty">해당하는 신청서가 없어요.</div>';
+      listEl.innerHTML = '<div class="empty">해당하는 신청서가 없습니다.</div>';
       updateBulkBar();
       return;
     }
@@ -841,7 +841,7 @@ async function loadList(){
     apps.forEach(app => listEl.appendChild(renderCard(app)));
     updateBulkBar();
   }catch(e){
-    listEl.innerHTML = '<div class="empty">목록을 불러오지 못했어요.</div>';
+    listEl.innerHTML = '<div class="empty">목록을 불러오지 못했습니다.</div>';
     updateBulkBar();
   }
 }

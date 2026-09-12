@@ -633,12 +633,16 @@ def _build_course_draft_reply(sub: dict, target: str) -> str:
     return reply
 
 
-def _rejection_reason(app: RecognitionApplication) -> str:
-    """신청서가 반려됐을 때(status == "rejected") 어느 단계에서 왜 반려됐는지 학생한테
-    보여줄 문장을 만든다. 3단계(학과장/복수전공학과장/행정처) 중 실제로 반려 처리된 단계를
-    찾아서 그 기록(decided_by/note)만 그대로 옮긴다 — 지어내지 않음. 3단계 승인 기능이
-    생기기 전의 구버전 기록(레거시 decision_note)만 있는 경우를 대비해 그쪽도 대체 경로로
-    확인한다(STAGE_LABELS/decide 라우트의 레거시 호환 주석과 동일한 이유)."""
+def _rejection_reason(app: RecognitionApplication, formal: bool = False) -> str:
+    """신청서가 반려됐을 때(status == "rejected") 어느 단계에서 왜 반려됐는지 보여줄 문장을
+    만든다. 3단계(학과장/복수전공학과장/행정처) 중 실제로 반려 처리된 단계를 찾아서 그
+    기록(decided_by/note)만 그대로 옮긴다 — 지어내지 않음. 3단계 승인 기능이 생기기 전의
+    구버전 기록(레거시 decision_note)만 있는 경우를 대비해 그쪽도 대체 경로로 확인한다
+    (STAGE_LABELS/decide 라우트의 레거시 호환 주석과 동일한 이유).
+
+    formal=False(기본)면 챗봇에서 학생한테 반말로 보여줄 때 쓰고(_handle_application_lookup),
+    formal=True면 이메일 본문처럼 존댓말이 필요한 곳에서 쓴다(실사용자 요청: "이메일이랑
+    교수님들이나 직원들이 보는 페이지는 무조건 존댓말로") — 문구만 다르고 로직은 동일."""
     stages = [
         ("학과장", app.home_chair_approval),
         ("복수전공학과장", app.dual_chair_approval),
@@ -647,10 +651,18 @@ def _rejection_reason(app: RecognitionApplication) -> str:
     for label, step in stages:
         if step.status == "rejected":
             who = step.decided_by or label
+            if formal:
+                if step.note:
+                    return f"{label}({who})님이 반려하셨습니다. 사유: {step.note}"
+                return f"{label}({who})님이 반려하셨습니다(별도로 남긴 사유는 없습니다)."
             if step.note:
                 return f"{label}({who})이 반려했어. 사유: {step.note}"
             return f"{label}({who})이 반려했어(별도로 남긴 사유는 없어)."
     # 레거시(구버전 1단계 승인) 기록만 있는 경우
+    if formal:
+        if app.decision_note:
+            return f"반려되었습니다. 사유: {app.decision_note}"
+        return "반려되었으나, 구체적인 사유는 따로 남아있지 않습니다."
     if app.decision_note:
         return f"반려됐어. 사유: {app.decision_note}"
     return "반려됐는데, 구체적인 사유는 따로 남아있지 않아."
@@ -1369,13 +1381,15 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
             # 않고, 반려가 확정되는 이 자리에서 바로 이메일 발송. 실패해도(주소 없음/API 키
             # 미설정/네트워크 오류) 신청서 반려 처리 자체는 그대로 진행됨(notify.send_email이
             # 예외를 던지지 않게 만들어둠).
+            # 실사용자 요청: "이메일이랑 교수님들이나 직원들이 보는 페이지는 무조건 존댓말로"
+            # — 학생용 챗봇(반말)과 달리 이메일은 공식 통지문이라 전부 존댓말(합쇼체)로 씀.
             notify.send_email(
                 target.student_email,
-                subject="[Uni-VOC] 이수과목 인정신청서가 반려됐어요",
+                subject="[Uni-VOC] 이수과목 인정신청서가 반려되었습니다",
                 text_body=(
                     f"{target.student_name}님, 신청하신 이수과목 인정신청서(타전공: {target.target_major})가 "
-                    f"반려됐어요.\n\n{_rejection_reason(target)}\n\n"
-                    "챗봇에서 '신청확인'이라고 말하고 학번을 알려주면 바로 이어서 재제출할 수 있어요."
+                    f"반려되었습니다.\n\n{_rejection_reason(target, formal=True)}\n\n"
+                    "챗봇에서 '신청확인'이라고 말씀하시고 학번을 알려주시면 바로 이어서 재제출하실 수 있습니다."
                 ),
                 status="rejected",
             )
@@ -1388,10 +1402,10 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
             target.status = "approved"
             notify.send_email(
                 target.student_email,
-                subject="[Uni-VOC] 이수과목 인정신청서가 승인됐어요",
+                subject="[Uni-VOC] 이수과목 인정신청서가 승인되었습니다",
                 text_body=(
                     f"{target.student_name}님, 신청하신 이수과목 인정신청서(타전공: {target.target_major})가 "
-                    "3단계 승인 절차를 모두 마치고 전산 반영까지 완료됐어요. 축하드려요!"
+                    "3단계 승인 절차를 모두 마치고 전산 반영까지 완료되었습니다. 축하드립니다!"
                 ),
                 status="approved",
             )

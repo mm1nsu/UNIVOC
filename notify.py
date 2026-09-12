@@ -102,8 +102,8 @@ def _render_html_body(subject: str, text_body: str, status: str) -> str:
         <tr><td style="height:1px;line-height:1px;font-size:0;background:#e7e5df;margin:0 28px;">&nbsp;</td></tr>
         <tr>
           <td style="padding:16px 28px 24px;">
-            <div style="font-size:12px;color:#9d9d9c;">이 메일은 Uni-VOC 챗봇에서 자동으로 발송됐어요.</div>
-            <div style="font-size:12px;color:#9d9d9c;margin-top:2px;">문의사항은 학교 수업학적팀(053-810-1095)으로 연락해줘.</div>
+            <div style="font-size:12px;color:#9d9d9c;">이 메일은 Uni-VOC 챗봇에서 자동으로 발송되었습니다.</div>
+            <div style="font-size:12px;color:#9d9d9c;margin-top:2px;">문의사항은 학교 수업학적팀(053-810-1095)으로 연락해 주시기 바랍니다.</div>
           </td>
         </tr>
         <tr><td style="height:5px;line-height:5px;font-size:0;background:{_BRAND_STRIPE};">&nbsp;</td></tr>

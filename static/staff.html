@@ -344,6 +344,14 @@
     padding:9px 12px;
   }
 
+  .decision-hint{
+    margin-top:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .decision-hint b{color:var(--yu-blue);}
+  .decision-hint-missing{color:var(--no);}
+
   /* 지금 보고 있는 화면이 최신 코드로 반영된 건지 바로 확인할 수 있게(실사용자 요청) */
   #versionInfo{
     text-align:center;
@@ -642,10 +650,22 @@ function decisionSectionHtml(app){
   if(currentRole === 'admin' && (app.home_chair_approval.status !== 'approved' || app.dual_chair_approval.status !== 'approved')){
     return `<div class="decided-note">학과장·복수전공학과장 승인이 둘 다 끝나야 행정처 처리를 할 수 있어요.</div>`;
   }
+  // 반려는 어느 단계에서든 그 즉시 전체 신청서가 최종 반려로 확정되지만, 승인은 3단계
+  // (학과장/복수전공학과장/행정처)가 전부 끝나야만 최종 승인이 확정됨 — 이메일도 그 확정
+  // 시점에만 나가니, 지금 이 버튼을 누르면 실제로 이메일이 나갈지 미리 알려줌(실사용자
+  // 요청: "staff.html에 이메일 표시" — 직원이 헷갈리지 않게 승인/반려 시점의 발송 여부까지
+  // 명확히 보여줌).
+  const otherStagesApproved = Object.values(STAGE_META)
+    .filter(m => m.field !== meta.field)
+    .every(m => app[m.field].status === 'approved');
+  const emailHint = app.student_email
+    ? `<div class="decision-hint">📧 반려하면 즉시, 승인하면 ${otherStagesApproved ? '지금이 마지막 단계라 바로' : '남은 단계까지 다 끝나야'} <b>${app.student_email}</b>로 알림 메일이 자동 발송돼요.</div>`
+    : `<div class="decision-hint decision-hint-missing">📧 학생 이메일이 없어서 승인/반려해도 알림 메일은 안 나가요.</div>`;
   return `<div class="decision-row">
        <button class="btn-approve" data-action="approved" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 승인</button>
        <button class="btn-reject" data-action="rejected" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 반려</button>
-     </div>`;
+     </div>
+     ${emailHint}`;
 }
 
 function renderCard(app){
@@ -683,6 +703,9 @@ function renderCard(app){
          ${app.student_id ? ' · 학번 ' + app.student_id : ''}
          ${app.student_grade ? ' · ' + app.student_grade : ''}
          ${app.student_college ? ' · ' + app.student_college : ''}
+         ${app.student_email
+           ? ' · 📧 ' + app.student_email
+           : ' · <span style="color:var(--no)">📧 이메일 미확인(승인/반려해도 알림 안 감)</span>'}
        </div>`
     : `<div class="student-info student-info-missing">👤 학생 개인정보 미확인(신청서 초안 단계에서 아직 안 채워짐)</div>`;
 

@@ -656,6 +656,32 @@ def _rejection_reason(app: RecognitionApplication) -> str:
     return "반려됐는데, 구체적인 사유는 따로 남아있지 않아."
 
 
+_IDENTITY_LABELS = {
+    "name": "이름",
+    "student_id": "학번",
+    "grade": "학년",
+    "college": "소속 단과대학",
+    "email": "이메일",
+}
+
+
+def _missing_identity_labels(identity: dict) -> list[str]:
+    """student_identity 딕셔너리에서 아직 안 채워진 항목의 한글 라벨 목록을 돌려준다.
+    student_info 단계에서 새로 물어볼 때와, 반려->재제출 시 예전 신청서 정보를 이어받아
+    이미 다 채워졌는지 확인할 때(course_draft 제출 분기) 둘 다에서 같이 쓴다."""
+    return [label for key, label in _IDENTITY_LABELS.items() if not identity.get(key)]
+
+
+def _identity_confirm_message(identity: dict) -> str:
+    """student_info_confirm 단계 진입 시 보여줄 확인 문구 — 두 진입 경로(직접 입력 완료 /
+    반려->재제출 시 예전 정보 이어받아 전부 채워진 경우)가 똑같은 문구를 쓰게 공유한다."""
+    return (
+        f"확인할게! 이름: {identity['name']} / 학번: {identity['student_id']} / "
+        f"학년: {identity['grade']} / 소속: {identity['college']} / 이메일: {identity['email']} "
+        f"— 맞으면 '제출', 틀린 게 있으면 '다시입력'이라고 알려줘!"
+    )
+
+
 # 학번 기반 세션 복원 — _LOOKUP_TRIGGER_RE/_LOOKUP_STUDENT_ID_RE 주석 참고. 새 탭/새 세션으로
 # 돌아온 학생이 학번만 알려주면, 그 학번으로 마지막에 낸 인정신청서를 찾아서 지금 상태를
 # 알려주고, 반려 상태면 기존 rejection_followup 흐름(수정 후 재제출)에 그대로 이어붙인다 —
@@ -817,6 +843,18 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             for m in (old_app.matched_courses if old_app else [])
         ]
         sub["completed_courses"] = carried
+        # 실사용자 요청: "반려->재제출 시 이름/학번/이메일 등 자동 재사용" — 예전 신청서에
+        # 남아있던 개인정보를 그대로 이어받아둔다. 이메일 기능 도입 전 신청서라 student_email이
+        # 없을 수도 있는데, 그런 항목은 None으로 남아서 나중에 student_info 단계에서 그것만
+        # 다시 물어보면 됨(_missing_identity_labels가 항목별로 판단).
+        if old_app:
+            sub["student_identity"] = {
+                "name": old_app.student_name,
+                "student_id": old_app.student_id,
+                "grade": old_app.student_grade,
+                "college": old_app.student_college,
+                "email": old_app.student_email,
+            }
         sub["matched"] = []
         sub["unmatched"] = []
         sub["overlap_candidates"] = []
@@ -979,6 +1017,18 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             # 이걸 전산화 한다는데에 의의가 있어야지", "모든 개인정보를 채워넣을 수 있도록")에
             # 따라, 실제 신청서에 필요한 성명/학번/학년/소속 단과대학을 확인받고 나서야
             # 신청서를 생성함(바로 만들지 않음).
+            # 단, 반려->재제출(rejection_followup)로 들어온 경우는 예전 신청서의 개인정보를
+            # 이미 이어받아놨을 수 있음(실사용자 요청: "반려->재제출 시 자동 재사용") — 그때는
+            # 이름/학번/학년/소속/이메일을 처음부터 다시 물어보지 않고 바로 확인만 받는다.
+            identity = sub["student_identity"]
+            if not _missing_identity_labels(identity):
+                sub["stage"] = "student_info_confirm"
+                reply = (
+                    "저번에 낸 신청서에 있던 개인정보 그대로 이어서 쓸게! "
+                    + _identity_confirm_message(identity)
+                )
+                return {"reply": reply, "stage": "student_info_confirm"}
+
             sub["stage"] = "student_info"
             reply = (
                 "좋아, 마지막으로 신청서에 넣을 정보만 확인할게! "
@@ -1019,18 +1069,7 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
         except Exception:  # noqa: BLE001
             pass  # 추출 실패해도 아래에서 부족한 항목 다시 물어보면 되니 신청 자체는 안 막음
 
-        missing_labels = []
-        if not identity["name"]:
-            missing_labels.append("이름")
-        if not identity["student_id"]:
-            missing_labels.append("학번")
-        if not identity["grade"]:
-            missing_labels.append("학년")
-        if not identity["college"]:
-            missing_labels.append("소속 단과대학")
-        if not identity["email"]:
-            missing_labels.append("이메일")
-
+        missing_labels = _missing_identity_labels(identity)
         if missing_labels:
             reply = f"{', '.join(missing_labels)}을(를) 아직 못 알아들었어. 다시 한번 알려줄래?"
             return {"reply": reply, "stage": "student_info"}
@@ -1039,11 +1078,7 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
         # (실사용자 요청: "채우고 난 다음에 학생에게 confirm을 받아서 제출할 수 있도록") —
         # 잘못 알아들은 정보가 있으면 여기서 고칠 기회를 준다.
         sub["stage"] = "student_info_confirm"
-        reply = (
-            f"확인할게! 이름: {identity['name']} / 학번: {identity['student_id']} / "
-            f"학년: {identity['grade']} / 소속: {identity['college']} / 이메일: {identity['email']} "
-            f"— 맞으면 '제출', 틀린 게 있으면 '다시입력'이라고 알려줘!"
-        )
+        reply = _identity_confirm_message(identity)
         return {"reply": reply, "stage": "student_info_confirm"}
 
     if stage == "student_info_confirm":

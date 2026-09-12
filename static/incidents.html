@@ -235,6 +235,18 @@
   .btn-reopen:hover{color:var(--yu-blue);border-color:var(--yu-blue);}
   .btn-delete{color:var(--no);background:var(--no-bg);border-color:var(--no);}
   .btn-delete:hover{background:var(--no);color:#fff;}
+  .btn-edit{color:var(--yu-blue);background:var(--pastel-navy);border-color:var(--pastel-navy-border);}
+  .btn-edit:hover{background:var(--yu-blue);color:#fff;}
+
+  .edit-form{margin:8px 0 10px;padding:12px 14px;background:var(--pastel-gray);border:1px solid var(--pastel-gray-border);border-radius:10px;}
+  .edit-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .edit-row:last-of-type{margin-bottom:0;}
+  .edit-row label{width:48px;flex-shrink:0;font-size:12.5px;color:var(--muted);font-weight:600;}
+  .edit-row input{
+    flex:1;min-width:0;font-size:13px;font-family:inherit;
+    padding:7px 10px;border:1px solid var(--border);border-radius:8px;
+    background:var(--panel);color:var(--text);
+  }
 
   .toast-wrap{
     position:fixed;
@@ -301,11 +313,68 @@ let currentCategory = '';
 let currentStatus = 'open';
 let knownIds = new Set();
 let firstLoad = true;
+let editingId = null;  // 지금 "위치/인원/연락처 수정" 폼을 열어둔 카드의 id — 없으면 null
+let pollTimer = null;
+
+function startPolling() {
+  if (!pollTimer) pollTimer = setInterval(() => loadReports(), 5000);
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+// 실사용자 요청: "직원용 사이트에는 신고가 접수됐을 때 소리도 나오면 좋겠어" — 별도
+// 오디오 파일 없이 Web Audio API로 짧은 2음 알림음을 그때그때 생성해서 재생함. 브라우저
+// 자동재생 정책상 사용자가 페이지에서 한 번이라도 클릭/키입력을 하기 전에는 소리가 아예
+// 안 날 수 있어서, 첫 클릭에 AudioContext를 미리 만들어(또는 resume) 둠 — 직원이 탭을
+// 누르거나 새로고침 버튼만 눌러도 자연스럽게 풀리므로 실사용에는 문제 없음.
+let audioCtx = null;
+function ensureAudioContext() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      audioCtx = null;
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+document.addEventListener('click', ensureAudioContext, { once: true });
+
+function playNewReportSound() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  // 짧게 두 음(솔→도 느낌) — 긴급함은 느껴지되 계속 반복돼도 거슬리지 않을 정도로 짧게.
+  [{ delay: 0, freq: 880 }, { delay: 0.16, freq: 1046.5 }].forEach(({ delay, freq }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now + delay);
+    gain.gain.exponentialRampToValueAtTime(0.35, now + delay + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + delay);
+    osc.stop(now + delay + 0.16);
+  });
+}
 
 function escapeHtml(s) {
   const div = document.createElement('div');
   div.textContent = s == null ? '' : s;
   return div.innerHTML;
+}
+
+// escapeHtml만으로는 큰따옴표(")가 안 이스케이프돼서 그대로 value="..." 안에 넣으면 속성이
+// 깨질 수 있음(예: 신고자가 이름에 큰따옴표를 넣는 극단적인 경우) — 수정 폼 input의 value
+// 속성용으로 별도로 큰따옴표까지 이스케이프.
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/"/g, '&quot;');
 }
 
 function timeAgo(iso) {
@@ -326,7 +395,7 @@ function showToast(msg) {
   setTimeout(() => { el.remove(); }, 6000);
 }
 
-function renderCard(r, isNew) {
+function renderCard(r, isNew, isEditing) {
   const cat = r.category || '기타';
   const reporterHtml = (r.reporter_name || r.reporter_contact)
     ? `신고자: ${escapeHtml(r.reporter_name || '(이름 미기재)')}${r.reporter_contact ? ' · ' + escapeHtml(r.reporter_contact) : ''}`
@@ -334,12 +403,47 @@ function renderCard(r, isNew) {
   const resolvedHtml = r.status === 'resolved'
     ? `<div class="resolved-note">✓ <b>${escapeHtml(r.resolved_by || '처리자 미기재')}</b>님이 처리 완료했습니다 (${timeAgo(r.resolved_at)})${r.resolved_note ? '<br/>메모: ' + escapeHtml(r.resolved_note) : ''}</div>`
     : '';
+
+  // 실사용자 피드백: "너무 세세하게 물어보면 긴급/응급때 귀찮을 수 있으니 일단 접수 —
+  // 사람이 이야기해주면 직원용 페이지에서 업데이트되는 거로". 챗봇이 접수 시점엔 위치
+  // 정도만(그것도 학생이 스스로 말했을 때만) 받고 인원수/이름/연락처는 아예 안 물어보니,
+  // 여기서 직원이 통화/현장 확인 후 직접 채워 넣을 수 있게 함(POST /api/incidents/{id}/update).
+  // 편집 폼을 열어둔 카드는 5초 자동 폴링이 덮어써서 타이핑 중인 내용이 날아가면 안
+  // 되므로, 편집 시작(edit-toggle) 시 stopPolling()으로 자동 갱신 자체를 멈춰둠(아래
+  // 클릭 핸들러 참고) — 그래서 여기서는 편집 중 카드가 다시 그려질 걱정 없이 단순하게
+  // 매번 서버 데이터로 폼을 채우면 됨.
+  const editFormHtml = `<div class="edit-form">
+    <div class="edit-row">
+      <label>위치</label>
+      <input type="text" data-field="location" value="${escapeAttr(r.location || '')}" placeholder="예: 정문, 의대 1층 강의실" />
+    </div>
+    <div class="edit-row">
+      <label>인원</label>
+      <input type="text" data-field="people_count" value="${escapeAttr(r.people_count || '')}" placeholder="예: 3명, 혼자" />
+    </div>
+    <div class="edit-row">
+      <label>이름</label>
+      <input type="text" data-field="reporter_name" value="${escapeAttr(r.reporter_name || '')}" placeholder="신고자 이름(선택)" />
+    </div>
+    <div class="edit-row">
+      <label>연락처</label>
+      <input type="text" data-field="reporter_contact" value="${escapeAttr(r.reporter_contact || '')}" placeholder="전화번호/이메일(선택)" />
+    </div>
+    <div class="decision-row">
+      <button class="btn btn-resolve" data-action="edit-save" data-id="${r.id}">저장</button>
+      <button class="btn btn-reopen" data-action="edit-cancel" data-id="${r.id}">취소</button>
+    </div>
+  </div>`;
+
+  const editToggleBtn = `<button class="btn btn-edit" data-action="edit-toggle" data-id="${r.id}">📍 위치/인원/연락처 추가·수정</button>`;
   const actionsHtml = r.status === 'resolved'
     ? `<div class="decision-row">
+         ${editToggleBtn}
          <button class="btn btn-reopen" data-action="reopen" data-id="${r.id}">다시 접수 상태로 되돌리기</button>
          <button class="btn btn-delete" data-action="delete" data-id="${r.id}">삭제</button>
        </div>`
     : `<div class="decision-row">
+         ${editToggleBtn}
          <button class="btn btn-resolve" data-action="resolve" data-id="${r.id}">처리 완료로 표시</button>
          <button class="btn btn-delete" data-action="delete" data-id="${r.id}">삭제</button>
        </div>`;
@@ -357,7 +461,7 @@ function renderCard(r, isNew) {
     <div class="desc">${escapeHtml(r.description)}</div>
     <div class="reporter">${reporterHtml}</div>
     ${resolvedHtml}
-    ${actionsHtml}
+    ${isEditing ? editFormHtml : actionsHtml}
   </div>`;
 }
 
@@ -379,13 +483,14 @@ async function loadReports(opts = {}) {
   if (!Array.isArray(data) || data.length === 0) {
     document.getElementById('listArea').innerHTML = '<div class="empty">해당하는 신고가 없습니다.</div>';
   } else {
-    document.getElementById('listArea').innerHTML = data.map(r => renderCard(r, false)).join('');
+    document.getElementById('listArea').innerHTML = data.map(r => renderCard(r, false, r.id === editingId)).join('');
   }
 
-  // 실시간 감지: 폴링으로 새로 들어온 신고를 찾아 토스트 + 카드 하이라이트 + 탭에 점 표시
+  // 실시간 감지: 폴링으로 새로 들어온 신고를 찾아 토스트 + 알림음 + 카드 하이라이트 + 탭에 점 표시
   if (!firstLoad && !opts.silent) {
     const newlyArrived = data.filter(r => !knownIds.has(r.id));
     if (newlyArrived.length > 0) {
+      playNewReportSound();  // 실사용자 요청: "신고가 접수됐을 때 소리도 나오면 좋겠어"
       newlyArrived.forEach(r => {
         showToast(`📣 새 신고가 접수되었습니다 (${r.category}) — ${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}`);
         const card = document.querySelector(`.card[data-id="${r.id}"]`);
@@ -462,6 +567,45 @@ document.getElementById('listArea').addEventListener('click', async (e) => {
       alert('서버와 통신 중 오류가 발생했습니다.');
       btn.disabled = false;
     }
+  } else if (action === 'edit-toggle') {
+    // 폼이 열려있는 동안 5초 자동 폴링이 카드를 다시 그리면 타이핑 중이던 내용이 날아가니,
+    // 편집을 시작하는 순간 자동 갱신을 멈춰둠(저장/취소하면 다시 켬).
+    editingId = id;
+    stopPolling();
+    await loadReports({ silent: true });
+  } else if (action === 'edit-cancel') {
+    editingId = null;
+    startPolling();
+    await loadReports({ silent: true });
+  } else if (action === 'edit-save') {
+    const card = btn.closest('.card');
+    const getVal = (field) => card.querySelector(`[data-field="${field}"]`).value.trim();
+    const payload = {
+      location: getVal('location'),
+      people_count: getVal('people_count'),
+      reporter_name: getVal('reporter_name'),
+      reporter_contact: getVal('reporter_contact'),
+    };
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/incidents/${id}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || '저장 중 오류가 발생했습니다.');
+        btn.disabled = false;
+        return;
+      }
+      editingId = null;
+      startPolling();
+      await loadReports({ silent: true });
+    } catch (err) {
+      alert('서버와 통신 중 오류가 발생했습니다.');
+      btn.disabled = false;
+    }
   }
 });
 
@@ -494,9 +638,10 @@ document.getElementById('refreshBtn').addEventListener('click', () => loadReport
 
 loadReports();
 // 실사용자 요청: "실시간으로 알림도 떴으면!" — 별도 서버 인프라(WebSocket 등) 없이도
-// 데모에서 충분히 "실시간"으로 느껴지도록 5초 폴링으로 새 신고를 감지해 토스트로 알림
-// (같은 필터를 유지한 채로 자동 갱신될 때만 — 위 설명 참고).
-setInterval(() => loadReports(), 5000);
+// 데모에서 충분히 "실시간"으로 느껴지도록 5초 폴링으로 새 신고를 감지해 토스트+알림음으로
+// 알림(같은 필터를 유지한 채로 자동 갱신될 때만 — 위 설명 참고). 편집 폼이 열려있는 동안은
+// stopPolling()으로 잠깐 멈췄다가 저장/취소하면 startPolling()으로 다시 켬.
+startPolling();
 </script>
 
 </body>

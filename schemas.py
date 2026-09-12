@@ -299,6 +299,20 @@ class IncidentReport(BaseModel):
     resolved_note: Optional[str] = None
 
 
+class IncidentUpdateIn(BaseModel):
+    """직원 대시보드(incidents.html)에서 접수된 신고에 나중에 알게 된 정보를 채워 넣을 때
+    쓰는 입력 스키마 — 실사용자 피드백: "너무 세세하게 물어보면 긴급/응급때 귀찮을 수
+    있으니 일단 접수, 사람이 이야기해주면 직원용 페이지에서 업데이트되는 거로". 챗봇은
+    위치를 학생이 스스로 말했을 때만 담고 나머지(인원수/이름/연락처)는 절대 안 캐물으므로,
+    현장에서 직접 듣고 확인한 직원이 이 필드들을 채운다. 넘어온 필드만 덮어쓰고(부분수정),
+    필드를 넘기지 않으면(None) 기존 값을 그대로 둔다 — 빈 문자열("")을 명시적으로 보내면
+    그 필드를 지운다."""
+    location: Optional[str] = None
+    people_count: Optional[str] = None
+    reporter_name: Optional[str] = None
+    reporter_contact: Optional[str] = None
+
+
 class IncidentReportExtraction(BaseModel):
     """메인 챗봇 대화 중 학생이 툭 던진 메시지(예: "야 정문에 신천지 있음ㅡㅡ")가 실제로
     캠퍼스 안전/시설 신고인지, 아니면 그냥 잡담/다른 상담 중 나온 무관한 말인지 LLM이
@@ -308,26 +322,15 @@ class IncidentReportExtraction(BaseModel):
     캠퍼스 신고가 아님. is_incident_report가 최종 판단이고, false면 나머지 필드는 안 써도
     되며 호출부는 이 메시지를 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리한다.
 
-    실사용자 피드백("이거보단 좀더 자세하게물어봐야하지 않을까? 위치나 몇명, 신고자이름이랑
-    연락처를 알려달라")에 따라, 이 1차 추출은 이제 곧바로 접수하지 않고 app.py가
-    sess["pending_incident"]에 잠깐 보관한 뒤 후속 질문(위치/인원수/이름/연락처)을 한 번
-    더 던진다 — location/people_count는 학생이 처음 메시지에 이미 말했으면 그만큼 후속
-    질문을 줄이기 위해 여기서도 뽑아둔다."""
+    접수는 항상 즉시·최소정보로 끝난다(실사용자 피드백: "너무 세세하게 물어보면 긴급/
+    응급때 귀찮을 수 있으니 일단 접수 — 사람이 이야기해주면 직원용 페이지에서
+    업데이트되는 거로" — 접수 전에 위치/인원수/이름/연락처를 캐묻는 후속 질문 단계를
+    한때 넣었다가 이 피드백으로 되돌림). location/people_count는 학생이 처음 메시지에서
+    이미 자발적으로 말했을 때만 뽑아서 담고, 안 물어본 나머지 항목(이름/연락처 등)은
+    직원이 직접 응대하면서 알아낸 뒤 대시보드에서 채워 넣는다(app.py의
+    POST /api/incidents/{id}/update 참고)."""
     is_incident_report: bool
     category: str = "기타"  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
     description: str = ""  # 신고 내용 요약(존댓말, 담당팀이 보는 공식 신고 내용)
     location: Optional[str] = None  # 학생이 장소를 명시했을 때만
     people_count: Optional[str] = None  # 학생이 인원수를 이미 언급했을 때만(자유텍스트)
-
-
-class IncidentFollowupExtraction(BaseModel):
-    """1차 신고 감지 후 app.py가 던진 후속 질문("정확히 어디야? 몇 명 정도야? 이름이랑
-    연락처는?")에 대한 학생의 답변 메시지에서 위치/인원수/이름/연락처를 뽑아내는 스키마.
-    실사용자가 정한 원칙대로 전부 선택 입력이라 "몰라", "패스", "그냥 접수해줘"처럼
-    답을 안 하거나 건너뛰는 경우 해당 필드는 반드시 null로 남겨야 한다 — 지어내면 안 됨.
-    학생이 후속 질문과 무관한 말을 해도(예: 다른 얘기로 새는 경우) 그 안에서라도 위치/
-    인원수/이름/연락처로 보이는 정보가 있으면 뽑고, 없으면 전부 null."""
-    location: Optional[str] = None
-    people_count: Optional[str] = None
-    reporter_name: Optional[str] = None
-    reporter_contact: Optional[str] = None

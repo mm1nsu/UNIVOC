@@ -15,7 +15,6 @@ from schemas import (
     DualMajorState,
     Eligibility,
     EligibilityResult,
-    IncidentFollowupExtraction,
     IncidentReportExtraction,
     IntentClassification,
     MatchedCourse,
@@ -216,32 +215,10 @@ def extract_incident_report(message: str) -> IncidentReportExtraction:
     return IncidentReportExtraction.model_validate_json(text)
 
 
-# ---------- 0-2. 캠퍼스 안전/시설 신고 후속 질문 답변 추출 ----------
-# 실사용자 피드백: "이거보단 좀더 자세하게물어봐야하지 않을까? 위치나 몇명, 신고자이름이랑
-# 연락처를 알려달라" — 1차 감지(extract_incident_report) 직후 바로 접수하지 않고, app.py가
-# 캐주얼한 말투로 위치/인원수/이름/연락처를 한 번 더 물어본 뒤(_try_handle_incident_report가
-# sess["pending_incident"]에 잠깐 보관), 학생의 다음 메시지를 이 함수로 파싱해서 최종 접수함.
-# 전부 선택 입력 원칙(실사용자가 이미 확정)은 그대로 유지 — "몰라"/무응답/스킵이면 해당
-# 필드는 null로 두고 그래도 접수는 진행한다.
-
-INCIDENT_FOLLOWUP_SYSTEM_PROMPT = """학생이 캠퍼스 안전/시설 신고 후속 질문(정확한 위치,
-관련 인원수, 이름, 연락처를 물어봄)에 대해 방금 남긴 답변 메시지를 보고, 그 안에서 아래
-네 가지를 뽑아낸다:
-- location: 장소(예: "정문", "의대 1층 강의실"). 언급 없으면 null.
-- people_count: 인원수(자유텍스트, 예: "3명", "혼자", "여러 명"). 언급 없으면 null.
-- reporter_name: 이름. 언급 없으면 null.
-- reporter_contact: 연락처(전화번호, 이메일 등). 언급 없으면 null.
-전부 선택 입력이라 학생이 "몰라", "패스", "그냥 접수해줘", "없어" 처럼 답을 안 하거나
-건너뛰면 해당 필드(또는 전부)를 null로 남겨라 — 지어내지 마라. 학생이 후속 질문과 상관없는
-말을 하더라도 그 안에서 위 정보가 보이면 그것만 뽑고, 안 보이면 전부 null로 둬라."""
-
-
-def extract_incident_followup(message: str) -> IncidentFollowupExtraction:
-    prompt = f"학생 답변: {message}"
-    text = _generate_json(
-        prompt, IncidentFollowupExtraction, temperature=0.0, system_instruction=INCIDENT_FOLLOWUP_SYSTEM_PROMPT
-    )
-    return IncidentFollowupExtraction.model_validate_json(text)
+# (한때 여기에 접수 전 위치/인원수/이름/연락처를 캐묻는 후속 질문 추출 함수가 있었는데,
+# 실사용자 피드백("너무 세세하게 물어보면 긴급/응급때 귀찮을 수 있으니 일단 접수 — 사람이
+# 이야기해주면 직원용 페이지에서 업데이트되는 거로")으로 되돌림. 빠진 정보는 직원이
+# app.py의 POST /api/incidents/{id}/update로 직원 대시보드에서 직접 채워 넣는다.)
 
 
 INTENT_CLARIFY_PROMPT = """너는 대학 학생상담 AI Uni-VOC다. 지금은 학생이 장학금 상담을 원하는지

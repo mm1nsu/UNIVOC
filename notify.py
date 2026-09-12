@@ -54,6 +54,11 @@ def send_email(to_email: str | None, subject: str, text_body: str) -> bool:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
+            # urllib 기본 User-Agent("Python-urllib/3.x")를 Resend 앞단 Cloudflare가 봇으로
+            # 오인해서 403(에러코드 1010, 브라우저 정합성 검사 실패)으로 막는 경우가 있어서,
+            # 일반적인 HTTP 클라이언트처럼 보이는 User-Agent를 직접 지정해줌.
+            "User-Agent": "Uni-VOC-Server/1.0 (+https://univoc.onrender.com)",
         },
         method="POST",
     )

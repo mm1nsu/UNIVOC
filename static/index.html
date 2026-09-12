@@ -324,17 +324,23 @@
 
   /* 지금 보고 있는 게 최신 버전인지 데모 중에 바로 확인할 수 있게(실사용자 요청) —
      서버 코드 파일들의 마지막 수정 시각(KST)을 눈에 안 띄게 작게 표시함 */
-  /* 실사용자 요청: "젤 밑에 이스터에그로 제작자 정보 넣어줘" — versionInfo(마지막
-     업데이트 시각)보다도 더 눈에 안 띄게, 화면 맨 아래 아주 작은 글씨로만 남김.
-     이메일은 링크를 걸어두되 색은 주변 글씨와 똑같이 눈에 띄지 않게. */
+  /* 실사용자 피드백: "너무 이스터에그처럼 추가한거아냐?? 잘 보이게 적어주라" — 처음엔
+     버전정보보다도 더 흐리게 숨겨뒀었는데, 투자자/학교 시연에서 제작자가 누군지 바로
+     보이고 연락할 수 있어야 한다는 취지로 바뀜. 그래서 눈에 띄는 카드 형태로 바꾸고
+     불투명도도 100%로 올림(이스터에그가 아니라 정식 크레딧 표시). */
   #credit{
+    margin:0 18px 14px;
+    padding:10px 14px;
+    border-radius:10px;
+    background:var(--pastel-navy);
+    border:1px solid var(--pastel-navy-border);
+    font-size:12.5px;
+    line-height:1.6;
+    color:var(--yu-blue-dark);
     text-align:center;
-    font-size:10px;
-    color:var(--muted);
-    padding:0 18px 14px;
-    opacity:.5;
   }
-  #credit a{color:inherit;text-decoration:none;}
+  #credit b{color:var(--yu-blue-dark);}
+  #credit a{color:var(--yu-blue);font-weight:600;text-decoration:none;}
   #credit a:hover{text-decoration:underline;}
   #versionInfo{
     text-align:center;
@@ -422,7 +428,7 @@
     <button type="submit">전송</button>
   </form>
   <div id="versionInfo"></div>
-  <div id="credit">제작자: 이민수 (영남대학교 의과대학) · <a href="mailto:dlalstn8306@naver.com">dlalstn8306@naver.com</a></div>
+  <div id="credit">Made by <b>이민수</b> · 영남대학교 의과대학 · <a href="mailto:dlalstn8306@naver.com">dlalstn8306@naver.com</a></div>
 </div>
 
 <script>

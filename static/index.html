@@ -267,11 +267,20 @@
     cursor:pointer;
     transition:all .15s ease;
   }
-  .quickbar button:nth-child(2){background:var(--pastel-beige);border-color:var(--pastel-beige-border);color:#8a6d33;}
-  .quickbar button:nth-child(3){background:var(--pastel-navy);border-color:var(--pastel-navy-border);color:var(--yu-blue);}
-  .quickbar button:nth-child(4){background:var(--pastel-gray);border-color:var(--pastel-gray-border);color:#5a5a59;}
+  /* 실사용자 요청으로 "도움말" 버튼이 맨 앞에 새로 추가되면서, 기존에 순서(:nth-child)로만
+     색을 입히던 규칙이 한 칸씩 밀려 엉뚱한 버튼에 적용되고 있었음 — 버튼 순서가 바뀌어도
+     항상 같은 버튼에 같은 색이 붙도록 id 기준으로 바꿈. */
+  #btnRecognition{background:var(--pastel-beige);border-color:var(--pastel-beige-border);color:#8a6d33;}
+  #btnReset{background:var(--pastel-navy);border-color:var(--pastel-navy-border);color:var(--yu-blue);}
+  #btnExit{background:var(--pastel-gray);border-color:var(--pastel-gray-border);color:#5a5a59;}
   .quickbar button:hover{filter:brightness(0.94);}
   .quickbar button[hidden]{display:none;}
+  /* 실사용자 리포트: "좌측 하단에 '이수과목 인정받기' 버튼 줄좀 맞추자" — 버튼이 5개로
+     늘면서 flex:1로 폭을 억지로 나눠 가지다보니 라벨이 긴 버튼만 두 줄로 줄바꿈돼서
+     버튼들의 높이가 서로 안 맞았음. 라벨을 "인정받기"로 줄이고(원래 명령어data-cmd는
+     그대로라 동작은 안 바뀜) 한 줄 유지가 안 되면 줄바꿈 대신 말줄임표로 처리해 항상
+     같은 높이를 유지하게 함. */
+  .quickbar button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
   form#composer{
     display:flex;
@@ -315,6 +324,18 @@
 
   /* 지금 보고 있는 게 최신 버전인지 데모 중에 바로 확인할 수 있게(실사용자 요청) —
      서버 코드 파일들의 마지막 수정 시각(KST)을 눈에 안 띄게 작게 표시함 */
+  /* 실사용자 요청: "젤 밑에 이스터에그로 제작자 정보 넣어줘" — versionInfo(마지막
+     업데이트 시각)보다도 더 눈에 안 띄게, 화면 맨 아래 아주 작은 글씨로만 남김.
+     이메일은 링크를 걸어두되 색은 주변 글씨와 똑같이 눈에 띄지 않게. */
+  #credit{
+    text-align:center;
+    font-size:10px;
+    color:var(--muted);
+    padding:0 18px 14px;
+    opacity:.5;
+  }
+  #credit a{color:inherit;text-decoration:none;}
+  #credit a:hover{text-decoration:underline;}
   #versionInfo{
     text-align:center;
     font-size:10.5px;
@@ -385,11 +406,11 @@
   </div>
 
   <div class="quickbar">
-    <button type="button" data-cmd="도움말">도움말</button>
+    <button type="button" id="btnHelp" data-cmd="도움말">도움말</button>
     <button type="button" id="btnList" data-cmd="목록" hidden>후보 목록</button>
-    <button type="button" id="btnRecognition" data-cmd="이미 들은 과목 인정받고 싶어" hidden>이수과목 인정받기</button>
-    <button type="button" data-cmd="처음부터">처음부터</button>
-    <button type="button" data-cmd="종료">종료</button>
+    <button type="button" id="btnRecognition" data-cmd="이미 들은 과목 인정받고 싶어" hidden>인정받기</button>
+    <button type="button" id="btnReset" data-cmd="처음부터">처음부터</button>
+    <button type="button" id="btnExit" data-cmd="종료">종료</button>
   </div>
   <div id="disclaimer" class="disclaimer">
     ※ 자격요건은 규정에 따라 자동 계산된 참고용 결과이며, 실제 신청 가능 여부는 수업학적팀(☎ 053-810-1095) 확인이 필요해요.
@@ -401,6 +422,7 @@
     <button type="submit">전송</button>
   </form>
   <div id="versionInfo"></div>
+  <div id="credit">제작자: 이민수 (영남대학교 의과대학) · <a href="mailto:dlalstn8306@naver.com">dlalstn8306@naver.com</a></div>
 </div>
 
 <script>

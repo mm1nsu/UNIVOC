@@ -1008,6 +1008,16 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         sub["selected"] = selected
         sub["needs_income_check"] = needs_income_check
         guide = bot_core.generate_action_guide(selected)
+        # 실사용자 요청: "구비서류에 증명서 있으면 발급 페이지 링크 좀 붙여주면 안되나" —
+        # 재학증명서/성적증명서 등은 매번 학생이 직접 포털 찾아 들어가는 게 번거로우니,
+        # 구비서류 목록에 "증명서"가 들어있으면 영남대 인터넷증명 발급 시스템(certpia)
+        # 링크를 바로 붙여줌. 완전 자동발급(본인인증 필요)까지는 아직 무리라 "링크
+        # 연결"까지만 지원 — 링크 하나로 학생이 서류 찾으러 헤매는 시간은 줄여줌.
+        if any("증명서" in doc for doc in (selected.required_documents or [])):
+            guide += (
+                "\n\n📄 재학증명서/성적증명서는 영남대 인터넷증명 발급 시스템에서 바로 뽑을 수 있어 — "
+                "https://yeungnam.certpia.com/ (전자증명서는 발급 수수료 있음, 궁금하면 수업학적팀 053-810-1096)"
+            )
         if needs_income_check:
             guide += (
                 "\n\n(참고: 이 장학금은 학자금지원구간 확인이 필요해요. "

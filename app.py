@@ -177,6 +177,11 @@ def _new_unified_session() -> dict:
         # 학번 기반 세션 복원("로그인" 없이 이전 신청 내역 이어받기) 대기 플래그 — 아래
         # LOOKUP_TRIGGER_RE 참고.
         "awaiting_lookup_id": False,
+        # 캠퍼스 안전신고 1차 감지 직후, 후속 질문(위치/인원수/이름/연락처)에 대한 학생의
+        # 답을 기다리는 동안 잠깐 들고 있는 상태. None이면 대기 중 아님. 아래
+        # `_try_handle_incident_report`/`_finalize_pending_incident` 참고 — sess["mode"]와는
+        # 완전히 독립적이라 진행 중이던 장학금/복수전공 상담을 절대 건드리지 않는다.
+        "pending_incident": None,
     }
 
 
@@ -403,12 +408,16 @@ def _looks_like_incident(msg: str) -> bool:
     return any(k in msg for k in INCIDENT_TRIGGER_KEYWORDS)
 
 
-def _try_handle_incident_report(user_msg: str) -> Optional[dict]:
+def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
     """user_msg가 실제로 캠퍼스 안전/시설 신고인지 LLM(bot_core.extract_incident_report)로
-    최종 확인하고, 맞으면 그 자리에서 바로 접수까지 끝낸 뒤 학생에게 보여줄 응답을 만들어
-    반환한다. 신고가 아니라고 판단되거나(오탐) LLM 호출 자체가 실패하면 None을 반환해서
-    호출부가 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리하게 한다 — 신고 오판정이
-    진행 중이던 상담을 끊어버리면 안 되니까 항상 "확실할 때만 가로채기" 원칙."""
+    최종 확인한다. 맞으면 예전처럼 그 자리에서 바로 접수하지 않고(실사용자 피드백: "이거보단
+    좀더 자세하게물어봐야하지 않을까? 위치나 몇명, 신고자이름이랑 연락처를 알려달라"),
+    sess["pending_incident"]에 지금까지 파악한 내용(카테고리/내용/이미 언급된 위치·인원수)을
+    잠깐 담아두고, 아직 모르는 항목만 캐주얼하게 후속 질문으로 물어본 응답을 반환한다 —
+    학생이 다음 메시지로 답하면 `_finalize_pending_incident`가 그 답을 파싱해서 최종 접수함.
+    신고가 아니라고 판단되거나(오탐) LLM 호출 자체가 실패하면 None을 반환해서 호출부가
+    원래 하던 대로(장학금/복수전공 상담 등) 계속 처리하게 한다 — 신고 오판정이 진행 중이던
+    상담을 끊어버리면 안 되니까 항상 "확실할 때만 가로채기" 원칙."""
     try:
         extraction = bot_core.extract_incident_report(user_msg)
     except Exception:  # noqa: BLE001 — LLM 실패 시 신고 아님으로 안전하게 처리, 원래 흐름 계속
@@ -417,15 +426,70 @@ def _try_handle_incident_report(user_msg: str) -> Optional[dict]:
         return None
 
     category = extraction.category if extraction.category in INCIDENT_CATEGORIES else "기타"
-    report = _save_new_incident_report(
-        category=category,
-        description=extraction.description.strip(),
-        location=(extraction.location or "").strip() or None,
-    )
+    location = (extraction.location or "").strip() or None
+    people_count = (extraction.people_count or "").strip() or None
+
+    sess["pending_incident"] = {
+        "category": category,
+        "description": extraction.description.strip(),
+        "location": location,
+        "people_count": people_count,
+    }
+
+    # 이미 처음 메시지에서 파악된 항목은 다시 안 물어봄 — 위치/인원수는 학생이 이미 말했으면
+    # 생략, 이름/연락처는 애초에 처음 메시지에 나올 일이 거의 없어서 항상 물어봄(그래도
+    # 실사용자가 확정한 "선택 입력" 원칙은 그대로 — 답 안 해도 접수됨).
+    missing_bits = []
+    if not location:
+        missing_bits.append("정확히 어디야?")
+    missing_bits.append("몇 명 정도야?")
+    missing_bits.append("이름이랑 연락처도 알려줄 수 있으면 좋고(선택!)")
+
     # 학생용 챗봇이라 100% 반말 유지 — 존댓말 규칙은 이메일/직원화면(staff.html/incidents.html)에만
     # 적용된다는 기존 원칙 그대로.
     reply = (
-        f"신고 접수했어! ({category}) 담당팀 화면에 바로 전달됐어 — 알려줘서 고마워. "
+        f"신고 접수 전에 몇 가지만 더 물어볼게! (다 몰라도 괜찮아, 그냥 넘어가도 접수는 돼) "
+        + " ".join(missing_bits)
+    )
+    return {
+        "reply": reply,
+        "stage": "incident_pending_followup",
+        "options": [],
+    }
+
+
+def _finalize_pending_incident(sess: dict, user_msg: str) -> dict:
+    """`_try_handle_incident_report`가 던진 후속 질문(위치/인원수/이름/연락처)에 대한 학생의
+    답변(user_msg)을 파싱해서 sess["pending_incident"]에 이미 있던 내용과 합친 뒤 최종
+    접수한다. LLM 호출(extract_incident_followup)이 실패하더라도 이미 1차 감지에서 확보한
+    category/description만으로 접수를 끝낸다 — 후속 질문은 어디까지나 "있으면 좋은" 보강
+    정보라 실패했다고 신고 자체를 무산시키면 안 된다(전부 선택 입력 원칙)."""
+    pending = sess["pending_incident"]
+    sess["pending_incident"] = None
+
+    location = pending.get("location")
+    people_count = pending.get("people_count")
+    reporter_name = None
+    reporter_contact = None
+    try:
+        followup = bot_core.extract_incident_followup(user_msg)
+        location = location or (followup.location or "").strip() or None
+        people_count = people_count or (followup.people_count or "").strip() or None
+        reporter_name = (followup.reporter_name or "").strip() or None
+        reporter_contact = (followup.reporter_contact or "").strip() or None
+    except Exception:  # noqa: BLE001 — 후속 질문 파싱 실패해도 이미 확보한 내용으로 접수 진행
+        pass
+
+    report = _save_new_incident_report(
+        category=pending["category"],
+        description=pending["description"],
+        location=location,
+        people_count=people_count,
+        reporter_name=reporter_name,
+        reporter_contact=reporter_contact,
+    )
+    reply = (
+        f"신고 접수 완료! ({pending['category']}) 담당팀 화면에 바로 전달됐어 — 알려줘서 고마워. "
         "하던 얘기 있으면 이어서 계속해도 돼!"
     )
     return {
@@ -1294,6 +1358,7 @@ def _chat_impl(session_id: str, body: ChatIn):
 
     if user_msg in RESET_WORDS:
         sess["history"] = []
+        sess["pending_incident"] = None
         if sess["mode"] == "scholarship":
             sess["scholarship"] = _new_scholarship_state()
             reply = "처음부터 다시 시작할게! 몇 학년이야?"
@@ -1311,6 +1376,18 @@ def _chat_impl(session_id: str, body: ChatIn):
         sess["history"].append(f"학생: {user_msg}")
         sess["history"].append(f"AI: {reply}")
         return {"session_id": session_id, "reply": reply, "stage": "exit", "mode": sess["mode"], "options": []}
+
+    # 캠퍼스 안전신고 후속 질문(위치/인원수/이름/연락처) 답변 대기 중이면, 이번 메시지는
+    # 무조건 그 답으로 취급해서 바로 최종 접수까지 끝낸다 — 실사용자 피드백("이거보단
+    # 좀더 자세하게물어봐야하지 않을까")에 따른 흐름. RESET/EXIT보다는 뒤, 학번조회
+    # 대기(awaiting_lookup_id)보다는 앞에 둬서 두 대기 상태가 동시에 걸릴 일이 없게 함.
+    if sess.get("pending_incident"):
+        result = _finalize_pending_incident(sess, user_msg)
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {result['reply']}")
+        result["session_id"] = session_id
+        result["mode"] = sess["mode"]
+        return result
 
     # 학번 기반 세션 복원 (2단계: 학번 대기 -> 조회). _LOOKUP_TRIGGER_RE/_handle_application_lookup
     # 주석 참고 — 새 탭이라 예전 대화가 없어도, 학번만 알려주면 저번 신청서 상태(특히 반려
@@ -1342,12 +1419,14 @@ def _chat_impl(session_id: str, body: ChatIn):
 
     # 실사용자 요청: "안전신고 탭을 안 들어가고 메인 챗봇에서 신고할 수 있도록" — 진행 중인
     # 상담(모드 None/scholarship/dual_major 무엇이든)을 방해하지 않고 아무 때나 툭 던진
-    # 신고를 그 자리에서 바로 접수함. 값싼 키워드 사전필터를 통과했을 때만 LLM으로 최종
+    # 신고를 그 자리에서 감지함. 값싼 키워드 사전필터를 통과했을 때만 LLM으로 최종
     # 확인하고(_try_handle_incident_report), 신고가 아니라고 판정되면(None 반환) 아래로
     # 그대로 흘러내려가서 원래 하던 라우팅/상담을 이어감 — 신고 감지가 sess["mode"]를 절대
-    # 건드리지 않으므로 신고 후에도 하던 상담을 정확히 그대로 이어갈 수 있음.
+    # 건드리지 않으므로 신고 후에도 하던 상담을 정확히 그대로 이어갈 수 있음. 맞으면(실사용자
+    # 피드백 반영) 바로 접수하지 않고 sess["pending_incident"]에 담아둔 채 후속 질문(위치/
+    # 인원수/이름/연락처)을 먼저 던지고, 다음 메시지는 위의 pending_incident 분기가 처리함.
     if _looks_like_incident(user_msg):
-        incident_result = _try_handle_incident_report(user_msg)
+        incident_result = _try_handle_incident_report(sess, user_msg)
         if incident_result is not None:
             sess["history"].append(f"AI: {incident_result['reply']}")
             incident_result["session_id"] = session_id
@@ -1364,8 +1443,9 @@ def _chat_impl(session_id: str, body: ChatIn):
             if classified == "incident_report":
                 # 키워드 사전필터에 안 걸린 창의적인 표현(예: "복도에 누가 쓰러져있어요")도
                 # 첫 메시지라면 classify_intent가 한 번 더 잡아줄 수 있음 — 여기서도 최종
-                # 확인은 반드시 _try_handle_incident_report(LLM 재확인)를 거쳐야 접수됨.
-                incident_result = _try_handle_incident_report(user_msg)
+                # 확인은 반드시 _try_handle_incident_report(LLM 재확인)를 거쳐야 하고, 맞으면
+                # 마찬가지로 바로 접수 대신 후속 질문부터 던짐.
+                incident_result = _try_handle_incident_report(sess, user_msg)
                 if incident_result is not None:
                     sess["history"].append(f"AI: {incident_result['reply']}")
                     incident_result["session_id"] = session_id
@@ -1574,6 +1654,7 @@ def _save_new_incident_report(
     category: str,
     description: str,
     location: Optional[str] = None,
+    people_count: Optional[str] = None,
     reporter_name: Optional[str] = None,
     reporter_contact: Optional[str] = None,
 ) -> IncidentReport:
@@ -1582,6 +1663,7 @@ def _save_new_incident_report(
         category=category,
         description=description,
         location=location or None,
+        people_count=people_count or None,
         reporter_name=reporter_name or None,
         reporter_contact=reporter_contact or None,
         created_at=datetime.now(timezone.utc).isoformat(),

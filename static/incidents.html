@@ -353,6 +353,7 @@ function renderCard(r, isNew) {
       </div>
     </div>
     ${r.location ? `<div class="loc">📍 ${escapeHtml(r.location)}</div>` : ''}
+    ${r.people_count ? `<div class="loc">👥 관련 인원: ${escapeHtml(r.people_count)}</div>` : ''}
     <div class="desc">${escapeHtml(r.description)}</div>
     <div class="reporter">${reporterHtml}</div>
     ${resolvedHtml}

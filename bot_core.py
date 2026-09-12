@@ -15,6 +15,7 @@ from schemas import (
     DualMajorState,
     Eligibility,
     EligibilityResult,
+    IncidentFollowupExtraction,
     IncidentReportExtraction,
     IntentClassification,
     MatchedCourse,
@@ -200,6 +201,8 @@ INCIDENT_SYSTEM_PROMPT = """너는 대학 캠퍼스 안전/시설 신고를 접�
 - description에는 학생이 말한 상황을 한두 문장으로 간결하게 정리해서 담아라 — 존댓말로 써라
   (담당 직원이 보는 공식 신고 내용이다). 학생이 말한 내용만 담고 지어내지 마라.
 - location은 학생이 장소를 명시적으로 언급했을 때만 채우고, 언급 안 했으면 null로 둬라.
+- people_count는 학생이 관련 인원수를 이미 언급했을 때만("셋이서", "저 혼자", "몇 명 모여있음"
+  등) 자유텍스트로 채우고, 언급 안 했으면 null로 둬라 — 지어내지 마라.
 - 신고와 무관한 잡담이나 다른 맥락(예: "나 오늘 게임하다 신고당함ㅋㅋ", "저기 계단 몇 개야"
   같은 단순 질문)이면 is_incident_report=false로 하고 나머지 필드는 채우지 마라(기본값 사용).
 확신 없으면 false로 답해라 — 애매한 잡담을 신고로 잘못 접수시키면 안 된다."""
@@ -211,6 +214,34 @@ def extract_incident_report(message: str) -> IncidentReportExtraction:
         prompt, IncidentReportExtraction, temperature=0.0, system_instruction=INCIDENT_SYSTEM_PROMPT
     )
     return IncidentReportExtraction.model_validate_json(text)
+
+
+# ---------- 0-2. 캠퍼스 안전/시설 신고 후속 질문 답변 추출 ----------
+# 실사용자 피드백: "이거보단 좀더 자세하게물어봐야하지 않을까? 위치나 몇명, 신고자이름이랑
+# 연락처를 알려달라" — 1차 감지(extract_incident_report) 직후 바로 접수하지 않고, app.py가
+# 캐주얼한 말투로 위치/인원수/이름/연락처를 한 번 더 물어본 뒤(_try_handle_incident_report가
+# sess["pending_incident"]에 잠깐 보관), 학생의 다음 메시지를 이 함수로 파싱해서 최종 접수함.
+# 전부 선택 입력 원칙(실사용자가 이미 확정)은 그대로 유지 — "몰라"/무응답/스킵이면 해당
+# 필드는 null로 두고 그래도 접수는 진행한다.
+
+INCIDENT_FOLLOWUP_SYSTEM_PROMPT = """학생이 캠퍼스 안전/시설 신고 후속 질문(정확한 위치,
+관련 인원수, 이름, 연락처를 물어봄)에 대해 방금 남긴 답변 메시지를 보고, 그 안에서 아래
+네 가지를 뽑아낸다:
+- location: 장소(예: "정문", "의대 1층 강의실"). 언급 없으면 null.
+- people_count: 인원수(자유텍스트, 예: "3명", "혼자", "여러 명"). 언급 없으면 null.
+- reporter_name: 이름. 언급 없으면 null.
+- reporter_contact: 연락처(전화번호, 이메일 등). 언급 없으면 null.
+전부 선택 입력이라 학생이 "몰라", "패스", "그냥 접수해줘", "없어" 처럼 답을 안 하거나
+건너뛰면 해당 필드(또는 전부)를 null로 남겨라 — 지어내지 마라. 학생이 후속 질문과 상관없는
+말을 하더라도 그 안에서 위 정보가 보이면 그것만 뽑고, 안 보이면 전부 null로 둬라."""
+
+
+def extract_incident_followup(message: str) -> IncidentFollowupExtraction:
+    prompt = f"학생 답변: {message}"
+    text = _generate_json(
+        prompt, IncidentFollowupExtraction, temperature=0.0, system_instruction=INCIDENT_FOLLOWUP_SYSTEM_PROMPT
+    )
+    return IncidentFollowupExtraction.model_validate_json(text)
 
 
 INTENT_CLARIFY_PROMPT = """너는 대학 학생상담 AI Uni-VOC다. 지금은 학생이 장학금 상담을 원하는지

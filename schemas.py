@@ -289,6 +289,7 @@ class IncidentReport(BaseModel):
     category: str  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
     description: str
     location: Optional[str] = None
+    people_count: Optional[str] = None  # 관련 인원 수 — 자유텍스트("3명 정도", "혼자" 등), 선택 입력
     reporter_name: Optional[str] = None
     reporter_contact: Optional[str] = None
     status: str = "open"  # open(접수) / resolved(처리완료)
@@ -305,8 +306,28 @@ class IncidentReportExtraction(BaseModel):
     "이 정도면 LLM한테 한 번 물어볼 가치가 있다"는 값싼 1차 필터일 뿐이라 오탐(false
     positive)이 섞일 수 있음 — 예: "나 오늘 롤하다가 신고당함ㅋㅋ"에도 "신고"가 들어있지만
     캠퍼스 신고가 아님. is_incident_report가 최종 판단이고, false면 나머지 필드는 안 써도
-    되며 호출부는 이 메시지를 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리한다."""
+    되며 호출부는 이 메시지를 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리한다.
+
+    실사용자 피드백("이거보단 좀더 자세하게물어봐야하지 않을까? 위치나 몇명, 신고자이름이랑
+    연락처를 알려달라")에 따라, 이 1차 추출은 이제 곧바로 접수하지 않고 app.py가
+    sess["pending_incident"]에 잠깐 보관한 뒤 후속 질문(위치/인원수/이름/연락처)을 한 번
+    더 던진다 — location/people_count는 학생이 처음 메시지에 이미 말했으면 그만큼 후속
+    질문을 줄이기 위해 여기서도 뽑아둔다."""
     is_incident_report: bool
     category: str = "기타"  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
     description: str = ""  # 신고 내용 요약(존댓말, 담당팀이 보는 공식 신고 내용)
     location: Optional[str] = None  # 학생이 장소를 명시했을 때만
+    people_count: Optional[str] = None  # 학생이 인원수를 이미 언급했을 때만(자유텍스트)
+
+
+class IncidentFollowupExtraction(BaseModel):
+    """1차 신고 감지 후 app.py가 던진 후속 질문("정확히 어디야? 몇 명 정도야? 이름이랑
+    연락처는?")에 대한 학생의 답변 메시지에서 위치/인원수/이름/연락처를 뽑아내는 스키마.
+    실사용자가 정한 원칙대로 전부 선택 입력이라 "몰라", "패스", "그냥 접수해줘"처럼
+    답을 안 하거나 건너뛰는 경우 해당 필드는 반드시 null로 남겨야 한다 — 지어내면 안 됨.
+    학생이 후속 질문과 무관한 말을 해도(예: 다른 얘기로 새는 경우) 그 안에서라도 위치/
+    인원수/이름/연락처로 보이는 정보가 있으면 뽑고, 없으면 전부 null."""
+    location: Optional[str] = None
+    people_count: Optional[str] = None
+    reporter_name: Optional[str] = None
+    reporter_contact: Optional[str] = None

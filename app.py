@@ -568,14 +568,23 @@ def _incident_next_action(pending: dict) -> Optional[str]:
 
     단계는 "details"(위치/인원수, INCIDENT_FOLLOWUP_MAX_DETAIL_ROUNDS번까지만 캐묻음)
     → "contact"(이름/연락처, 딱 한 번만 물어봄, 익명 요청 시 건너뜀) 순서 — 112 지령실이
-    상황부터 확인하고 신원은 나중에 묻는 순서를 그대로 따름."""
+    상황부터 확인하고 신원은 나중에 묻는 순서를 그대로 따름.
+
+    실사용자 리포트: "공유기 고장낫어 의과대학 2층 와이파이"라고 신고했는데 "몇 명 정도
+    있어?"라고 물어봐서 뜬금없었음 — 인원수는 보안 신고(수상한 사람이 몇 명인지, 다친
+    사람이 몇 명인지 등)에서나 의미가 있지, 와이파이/에어컨/엘리베이터 같은 시설 고장
+    신고에는 "관련 인원"이라는 개념 자체가 안 맞음. 그래서 카테고리별로 물어볼 가치가
+    있는 필드 자체를 다르게 둠 — 시설/기타 신고는 위치만 캐묻고, 보안 신고에서만
+    인원수까지 캐묻는다(학생이 먼저 알아서 인원수를 언급했다면 category와 무관하게
+    그대로 저장은 됨 — 여기서 막는 건 "먼저 나서서 캐묻는 질문"뿐)."""
     if pending["anonymous"]:
         # 실사용자 요청: "개인정보 익명처리하고 싶다하면 그렇게 할 수 있도록" — 익명 요청은
         # 대화 어느 시점에 나오든 그 뒤로 이름/연락처는 다시는 안 물어봄.
         pending["contact_asked"] = True
 
     if pending["stage"] == "details":
-        missing = [f for f in ("location", "people_count") if not pending.get(f)]
+        relevant_fields = ("location", "people_count") if pending["category"] == "보안" else ("location",)
+        missing = [f for f in relevant_fields if not pending.get(f)]
         if missing and pending["detail_rounds"] < INCIDENT_FOLLOWUP_MAX_DETAIL_ROUNDS:
             pending["detail_rounds"] += 1
             bits = []

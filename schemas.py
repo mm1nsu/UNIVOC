@@ -301,12 +301,12 @@ class IncidentReport(BaseModel):
 
 class IncidentUpdateIn(BaseModel):
     """직원 대시보드(incidents.html)에서 접수된 신고에 나중에 알게 된 정보를 채워 넣을 때
-    쓰는 입력 스키마 — 실사용자 피드백: "너무 세세하게 물어보면 긴급/응급때 귀찮을 수
-    있으니 일단 접수, 사람이 이야기해주면 직원용 페이지에서 업데이트되는 거로". 챗봇은
-    위치를 학생이 스스로 말했을 때만 담고 나머지(인원수/이름/연락처)는 절대 안 캐물으므로,
-    현장에서 직접 듣고 확인한 직원이 이 필드들을 채운다. 넘어온 필드만 덮어쓰고(부분수정),
-    필드를 넘기지 않으면(None) 기존 값을 그대로 둔다 — 빈 문자열("")을 명시적으로 보내면
-    그 필드를 지운다."""
+    쓰는 입력 스키마. 챗봇이 접수 중 위치/인원수/이름·연락처를 112 지령실처럼 후속
+    질문으로 캐묻긴 하지만(IncidentReportExtraction/IncidentFollowupExtraction 참고),
+    학생이 "그만"이라고 중간에 끝내버리거나 답을 얼버무리면 일부 정보가 비어있는 채로
+    접수될 수 있음 — 그럴 때 현장에서 직접 확인한 직원이 여기서 보완해 채운다. 넘어온
+    필드만 덮어쓰고(부분수정), 필드를 넘기지 않으면(None) 기존 값을 그대로 둔다 — 빈
+    문자열("")을 명시적으로 보내면 그 필드를 지운다."""
     location: Optional[str] = None
     people_count: Optional[str] = None
     reporter_name: Optional[str] = None
@@ -322,15 +322,40 @@ class IncidentReportExtraction(BaseModel):
     캠퍼스 신고가 아님. is_incident_report가 최종 판단이고, false면 나머지 필드는 안 써도
     되며 호출부는 이 메시지를 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리한다.
 
-    접수는 항상 즉시·최소정보로 끝난다(실사용자 피드백: "너무 세세하게 물어보면 긴급/
-    응급때 귀찮을 수 있으니 일단 접수 — 사람이 이야기해주면 직원용 페이지에서
-    업데이트되는 거로" — 접수 전에 위치/인원수/이름/연락처를 캐묻는 후속 질문 단계를
-    한때 넣었다가 이 피드백으로 되돌림). location/people_count는 학생이 처음 메시지에서
-    이미 자발적으로 말했을 때만 뽑아서 담고, 안 물어본 나머지 항목(이름/연락처 등)은
-    직원이 직접 응대하면서 알아낸 뒤 대시보드에서 채워 넣는다(app.py의
-    POST /api/incidents/{id}/update 참고)."""
+    이게 진짜 신고로 확인되면 app.py는 곧바로 접수하지 않고 sess["pending_incident"]로
+    넘어가 후속 대화를 이어간다(실사용자 요청: "112신고하면 어디에 칼부림났어요하면
+    계속 물어보잖아 그런걸 모델로해서 뭔가 계속 물어보면 좋겠어" — 112 지령실이 신고
+    받으면서 위치·인원 등을 계속 확인하는 것처럼, 위치/인원수를 몇 차례 더 캐묻고
+    마지막으로 이름/연락처도 한 번 물어봄). location/people_count는 학생이 이 첫 메시지
+    에서 이미 자발적으로 말했으면 여기서 뽑아두고(그만큼 후속 질문이 줄어듦), 후속
+    대화의 나머지 판단은 IncidentFollowupExtraction이 맡는다. (한때 후속 질문 없이
+    즉시 접수만 하고 나머지는 직원이 대시보드에서 채우게 했었는데(POST
+    /api/incidents/{id}/update), "긴급할 때 캐물으면 귀찮다"는 이전 피드백과 "112처럼
+    계속 물어봐 달라"는 이번 피드백이 서로 반대라 최신 지시를 따름 — 다만 그 수정
+    기능 자체는 학생이 대화 중간에 "그만"하고 끝내 정보가 비어있을 때를 위한 보완
+    수단으로 계속 남겨둠.)"""
     is_incident_report: bool
     category: str = "기타"  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
     description: str = ""  # 신고 내용 요약(존댓말, 담당팀이 보는 공식 신고 내용)
     location: Optional[str] = None  # 학생이 장소를 명시했을 때만
     people_count: Optional[str] = None  # 학생이 인원수를 이미 언급했을 때만(자유텍스트)
+
+
+class IncidentFollowupExtraction(BaseModel):
+    """112 신고전화에서 접수자가 위치·인원 등을 계속 확인하는 것을 모델 삼아, 신고 접수
+    중(sess["pending_incident"]) 학생이 후속 질문에 남긴 답변 메시지를 해석하는 스키마
+    — 실사용자 요청: "112신고하면 계속 물어보잖아 그런걸 모델로해서 뭔가 계속 물어보면
+    좋겠어. 대신 언제든 신고를 끝낼 수는 잇도록 안내하고, 개인정보 익명처리하고
+    싶다하면 그렇게 할 수 있도록." 그래서 상황 정보 추출뿐 아니라 "그만하고 싶어하는지"
+    "익명으로 하고 싶어하는지"까지 판단한다 — 이 둘은 app.py가 언제든 확인하는 안전판:
+    wants_to_finish가 true면 그 시점까지 모은 정보로 바로 접수를 끝내고, wants_anonymous가
+    true면 그 뒤로는 이름/연락처를 아예 묻지 않는다(app.py의 _incident_next_action 참고).
+    전부 선택 입력이라 학생이 "몰라"/무응답/스킵이면 해당 필드는 반드시 null로 남겨야
+    한다 — 지어내면 안 됨."""
+    wants_to_finish: bool = False  # "그만", "됐어", "그냥 접수해줘"처럼 지금까지 내용으로 끝내고 싶다는 의사
+    wants_anonymous: bool = False  # "이름/연락처 말하기 싫어", "익명으로 할래"처럼 신원을 밝히기 싫다는 의사(명시했을 때만)
+    location: Optional[str] = None
+    people_count: Optional[str] = None
+    extra_detail: Optional[str] = None  # 상황 설명에 보탤 추가 정보(존댓말, description에 이어붙임) — 없으면 null
+    reporter_name: Optional[str] = None
+    reporter_contact: Optional[str] = None

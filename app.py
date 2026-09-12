@@ -364,6 +364,45 @@ RESET_WORDS = {"처음부터", "다시검색", "리셋", "reset"}
 LIST_WORDS = {"목록", "리스트", "list"}
 EXIT_WORDS = {"종료", "exit", "quit"}
 
+# 실사용자 요청: "내가 여태 구현해놓은 기능들을 도움말?형태로 해서 볼 수 있도록 하면
+# 좋겠어. 사용자가 어떤 기능이 있는지 볼 수 있도록." — 학생이 지금 챗봇으로 뭘 할 수
+# 있는지 스스로 발견할 방법이 없었음(퀵바 버튼도 모드 진입 전엔 대부분 숨겨져 있음).
+# RESET/EXIT처럼 LLM 호출 없이 고정 문구로 즉답하되, RESET과 달리 지금 진행 중인
+# 대화(mode/scholarship/dual_major/pending_incident 등 상태)는 전혀 건드리지 않음 —
+# 상담이나 신고 접수 중간에 "도움말"이라고 물어봐도 답만 해주고 하던 흐름은 그대로
+# 이어갈 수 있게 하기 위함. 버튼(quickbar의 "도움말", data-cmd="도움말")으로 누르면
+# 정확히 매칭되고, 자유 타이핑으로도 대표적인 표현은 잡히도록 키워드도 같이 둔다.
+HELP_EXACT_WORDS = {"도움말", "도움", "help", "사용법", "명령어"}
+HELP_KEYWORD_PHRASES = (
+    "뭐 할 수 있어", "뭘 할 수 있어", "뭐할수있어", "뭘할수있어",
+    "무슨 기능", "어떤 기능", "무슨기능", "어떤기능", "기능이 뭐", "기능이뭐",
+    "뭐가 가능", "뭐가가능", "사용법",
+)
+
+
+def _looks_like_help_request(msg: str) -> bool:
+    stripped = msg.strip()
+    if stripped in HELP_EXACT_WORDS:
+        return True
+    return any(p in stripped for p in HELP_KEYWORD_PHRASES)
+
+
+HELP_MESSAGE = (
+    "내가 할 수 있는 거 정리해줄게!\n\n"
+    "1. 장학금 상담 — 학년, 성적, 소득분위 같은 조건 물어보면서 너한테 맞는 장학금 찾아줘. "
+    "\"장학금\"이라고 말하면 시작돼.\n\n"
+    "2. 복수전공/이수과목 인정신청 — 복수전공·부전공·다전공 관련 자격 확인부터, 이미 들은 "
+    "과목을 인정받는 신청서 작성까지 도와줘. 신청서 내면 직원 승인 거쳐서 결과 나오고, "
+    "학번만 알려주면 저번에 낸 신청 상태(반려됐는지 등)도 바로 조회해줄 수 있어. "
+    "\"복수전공\" 또는 \"이수과목\"이라고 말하면 시작돼.\n\n"
+    "3. 캠퍼스 안전신고 — 위험한 상황이나 시설 고장(화재, 사고, 수상한 사람, 에어컨/난방/"
+    "와이파이 고장 등) 그냥 편하게 톡하듯 말해주면 바로 접수돼. 필요하면 장소나 인원수 같은 "
+    "걸 한두 번 더 물어볼 수 있는데, \"그만\"이라고 하면 언제든 그 시점까지 내용으로 바로 "
+    "접수 끝낼 수 있어. 이름·연락처도 \"익명으로 할래\"라고 하면 안 남겨.\n\n"
+    "그 외에 \"처음부터\"라고 하면 지금 하던 거 리셋하고 새로 시작하고, \"종료\"라고 하면 "
+    "대화 끝낼 수 있어. 편하게 아무거나 말 걸어봐!"
+)
+
 # 실사용자 요청: "로그인해서 대화내용 기억하고, 이수과목 인정신청서 반려되면 먼저 알려주면
 # 좋겠다". 진짜 회원가입/로그인(비번 저장·보안 처리 등)은 데모 코앞에 손대기엔 작업량·리스크가
 # 크고, 이 앱 세션은 애초에 브라우저 탭 하나에 sessionStorage로 묶여있어서(새로고침엔
@@ -1451,6 +1490,21 @@ def _chat_impl(session_id: str, body: ChatIn):
         sess["history"].append(f"학생: {user_msg}")
         sess["history"].append(f"AI: {reply}")
         return {"session_id": session_id, "reply": reply, "stage": "exit", "mode": sess["mode"], "options": []}
+
+    # 도움말 — RESET/EXIT와 달리 세션 상태(mode/scholarship/dual_major/pending_incident/
+    # awaiting_lookup_id)는 하나도 건드리지 않는다. 상담이나 신고 접수 중간에 물어봐도
+    # 답만 해주고 하던 흐름 그대로 이어갈 수 있어야 하기 때문 (실사용자 요청: "내가 여태
+    # 구현해놓은 기능들을 도움말?형태로 해서 볼 수 있도록").
+    if _looks_like_help_request(user_msg):
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {HELP_MESSAGE}")
+        return {
+            "session_id": session_id,
+            "reply": HELP_MESSAGE,
+            "stage": "help",
+            "mode": sess["mode"],
+            "options": [],
+        }
 
     # 캠퍼스 안전신고 후속 질문(위치/인원수/이름·연락처) 답변 대기 중이면, 이번 메시지는
     # 그 답으로 취급해서 해석한다 — 계속 캐물을지 여기서 접수를 끝낼지는

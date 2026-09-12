@@ -436,7 +436,35 @@ HELP_MESSAGE = (
     "걸 한두 번 더 물어볼 수 있는데, \"그만\"이라고 하면 언제든 그 시점까지 내용으로 바로 "
     "접수 끝낼 수 있어. 이름·연락처도 \"익명으로 할래\"라고 하면 안 남겨.\n\n"
     "그 외에 \"처음부터\"라고 하면 지금 하던 거 리셋하고 새로 시작하고, \"종료\"라고 하면 "
-    "대화 끝낼 수 있어. 편하게 아무거나 말 걸어봐!"
+    "대화 끝낼 수 있어. 편하게 아무거나 말 걸어봐! (참고로 \"제작자가 누구야?\"라고 물어보면 "
+    "누가 만들었는지도 알려줄게!)"
+)
+
+# 실사용자 요청: "제작자가 누구냐고 물으면 내 정보를 좀 알려줘" — 도움말과 같은 패턴
+# (LLM 호출 없이 고정 문구 즉답, 세션 상태 안 건드림)으로 구현. 연락처는 실사용자가
+# 직접 알려준 값만 사용(이메일/전화/인스타) — 지어내거나 다른 정보(생년월일, 학번,
+# 개인 취미 등)는 공개용 챗봇 답변에 어울리지 않아 넣지 않음.
+CREATOR_EXACT_WORDS = {"제작자", "개발자"}
+CREATOR_KEYWORD_PHRASES = (
+    "제작자가 누구", "제작자 누구", "누가 만들었", "누가만들었", "누가 만든", "누가만든",
+    "누가 개발", "누가개발", "만든 사람", "만든사람", "개발자가 누구", "개발자 누구",
+)
+
+
+def _looks_like_creator_question(msg: str) -> bool:
+    stripped = msg.strip()
+    if stripped in CREATOR_EXACT_WORDS:
+        return True
+    return any(p in stripped for p in CREATOR_KEYWORD_PHRASES)
+
+
+CREATOR_MESSAGE = (
+    "영남대학교 의과대학 이민수가 직접 기획하고 개발했어! 의료 현장의 반복적인 행정 업무랑 "
+    "안내 부담을 AI로 줄여보자는 목표로 만든 프로젝트야.\n\n"
+    "궁금한 거나 협업·투자 제안 있으면 편하게 연락해줘 —\n"
+    "이메일: dlalstn8306@naver.com\n"
+    "전화: 010-9973-8306\n"
+    "인스타그램: @mm1n_su"
 )
 
 # 실사용자 요청: "로그인해서 대화내용 기억하고, 이수과목 인정신청서 반려되면 먼저 알려주면
@@ -1608,6 +1636,21 @@ def _chat_impl(session_id: str, body: ChatIn):
             "session_id": session_id,
             "reply": HELP_MESSAGE,
             "stage": "help",
+            "mode": sess["mode"],
+            "options": [],
+        }
+
+    # 제작자 소개 — 도움말과 동일하게 세션 상태를 전혀 건드리지 않는 순수 안내성 응답.
+    # 상담/신고 접수 중간에 "제작자가 누구야?"라고 물어봐도 답만 해주고 하던 흐름
+    # 그대로 이어갈 수 있어야 함(실사용자 요청: "제작자가 누구냐고 물으면 내 정보를
+    # 좀 알려줘").
+    if _looks_like_creator_question(user_msg):
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {CREATOR_MESSAGE}")
+        return {
+            "session_id": session_id,
+            "reply": CREATOR_MESSAGE,
+            "stage": "creator_info",
             "mode": sess["mode"],
             "options": [],
         }

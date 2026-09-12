@@ -445,17 +445,25 @@ HELP_MESSAGE = (
 # 직접 알려준 값만 사용(이메일/전화/인스타) — 지어내거나 다른 정보(생년월일, 학번,
 # 개인 취미 등)는 공개용 챗봇 답변에 어울리지 않아 넣지 않음.
 CREATOR_EXACT_WORDS = {"제작자", "개발자"}
+# 실사용자 리포트: "제작자가누구냐"/"제작자말이야"처럼 띄어쓰기 없이(또는 다르게) 치는
+# 경우가 많아서, 문구를 그대로 비교하면 다 놓침. 그래서 "제작자"/"개발자" 같은 핵심
+# 단어는 문장 어디에 붙어있든(부분 문자열로) 잡아내고, 그 단어가 아예 없는 "누가
+# 만들었어?" 같은 표현만 별도 문구로 커버함. 이 챗봇 도메인(장학금/복수전공/안전신고)
+# 특성상 "제작자"/"개발자" 단어가 나오는 대화는 거의 항상 이 질문이라 오탐 위험은 낮음.
 CREATOR_KEYWORD_PHRASES = (
-    "제작자가 누구", "제작자 누구", "누가 만들었", "누가만들었", "누가 만든", "누가만든",
-    "누가 개발", "누가개발", "만든 사람", "만든사람", "개발자가 누구", "개발자 누구",
+    "누가 만들었", "누가만들었", "누가 만든", "누가만든",
+    "누가 개발", "누가개발", "만든 사람", "만든사람",
 )
 
 
 def _looks_like_creator_question(msg: str) -> bool:
     stripped = msg.strip()
-    if stripped in CREATOR_EXACT_WORDS:
+    if not stripped:
+        return False
+    compact = stripped.replace(" ", "")
+    if any(w in compact for w in CREATOR_EXACT_WORDS):
         return True
-    return any(p in stripped for p in CREATOR_KEYWORD_PHRASES)
+    return any(p.replace(" ", "") in compact for p in CREATOR_KEYWORD_PHRASES)
 
 
 CREATOR_MESSAGE = (

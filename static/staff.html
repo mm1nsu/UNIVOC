@@ -13,8 +13,8 @@
     --yu-sky:#00aaca;
     --yu-gray:#9d9d9c;
     --yu-beige:#eae3d2;
-    --bg:#f7f7f5;
-    --panel:#ffffff;
+    --bg:#f3f3f1;
+    --panel:#fbfbfa;
     --border:#e7e5df;
     --text:#1c2530;
     --muted:#6b7280;
@@ -28,8 +28,8 @@
        브랜드와 무관한 색은 쓰지 않고, 같은 4색을 옅게/진하게만 변주함 */
     --pastel-navy:#e6eaf3;
     --pastel-navy-border:#ccd4e6;
-    --pastel-sky:#e1f6fa;
-    --pastel-sky-border:#bfeaf1;
+    --pastel-sky:#d9eef3;
+    --pastel-sky-border:#aadce6;
     --pastel-beige:#f8f4ea;
     --pastel-beige-border:#eae3d2;
     --pastel-gray:#f2f2f1;
@@ -71,7 +71,7 @@
   header .divider{width:1px;height:20px;background:var(--border);}
   header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
   header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
-  header nav{display:flex;gap:8px;}
+  header nav{display:flex;gap:8px;flex-shrink:0;}
   header a{
     color:var(--yu-blue);
     text-decoration:none;
@@ -80,6 +80,8 @@
     border:1px solid var(--pastel-sky-border);
     border-radius:20px;
     padding:6px 13px;
+    white-space:nowrap;
+    flex-shrink:0;
   }
   header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
 

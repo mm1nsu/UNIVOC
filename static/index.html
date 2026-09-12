@@ -13,8 +13,8 @@
     --yu-sky:#00aaca;
     --yu-gray:#9d9d9c;
     --yu-beige:#eae3d2;
-    --bg:#f2f5f8;
-    --panel:#fffefc;
+    --bg:#eef1f4;
+    --panel:#fbfbf9;
     --border:#e7e5df;
     --text:#1c2530;
     --muted:#6b7280;
@@ -26,8 +26,8 @@
        브랜드와 무관한 색은 쓰지 않고, 같은 4색을 옅게/진하게만 변주함 */
     --pastel-navy:#e6eaf3;
     --pastel-navy-border:#ccd4e6;
-    --pastel-sky:#e1f6fa;
-    --pastel-sky-border:#bfeaf1;
+    --pastel-sky:#d9eef3;
+    --pastel-sky-border:#aadce6;
     --pastel-beige:#f8f4ea;
     --pastel-beige-border:#eae3d2;
     --pastel-gray:#f2f2f1;
@@ -77,12 +77,24 @@
     background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
     box-shadow:0 1px 6px rgba(21,57,116,.25);
   }
-  header .brand{display:flex;align-items:center;gap:10px;}
-  header img.logo{height:22px;display:block;}
-  header .divider{width:1px;height:18px;background:var(--border);}
-  header .name{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-0.2px;}
-  header .name small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
-  header nav{display:flex;gap:6px;}
+  header .brand{display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden;}
+  header img.logo{height:22px;display:block;flex-shrink:0;}
+  header .divider{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+  /* 실사용자 리포트: "안전신고 직원승인 관리자 다 글자가 깨져" — 헤더가 좁아지면
+     .brand(로고+제목)와 nav(버튼들)이 flex로 같이 눌리면서, 한글은 기본적으로 거의
+     아무 글자 사이에서나 줄바꿈이 허용되기 때문에("안전신 / 고"처럼) 버튼 텍스트가
+     단어 중간에서 깨져버림. nav 쪽은 줄바꿈 자체를 막고(white-space:nowrap +
+     flex-shrink:0) 절대 안 깨지게 하고, 대신 자리가 부족하면 상대적으로 덜 중요한
+     brand 쪽(제목/부제)이 말줄임표(ellipsis)로 줄어들게 함.  */
+  header .name{
+    font-size:13px;font-weight:600;color:var(--text);letter-spacing:-0.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  header .name small{
+    display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  header nav{display:flex;gap:6px;flex-shrink:0;}
   header nav a{
     font-size:13px;
     color:var(--yu-blue);
@@ -91,6 +103,8 @@
     border:1px solid var(--pastel-sky-border);
     border-radius:20px;
     padding:5px 11px;
+    white-space:nowrap;
+    flex-shrink:0;
   }
   header nav a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
 
@@ -122,12 +136,15 @@
     display:flex;
     flex-direction:column;
     gap:14px;
+    /* 실사용자 피드백: "전반적인 색이 너무 밝아서 눈부신거 같다" — 은은한 배경 장식용
+       그라데이션이었는데 특히 하늘색/베이지 원이 너무 진하게 빛나 보였음. 디자인은
+       그대로 두고 불투명도만 전체적으로 한 단계씩 낮춤. */
     background:
-      radial-gradient(circle at 8% 5%, rgba(21,57,116,.07), transparent 32%),
-      radial-gradient(circle at 95% 15%, rgba(0,170,202,.12), transparent 34%),
-      radial-gradient(circle at 90% 60%, rgba(234,227,210,.55), transparent 32%),
-      radial-gradient(circle at 10% 65%, rgba(0,170,202,.07), transparent 30%),
-      radial-gradient(circle at 75% 95%, rgba(21,57,116,.05), transparent 30%),
+      radial-gradient(circle at 8% 5%, rgba(21,57,116,.05), transparent 32%),
+      radial-gradient(circle at 95% 15%, rgba(0,170,202,.08), transparent 34%),
+      radial-gradient(circle at 90% 60%, rgba(234,227,210,.4), transparent 32%),
+      radial-gradient(circle at 10% 65%, rgba(0,170,202,.05), transparent 30%),
+      radial-gradient(circle at 75% 95%, rgba(21,57,116,.04), transparent 30%),
       var(--bg);
   }
   .msg{max-width:82%;display:flex;flex-direction:column;}
@@ -341,7 +358,7 @@
     </div>
     <nav>
       <a href="/report" target="_blank" rel="noopener">안전신고</a>
-      <a href="/staff" target="_blank" rel="noopener">직원승인</a>
+      <a href="/staff" target="_blank" rel="noopener">직원</a>
       <a href="/admin" target="_blank" rel="noopener">관리자</a>
     </nav>
   </header>

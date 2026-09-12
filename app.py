@@ -154,6 +154,9 @@ def _new_unified_session() -> dict:
         "history": [],  # 두 시나리오가 공유하는 대화 이력 (모드 전환해도 맥락 유지)
         "scholarship": _new_scholarship_state(),
         "dual_major": _new_dual_major_state(),
+        # 학번 기반 세션 복원("로그인" 없이 이전 신청 내역 이어받기) 대기 플래그 — 아래
+        # LOOKUP_TRIGGER_RE 참고.
+        "awaiting_lookup_id": False,
     }
 
 
@@ -309,6 +312,17 @@ class ChatIn(BaseModel):
 RESET_WORDS = {"처음부터", "다시검색", "리셋", "reset"}
 LIST_WORDS = {"목록", "리스트", "list"}
 EXIT_WORDS = {"종료", "exit", "quit"}
+
+# 실사용자 요청: "로그인해서 대화내용 기억하고, 이수과목 인정신청서 반려되면 먼저 알려주면
+# 좋겠다". 진짜 회원가입/로그인(비번 저장·보안 처리 등)은 데모 코앞에 손대기엔 작업량·리스크가
+# 크고, 이 앱 세션은 애초에 브라우저 탭 하나에 sessionStorage로 묶여있어서(새로고침엔
+# 살아남지만 탭을 닫으면 사라짐 — static/index.html 참고) 반려 여부가 나오는 데 며칠 걸리는
+# 이 기능 특성상 "같은 세션으로 돌아와야만 알림이 뜨는" 지금 방식(app.py의 (0) 자동체크)은
+# 사실상 거의 발동을 못 함. 그렇다고 정식 로그인 시스템 없이도, 신청서 제출 때 이미 받아둔
+# 학번(student_id, RecognitionApplication에 이미 저장돼 있음)으로 "이어하기"만 붙이면 같은
+# 효과를 훨씬 가볍게 낼 수 있음 — 그래서 비번 없는 "학번 기반 세션 복원"으로 구현함.
+_LOOKUP_TRIGGER_RE = re.compile(r"(신청\s*(확인|조회|결과)|반려\s*(됐|되)|승인\s*(됐|됐나|여부))")
+_LOOKUP_STUDENT_ID_RE = re.compile(r"\d{6,}")
 
 SCHOLARSHIP_KEYWORDS = ("장학금", "장학", "학자금")
 DUAL_MAJOR_KEYWORDS = ("복수전공", "복전", "다전공", "부전공", "이수과목")
@@ -639,6 +653,47 @@ def _rejection_reason(app: RecognitionApplication) -> str:
     if app.decision_note:
         return f"반려됐어. 사유: {app.decision_note}"
     return "반려됐는데, 구체적인 사유는 따로 남아있지 않아."
+
+
+# 학번 기반 세션 복원 — _LOOKUP_TRIGGER_RE/_LOOKUP_STUDENT_ID_RE 주석 참고. 새 탭/새 세션으로
+# 돌아온 학생이 학번만 알려주면, 그 학번으로 마지막에 낸 인정신청서를 찾아서 지금 상태를
+# 알려주고, 반려 상태면 기존 rejection_followup 흐름(수정 후 재제출)에 그대로 이어붙인다 —
+# "다른 세션에서 반려 처리됨"과 "같은 세션에서 반려 처리됨"을 같은 코드 경로로 합쳐서
+# 새로 짤 로직을 최소화함.
+def _handle_application_lookup(sess: dict, student_id: str) -> dict:
+    apps = load_recognition_apps()
+    mine = [a for a in apps if a.student_id == student_id]
+    if not mine:
+        return {
+            "reply": f"학번 {student_id}로 낸 이수과목 인정신청서를 못 찾았어. 학번 다시 한번 확인해줄래?",
+            "stage": "intent",
+        }
+    latest = max(mine, key=lambda a: a.created_at)
+
+    if latest.status == "rejected":
+        sub = sess["dual_major"]
+        sub["last_application_id"] = latest.id
+        sub["rejection_notified"] = True
+        sub["stage"] = "rejection_followup"
+        sess["mode"] = "dual_major"
+        reason = _rejection_reason(latest)
+        reply = (
+            f"찾았다! 저번에 낸 인정신청서가 반려됐었네. {reason}\n\n"
+            "일부만 수정해서 다시 제출할 수 있어 — 지금 바로 수정해서 다시 낼까? "
+            "('응'이라고 하면 저번에 확인됐던 과목 그대로 들고 이어서 빼거나 더할 수 있게 해줄게, "
+            "'아니'라고 하면 나중에 다시 얘기하자)"
+        )
+        return {"reply": reply, "stage": "rejection_followup"}
+
+    if latest.status == "approved":
+        reply = f"찾았다! {latest.target_major} 인정신청서 3단계 승인 다 끝나서 전산 반영까지 완료됐어. 축하해!"
+        return {"reply": reply, "stage": "intent"}
+
+    reply = (
+        f"찾았다! {latest.target_major} 인정신청서는 아직 승인 절차 진행 중이야 "
+        "(학과장/복수전공학과장 → 행정처 순으로 확인 중, 끝나면 알려줄게)."
+    )
+    return {"reply": reply, "stage": "intent"}
 
 
 def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str) -> dict:
@@ -1093,6 +1148,32 @@ def _chat_impl(session_id: str, body: ChatIn):
         sess["history"].append(f"학생: {user_msg}")
         sess["history"].append(f"AI: {reply}")
         return {"session_id": session_id, "reply": reply, "stage": "exit", "mode": sess["mode"], "options": []}
+
+    # 학번 기반 세션 복원 (2단계: 학번 대기 -> 조회). _LOOKUP_TRIGGER_RE/_handle_application_lookup
+    # 주석 참고 — 새 탭이라 예전 대화가 없어도, 학번만 알려주면 저번 신청서 상태(특히 반려
+    # 여부)를 바로 알려주고 필요하면 수정·재제출 흐름으로 바로 이어붙인다.
+    if sess.get("awaiting_lookup_id"):
+        m = _LOOKUP_STUDENT_ID_RE.search(user_msg)
+        if not m:
+            reply = "학번(숫자)으로 알려줘야 찾을 수 있어! 다시 한번 알려줄래?"
+            sess["history"].append(f"학생: {user_msg}")
+            sess["history"].append(f"AI: {reply}")
+            return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": sess["mode"], "options": []}
+        sess["awaiting_lookup_id"] = False
+        result = _handle_application_lookup(sess, m.group())
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {result['reply']}")
+        result["session_id"] = session_id
+        result["mode"] = sess["mode"]
+        result.setdefault("options", [])
+        return result
+
+    if _LOOKUP_TRIGGER_RE.search(user_msg):
+        sess["awaiting_lookup_id"] = True
+        reply = "학번 알려주면 예전에 낸 신청 내역 찾아줄게!"
+        sess["history"].append(f"학생: {user_msg}")
+        sess["history"].append(f"AI: {reply}")
+        return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": sess["mode"], "options": []}
 
     sess["history"].append(f"학생: {user_msg}")
     convo = "\n".join(sess["history"])

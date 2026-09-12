@@ -3,8 +3,10 @@
 실행: python3 app.py  →  http://localhost:8000
 """
 import json
+import os
 import re
 import threading
+import traceback
 import urllib.parse
 import uuid
 from datetime import date, datetime, timezone
@@ -70,6 +72,11 @@ RECOGNITION_APPS_LOCK = threading.Lock()
 INCIDENT_REPORTS_LOCK = threading.Lock()
 STAFF_ACCESS_LOGS_LOCK = threading.Lock()
 CHAT_LOGS_LOCK = threading.Lock()
+# 코드 리뷰 지적: 다른 JSON 저장소(신청서/신고/로그)는 다 락이 있는데 장학금 DB만 없어서,
+# 관리자가 공지 하나를 등록(ingest_save)하는 도중에 다른 관리자가 항목을 삭제
+# (delete_scholarship)하면 "읽고 -> 고치고 -> 통째로 저장" 두 작업이 겹쳐서 먼저 끝난
+# 쪽의 변경이 그냥 사라져버릴 수 있었음(lost update).
+DB_LOCK = threading.Lock()
 
 
 def _get_session_lock(session_id: str) -> threading.Lock:
@@ -83,6 +90,19 @@ def _get_session_lock(session_id: str) -> threading.Lock:
 
 # ---------------- DB 로드/저장 ----------------
 
+def _atomic_write_text(path: Path, text: str) -> None:
+    """코드 리뷰 지적: 예전엔 각 save_* 함수가 그냥 path.write_text(...)로 파일 전체를
+    바로 덮어썼는데, 이건 원자적(atomic)이지 않아서 — staff.html/incidents.html/
+    admin.html처럼 몇 초마다 폴링해서 같은 파일을 읽는 화면이 하필 쓰는 도중(파일이
+    반쯤만 써진 순간)에 읽으면 JSON이 잘려서 json.JSONDecodeError로 500이 날 수 있었음.
+    같은 디렉터리에 임시파일로 먼저 다 쓴 다음 os.replace로 한 번에 갈아끼우면, 읽는
+    쪽은 항상 완전히 쓰여진 이전 버전 아니면 완전히 쓰여진 새 버전만 보게 됨."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + f".tmp{uuid.uuid4().hex[:8]}")
+    tmp_path.write_text(text, encoding="utf-8")
+    os.replace(tmp_path, path)
+
+
 def load_db() -> list[Scholarship]:
     if not DB_PATH.exists():
         return []
@@ -91,10 +111,9 @@ def load_db() -> list[Scholarship]:
 
 
 def save_db(db: list[Scholarship]) -> None:
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    DB_PATH.write_text(
+    _atomic_write_text(
+        DB_PATH,
         json.dumps([s.model_dump() for s in db], ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
@@ -113,18 +132,16 @@ def load_incident_reports() -> list[IncidentReport]:
 
 
 def save_incident_reports(reports: list[IncidentReport]) -> None:
-    INCIDENT_REPORTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    INCIDENT_REPORTS_PATH.write_text(
+    _atomic_write_text(
+        INCIDENT_REPORTS_PATH,
         json.dumps([r.model_dump() for r in reports], ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
 def save_recognition_apps(apps: list[RecognitionApplication]) -> None:
-    RECOGNITION_PATH.parent.mkdir(parents=True, exist_ok=True)
-    RECOGNITION_PATH.write_text(
+    _atomic_write_text(
+        RECOGNITION_PATH,
         json.dumps([a.model_dump() for a in apps], ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
@@ -136,10 +153,9 @@ def load_staff_access_logs() -> list[StaffAccessLog]:
 
 
 def save_staff_access_logs(logs: list[StaffAccessLog]) -> None:
-    STAFF_ACCESS_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STAFF_ACCESS_LOGS_PATH.write_text(
+    _atomic_write_text(
+        STAFF_ACCESS_LOGS_PATH,
         json.dumps([r.model_dump() for r in logs], ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
@@ -151,10 +167,9 @@ def load_chat_logs() -> list[ChatLogEntry]:
 
 
 def save_chat_logs(logs: list[ChatLogEntry]) -> None:
-    CHAT_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CHAT_LOGS_PATH.write_text(
+    _atomic_write_text(
+        CHAT_LOGS_PATH,
         json.dumps([r.model_dump() for r in logs], ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
@@ -341,10 +356,11 @@ def list_scholarships():
 
 @app.delete("/api/scholarships/{sid}")
 def delete_scholarship(sid: str):
-    db = load_db()
-    new_db = [s for s in db if s.id != sid]
-    save_db(new_db)
-    return {"ok": True, "count": len(new_db)}
+    with DB_LOCK:
+        db = load_db()
+        new_db = [s for s in db if s.id != sid]
+        save_db(new_db)
+        return {"ok": True, "count": len(new_db)}
 
 
 # ---------------- RAG 자료 추가 (공지 원문 → 구조화 → 저장) ----------------
@@ -373,10 +389,11 @@ def ingest_save(body: IngestSaveIn):
     except Exception as e:  # noqa: BLE001
         return JSONResponse(status_code=400, content={"error": f"형식이 올바르지 않아요: {e}"})
     record.id = record.id or uuid.uuid4().hex[:12]
-    db = load_db()
-    db.append(record)
-    save_db(db)
-    return {"ok": True, "id": record.id, "count": len(db)}
+    with DB_LOCK:
+        db = load_db()
+        db.append(record)
+        save_db(db)
+        return {"ok": True, "id": record.id, "count": len(db)}
 
 
 # ---------------- 채팅 (통합) ----------------
@@ -446,10 +463,14 @@ HELP_MESSAGE = (
 # 개인 취미 등)는 공개용 챗봇 답변에 어울리지 않아 넣지 않음.
 CREATOR_EXACT_WORDS = {"제작자", "개발자"}
 # 실사용자 리포트: "제작자가누구냐"/"제작자말이야"처럼 띄어쓰기 없이(또는 다르게) 치는
-# 경우가 많아서, 문구를 그대로 비교하면 다 놓침. 그래서 "제작자"/"개발자" 같은 핵심
-# 단어는 문장 어디에 붙어있든(부분 문자열로) 잡아내고, 그 단어가 아예 없는 "누가
-# 만들었어?" 같은 표현만 별도 문구로 커버함. 이 챗봇 도메인(장학금/복수전공/안전신고)
-# 특성상 "제작자"/"개발자" 단어가 나오는 대화는 거의 항상 이 질문이라 오탐 위험은 낮음.
+# 경우가 많아서, 문구를 그대로 비교하면 다 놓침. 그래서 "제작자"/"개발자"로 문장이
+# *시작할* 때만 부분 문자열로 넉넉하게 잡아냄. (코드 리뷰에서 지적된 문제: 그냥
+# "메시지 어디에든 포함되면 매칭"으로 하면, 복수전공 상담 중 "저는 개발자가 되고
+# 싶어서 이 수업 들었어" 같은 진로 얘기나, 안전신고 위치로 "학생창업개발자센터 앞"을
+# 말한 경우까지 죄다 여기로 새버림. "문장 맨 앞"으로 좁히면 그 두 오탐 사례는 모두
+# 피하면서, 실제 "제작자가누구냐" 같은 붙여쓰기는 그대로 잡아냄.)
+# "누가 만들었어?"처럼 저 단어 자체가 없는 표현은 문장 아무 데나 있어도 됨 — 이런
+# 표현이 진로/장소 얘기와 헷갈릴 일은 없기 때문.
 CREATOR_KEYWORD_PHRASES = (
     "누가 만들었", "누가만들었", "누가 만든", "누가만든",
     "누가 개발", "누가개발", "만든 사람", "만든사람",
@@ -461,7 +482,7 @@ def _looks_like_creator_question(msg: str) -> bool:
     if not stripped:
         return False
     compact = stripped.replace(" ", "")
-    if any(w in compact for w in CREATOR_EXACT_WORDS):
+    if any(compact.startswith(w) for w in CREATOR_EXACT_WORDS):
         return True
     return any(p.replace(" ", "") in compact for p in CREATOR_KEYWORD_PHRASES)
 
@@ -488,6 +509,18 @@ _LOOKUP_STUDENT_ID_RE = re.compile(r"\d{6,}")
 
 SCHOLARSHIP_KEYWORDS = ("장학금", "장학", "학자금")
 DUAL_MAJOR_KEYWORDS = ("복수전공", "복전", "다전공", "부전공", "이수과목")
+
+# 코드 리뷰 발견 버그 수정용: 아래 stage들은 "지금 막 던진 질문에 대한 짧고 명확한 답"을
+# 기다리는 단계라서, 메시지에 다른 모드 키워드가 우연히 섞여 있어도 모드를 바꾸면 안 됨
+# (_chat_impl의 mode 자동전환 분기 참고).
+_MODE_SWITCH_LOCKED_STAGES = {
+    "scholarship": {"matched", "condition_check"},
+    "dual_major": {
+        "course_draft", "student_info", "student_info_confirm",
+        "course_overlap_check", "course_semester_check",
+        "rejection_followup", "awaiting_home_major",
+    },
+}
 
 
 def detect_mode_keywords(msg: str) -> Optional[str]:
@@ -665,10 +698,17 @@ def _handle_incident_followup_message(sess: dict, user_msg: str) -> dict:
         if fu.extra_detail and fu.extra_detail.strip():
             pending["description"] = (pending["description"] + " " + fu.extra_detail.strip()).strip()
             updates["description"] = pending["description"]
-        if fu.reporter_name:
+        # 코드 리뷰에서 지적된 버그: 학생이 한 번 "익명으로 할래"라고 정한 뒤에, 그
+        # 다음 턴에서 별 생각 없이 "아 참고로 내 이름은 홍길동이야" 처럼 이름을
+        # 흘리면, 예전엔 그 이름이 그대로 저장/직원 화면 반영까지 돼버려서 방금 한
+        # 익명 선택이 조용히 뒤집혔었음. 이미 익명으로 확정된 뒤에는 이름/연락처를
+        # 새로 안 받고 그 결정을 그대로 지켜준다 (같은 턴에 다시 "이름 알려줄게" +
+        # wants_anonymous 신호가 같이 온 경우는 아래 wants_anonymous 블록이 그대로
+        # 처리하므로 문제 없음).
+        if fu.reporter_name and not pending["anonymous"]:
             pending["reporter_name"] = fu.reporter_name.strip()
             updates["reporter_name"] = pending["reporter_name"]
-        if fu.reporter_contact:
+        if fu.reporter_contact and not pending["anonymous"]:
             pending["reporter_contact"] = fu.reporter_contact.strip()
             updates["reporter_contact"] = pending["reporter_contact"]
         if fu.wants_anonymous:
@@ -932,21 +972,33 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         }
 
     if stage == "matched":
-        m = re.search(r"\d+", user_msg)
-        if not m:
-            # 예전엔 숫자가 없으면 무조건 "번호로 골라줘"만 반복해서, 학생이 "이거 나
-            # 해당 안 되는데?"처럼 후보를 반박해도 그 말을 완전히 무시하고 똑같은 문장을
-            # 계속 뱉는 무한루프 버그가 있었음. 이제는 학생이 뭐라고 했는지 실제로 읽고
-            # 반응한 다음에 다시 번호를 고를 수 있게 안내함.
-            reply = bot_core.generate_matched_stage_reply(convo, sub["matches"])
-            return {
-                "reply": reply,
-                "stage": "matched",
-                "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
-            }
-        idx = int(m.group()) - 1
-        if idx < 0 or idx >= len(sub["matches"]):
-            reply = "그 번호는 없어, 다시 골라줘!"
+        match_count = len(sub["matches"])
+        idx = None
+        # "3번" 처럼 번호 뒤에 '번'이 붙어있으면 그게 제일 확실한 신호라서 최우선으로 씀.
+        m_labeled = re.search(r"(\d+)\s*번", user_msg)
+        if m_labeled:
+            candidate = int(m_labeled.group(1)) - 1
+            if 0 <= candidate < match_count:
+                idx = candidate
+        if idx is None:
+            # 실사용자 리포트: "학번 20231234인데 3번 할래"처럼 메시지에 숫자가 여러 개
+            # 섞여 있으면, 예전엔 그냥 메시지에서 처음 나오는 숫자(학번 20231234)를
+            # 집어서 번호로 잘못 해석해버리는 버그가 있었음. 이제는 실제 후보 개수
+            # 범위(1~match_count) 안에 드는 숫자만 후보로 인정하고, 그런 숫자가 정확히
+            # 하나일 때만 그걸로 확정함 — 범위 밖 숫자(학번, 연도 등)는 무시됨.
+            in_range = [int(x) - 1 for x in re.findall(r"\d+", user_msg) if 0 < int(x) <= match_count]
+            unique_in_range = set(in_range)
+            if len(unique_in_range) == 1:
+                idx = next(iter(unique_in_range))
+        if idx is None:
+            if not re.search(r"\d+", user_msg):
+                # 예전엔 숫자가 없으면 무조건 "번호로 골라줘"만 반복해서, 학생이 "이거 나
+                # 해당 안 되는데?"처럼 후보를 반박해도 그 말을 완전히 무시하고 똑같은 문장을
+                # 계속 뱉는 무한루프 버그가 있었음. 이제는 학생이 뭐라고 했는지 실제로 읽고
+                # 반응한 다음에 다시 번호를 고를 수 있게 안내함.
+                reply = bot_core.generate_matched_stage_reply(convo, sub["matches"])
+            else:
+                reply = "그 번호는 없어, 다시 골라줘!"
             return {
                 "reply": reply,
                 "stage": "matched",
@@ -1594,7 +1646,24 @@ def chat(body: ChatIn):
     # 단계에서 "제출"이 두 번 겹치면 신청서가 2개로 접수되는 걸 막기 위함.
     session_id = body.session_id or uuid.uuid4().hex
     with _get_session_lock(session_id):
-        result = _chat_impl(session_id, body)
+        try:
+            result = _chat_impl(session_id, body)
+        except Exception:
+            # 코드 리뷰 지적: Gemini 호출 하나(네트워크 순단, 429, 모델이 형식 안 맞는 JSON을
+            # 뱉어서 모델 검증 실패 등)라도 실패하면 그게 그대로 위로 튀어서 브라우저에
+            # 날것의 500 에러가 뜨고 채팅이 그 자리에서 멈춰버렸음 — 시연 중 가장 눈에 띄게
+            # 터질 수 있는 지점이라 여기서 반드시 잡아서 대화가 끊기지 않게 한다. 서버 콘솔에는
+            # 원인 추적을 위해 스택트레이스를 남기고, 학생한테는 세션/모드는 그대로 둔 채
+            # 자연스러운 재시도 안내만 보여줌.
+            traceback.print_exc()
+            sess = get_unified_session(session_id)
+            result = {
+                "session_id": session_id,
+                "reply": "미안, 방금 답변 만드는 중에 문제가 좀 생겼어! 방금 한 말 한 번만 다시 말해줄래?",
+                "stage": sess["mode"] or "intent",
+                "mode": sess["mode"],
+                "options": [],
+            }
         _log_chat_turn(session_id, body.message, result)
         return result
 
@@ -1602,6 +1671,19 @@ def chat(body: ChatIn):
 def _chat_impl(session_id: str, body: ChatIn):
     sess = get_unified_session(session_id)
     user_msg = body.message.strip()
+
+    if not user_msg:
+        # 코드 리뷰 지적: 빈 메시지가 여기까지 오면 아래 라우팅(특히 mode가 아직 None일 때
+        # 호출되는 bot_core.classify_intent("")) 이 의미 없는 빈 문자열로 LLM을 호출하게
+        # 됨 — 프론트엔드에서 이미 막고 있긴 하지만, API를 직접 두드리는 경우까지
+        # 대비해서 서버에서도 한 번 더 막아준다.
+        return {
+            "session_id": session_id,
+            "reply": "어? 메시지가 안 보내진 것 같아. 하고 싶은 말 편하게 입력해줘!",
+            "stage": sess["mode"] or "intent",
+            "mode": sess["mode"],
+            "options": [],
+        }
 
     if not config.has_api_key():
         return {
@@ -1753,7 +1835,17 @@ def _chat_impl(session_id: str, body: ChatIn):
             return {"session_id": session_id, "reply": reply, "stage": "intent", "mode": None, "options": []}
         sess["mode"] = mode
     elif detected and detected != sess["mode"]:
-        sess["mode"] = detected
+        # 코드 리뷰에서 지적된 버그: 예전엔 어느 단계에 있든 상관없이 메시지에 "장학금"/
+        # "복수전공" 같은 키워드가 스치기만 하면 바로 모드를 바꿔버렸음. 그래서 예를 들어
+        # 복수전공 신청서를 다 쓰고 "장학금도 궁금한데 일단 이거 제출할게"처럼 말하면,
+        # "제출"은 무시되고 모드가 장학금으로 튀어서 방금 쓴 신청서 제출이 씹혀버림.
+        # 지금 하던 흐름이 번호 선택/제출 확인처럼 "짧고 명확한 답을 기다리는" 단계일
+        # 때는 모드를 바꾸지 않고 그 흐름을 마저 처리하게 둔다 — 자유롭게 이야기하는
+        # 단계(슬롯 채우기, 과목 수집 등)에서만 자연스럽게 주제 전환을 허용함.
+        current_sub = sess["scholarship"] if sess["mode"] == "scholarship" else sess["dual_major"]
+        locked_stages = _MODE_SWITCH_LOCKED_STAGES.get(sess["mode"], set())
+        if current_sub.get("stage") not in locked_stages:
+            sess["mode"] = detected
 
     mode = sess["mode"]
     if mode == "scholarship":

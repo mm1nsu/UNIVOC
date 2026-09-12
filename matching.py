@@ -126,15 +126,39 @@ def _major_core(text: str) -> str:
     return text
 
 
+def _exclusion_spans(text: str) -> list[tuple[int, int]]:
+    """major_restriction 원문 안에서 "(...제외...)" 형태의 배제 괄호 구간을 찾아
+    (시작 인덱스, 끝 인덱스) 목록으로 반환. 코드 리뷰에서 발견된 버그를 고치기 위해
+    추가됨: 실제 DB의 "가수 윤하 장학금"이 major_restriction에
+    "학과명에 '물리' 단어 포함 학과 (물리치료학과 등 의료·보건계열 제외)"라고 적어놨는데,
+    여기서 '물리치료'는 배제 대상으로 명시된 학과라서 오히려 매칭에서 빠져야 하는데도
+    단순 포함 검사로는 강제포함 대상으로 잘못 걸렸었음."""
+    return [
+        (m.start(), m.end())
+        for m in re.finditer(r"\(([^()]*)\)", text)
+        if "제외" in m.group(1)
+    ]
+
+
 def major_clearly_matches(student_major: str | None, major_restriction: str | None) -> bool:
     """학생이 말한 전공의 핵심 학과명이 공지의 학과제한 원문에 그대로 포함되면 True.
-    2글자 미만인 핵심명은(오탐 위험이 커서) 매칭 대상에서 제외함."""
+    2글자 미만인 핵심명은(오탐 위험이 커서) 매칭 대상에서 제외함. 단, 그 핵심 학과명이
+    "(...제외...)" 형태의 배제 괄호 안에서만 발견되고 그 바깥에서는 전혀 안 나오면,
+    그건 오히려 "이 학과는 대상 아님"이라는 뜻이므로 강제포함하지 않는다."""
     if not student_major or not major_restriction:
         return False
     core = _major_core(student_major)
     if len(core) < 2:
         return False
-    return core in major_restriction
+    if core not in major_restriction:
+        return False
+    exclusion_spans = _exclusion_spans(major_restriction)
+    if not exclusion_spans:
+        return True
+    for m in re.finditer(re.escape(core), major_restriction):
+        if not any(start <= m.start() < end for start, end in exclusion_spans):
+            return True
+    return False
 
 
 def _status_matches(student_status: str | None, allowed: list[str]) -> bool:
@@ -158,6 +182,16 @@ def is_currently_open(s: Scholarship, today: date) -> bool:
     if s.benefit_type not in ("장학금", "근로장학"):
         # 대출/이자지원류는 기본 매칭에서는 제외 (필요시 별도 안내)
         return False
+    # 코드 리뷰에서 지적된 버그: apply_start는 스키마에 있고 크롤링 데이터에도 채워져
+    # 있는데, 정작 여기서는 apply_end(마감일)만 확인하고 apply_start(접수 시작일)는 한
+    # 번도 확인하지 않았음. 그래서 아직 접수가 시작도 안 한 장학금(예: 접수 시작이
+    # 며칠 뒤인 공지)이 "지금 신청 가능"으로 잘못 뜨는 문제가 있었음.
+    if s.apply_start:
+        try:
+            if date.fromisoformat(s.apply_start) > today:
+                return False
+        except ValueError:
+            pass
     if s.apply_end:
         try:
             if date.fromisoformat(s.apply_end) < today:
@@ -188,7 +222,12 @@ def match_scholarships(
         if e.gpa_requirement_percent is not None:
             if state.gpa is None:
                 continue
-            student_gpa_percent = state.gpa / 4.5 * 100
+            # 코드 리뷰 지적: 4.5 만점 -> 백분율 변환은 나눗셈이라 3.5/4.5*100처럼 딱
+            # 커트라인에 걸치는 값도 77.77777...78% 같은 부동소수점 오차가 생김. DB에
+            # 저장된 gpa_requirement_percent(77.8)는 소수 첫째자리까지 반올림된 값이라
+            # 반올림 없이 그대로 비교하면 "정확히 3.5 이상"인 학생이 부동소수점 오차
+            # 때문에 커트라인에서 튕겨나가는 경우가 생긴다. 같은 자릿수로 반올림한 뒤 비교.
+            student_gpa_percent = round(state.gpa / 4.5 * 100, 1)
             if student_gpa_percent < e.gpa_requirement_percent:
                 continue
 

@@ -64,11 +64,13 @@
     background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
     box-shadow:0 1px 6px rgba(21,57,116,.25);
   }
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img.logo{height:24px;}
-  header .divider{width:1px;height:20px;background:var(--border);}
-  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
-  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
+  /* staff.html과 동일한 문제(코드 리뷰/직접 테스트로 발견) — 좁은 화면에서 헤더 제목이
+     글자 단위로 줄바꿈되던 것을 index.html과 같은 방식으로 고침. */
+  header .brand{display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden;}
+  header img.logo{height:24px;flex-shrink:0;}
+  header .divider{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header nav{display:flex;gap:8px;align-items:center;flex-shrink:0;}
   header a{
     color:var(--yu-blue);
@@ -346,6 +348,11 @@
   </div>
 </div>
 
+<!-- 코드 리뷰 지적: staff.html과 같은 문제 — 게이트가 화면만 덮고 키보드 Tab 이동은
+     막지 않아서, 이름/소속 확인 없이도 Tab+Enter로 뒤에 깔린 처리 버튼을 누를 수
+     있었음. inert로 확인 전까지 안쪽을 완전히 비활성화하고, initIncidentsGate()에서
+     확인 시 제거함. -->
+<div id="appRoot" inert>
 <header>
   <div class="brand">
     <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
@@ -376,6 +383,7 @@
 
   <div id="listArea"><div class="empty">불러오는 중입니다...</div></div>
 </main>
+</div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
@@ -751,6 +759,8 @@ startPolling();
     localStorage.setItem('univoc_staff_name', name);
     localStorage.setItem('univoc_staff_affiliation', affiliation);
     overlay.hidden = true;
+    const root = document.getElementById('appRoot');
+    if(root) root.removeAttribute('inert');
   }
 
   confirmBtn.addEventListener('click', confirmGate);

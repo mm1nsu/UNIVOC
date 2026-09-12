@@ -58,11 +58,13 @@
     background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
     box-shadow:0 1px 6px rgba(21,57,116,.25);
   }
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img.logo{height:24px;}
-  header .divider{width:1px;height:20px;background:var(--border);}
-  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
-  header .title small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
+  /* staff.html/incidents.html과 동일한 문제(코드 리뷰/직접 테스트로 발견) — 좁은
+     화면에서 헤더 제목이 글자 단위로 줄바꿈되던 것을 index.html과 같은 방식으로 고침. */
+  header .brand{display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden;}
+  header img.logo{height:24px;flex-shrink:0;}
+  header .divider{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header .title small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header nav{display:flex;gap:8px;flex-shrink:0;}
   header a{
     color:var(--yu-blue);
@@ -92,8 +94,14 @@
     border-radius:16px;
     padding:24px 26px;
   }
-  .card:nth-of-type(2){border-top-color:var(--pastel-beige-border);}
-  .card:nth-of-type(3){border-top-color:var(--pastel-navy-border);}
+  /* 코드 리뷰 지적: :nth-of-type은 카드가 DOM에서 몇 번째인지로만 색을 정해서, Step
+     카드를 새로 추가/삭제/순서변경하면(예: Step 4/5가 나중에 추가됨) 색이 조용히
+     엉뚱한 카드로 옮겨감 — index.html 퀵바에서 이미 한 번 겪은 것과 같은 버그 클래스라
+     여기도 id 기반으로 바꿈. */
+  #cardStep2{border-top-color:var(--pastel-beige-border);}
+  #cardStep3{border-top-color:var(--pastel-navy-border);}
+  #cardStep4{border-top-color:var(--pastel-gray-border);}
+  #cardStep5{border-top-color:var(--pastel-beige-border);}
   .card .eyebrow{
     font-size:11px;
     font-weight:700;
@@ -197,7 +205,7 @@
 </header>
 
 <main>
-  <div class="card">
+  <div class="card" id="cardStep1">
     <div class="eyebrow">Step 1</div>
     <h2>Gemini API 설정</h2>
     <div class="desc">여기서 등록하면 서버 재시작 없이 바로 챗봇에 반영돼요.</div>
@@ -217,7 +225,7 @@
     <div id="settingsStatus" class="status"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardStep2">
     <div class="eyebrow">Step 2</div>
     <h2>장학금 공지 추가</h2>
     <div class="desc">크롤링한 공지 원문(markdown/텍스트)을 붙여넣거나 파일을 올리면 AI가 구조화해서 미리보기를 보여줘요. 확인 후 저장을 눌러야 실제 DB에 반영됩니다.</div>
@@ -246,13 +254,13 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardStep3">
     <div class="eyebrow">Step 3</div>
     <h2>등록된 장학금 (<span id="dbCount">0</span>건)</h2>
     <div id="dbTableWrap" class="table-scroll"><div class="empty">불러오는 중...</div></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardStep4">
     <div class="eyebrow">Step 4</div>
     <h2>직원 접속 로그 (<span id="accessLogCount">0</span>건)</h2>
     <!-- 실사용자 요청: "직원 페이지는 직원 페이지 들어갈때마다 본인의 이름과 소속을 확인해서
@@ -265,7 +273,7 @@
     <div id="accessLogTableWrap" class="table-scroll"><div class="empty">불러오는 중...</div></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardStep5">
     <div class="eyebrow">Step 5</div>
     <h2>학생 대화 로그</h2>
     <!-- 실사용자 요청: "사람들이 나눈 대화를 로그처럼 저장해놓을 수 있으면 좋겠는데" —
@@ -286,10 +294,19 @@
 let lastParsed = null;
 
 async function loadSettings(){
-  const res = await fetch('/api/settings');
-  const data = await res.json();
-  document.getElementById('modelName').value = data.model || '';
-  document.getElementById('apiKey').placeholder = data.has_api_key ? '저장된 키가 있어요 (변경하려면 새로 입력)' : 'AIza...';
+  // 코드 리뷰 지적: 이 파일의 다른 fetch 호출은 전부 try/catch로 감싸서 실패해도
+  // 화면에 "불러오기 실패" 같은 메시지가 뜨는데, 여기만 감싸져 있지 않아서 /api/settings가
+  // 잠깐이라도 실패하면(예: Render 콜드스타트) 처리 안 된 예외가 조용히 던져지고 API
+  // 키/모델 입력칸이 그냥 빈 채로 남아서 "설정 화면이 고장났나?"처럼 보였음.
+  try{
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    document.getElementById('modelName').value = data.model || '';
+    document.getElementById('apiKey').placeholder = data.has_api_key ? '저장된 키가 있어요 (변경하려면 새로 입력)' : 'AIza...';
+  }catch(e){
+    document.getElementById('settingsStatus').textContent = '설정을 불러오지 못했어요. 새로고침해서 다시 시도해주세요.';
+    document.getElementById('settingsStatus').className = 'status err';
+  }
 }
 
 async function saveSettings(){
@@ -405,11 +422,11 @@ async function loadDb(){
       if(s.eligibility?.gpa_requirement_raw) tags.push(`성적 ${s.eligibility.gpa_requirement_raw}`);
       (s.eligibility?.special_conditions || []).forEach(c => tags.push(c));
       html += `<tr>
-        <td><b>${s.name}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px;">${s.benefit_type || ''}</div></td>
-        <td>${s.apply_end || '상시/정보없음'}</td>
-        <td>${tags.map(t => `<span class="tag">${t}</span>`).join('') || '-'}</td>
+        <td><b>${escapeHtml(s.name)}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px;">${escapeHtml(s.benefit_type || '')}</div></td>
+        <td>${escapeHtml(s.apply_end || '상시/정보없음')}</td>
+        <td>${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('') || '-'}</td>
         <td>${s.is_open_application ? '🟢 신청가능' : '⚪ 비활성'}</td>
-        <td><button class="danger" onclick="deleteScholarship('${s.id}')">삭제</button></td>
+        <td><button class="danger" onclick="deleteScholarship('${escapeHtml(s.id)}')">삭제</button></td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -448,9 +465,9 @@ async function loadAccessLogs(){
     list.forEach(r => {
       html += `<tr>
         <td>${fmtLogTime(r.created_at)}</td>
-        <td>${r.name}</td>
-        <td>${r.affiliation}</td>
-        <td>${PAGE_LABELS[r.page] || r.page}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.affiliation)}</td>
+        <td>${escapeHtml(PAGE_LABELS[r.page] || r.page)}</td>
       </tr>`;
     });
     html += '</tbody></table>';

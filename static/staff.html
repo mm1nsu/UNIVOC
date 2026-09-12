@@ -66,11 +66,17 @@
     background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
     box-shadow:0 1px 6px rgba(21,57,116,.25);
   }
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img.logo{height:24px;}
-  header .divider{width:1px;height:20px;background:var(--border);}
-  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
-  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
+  /* 코드 리뷰(직접 브라우저 테스트)에서 발견: index.html 헤더는 이미 이 문제를 고친
+     적 있는데(주석 참고) staff.html은 그 수정이 안 들어가 있었음 — 좁은 화면에서
+     nav(flex-shrink:0)가 자리를 다 차지하면 brand/title이 눌리면서 한글이 글자
+     단위로 줄바꿈돼 제목이 세로로 한 글자씩 쪼개져 보임. index.html과 동일하게
+     brand는 min-width:0+overflow:hidden으로 축소를 허용하고, title은 nowrap+
+     ellipsis로 잘리게 함. */
+  header .brand{display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden;}
+  header img.logo{height:24px;flex-shrink:0;}
+  header .divider{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header nav{display:flex;gap:8px;flex-shrink:0;}
   header a{
     color:var(--yu-blue);
@@ -91,9 +97,16 @@
     padding:24px 20px 70px;
   }
 
+  /* 코드 리뷰 지적: 이전에 index.html 퀵바에서 이미 한 번 겪은 것과 같은 버그 —
+     좁은 화면(360~400px)에서 flex 행이 눌리면 한글은 기본적으로 아무 글자 사이에서나
+     줄바꿈이 허용돼서 "복수전공학과장" 같은 버튼 라벨이 글자 중간에서 깨짐. 여기(toolbar/
+     role-chip/decision-row)는 그 수정이 안 들어가 있었어서 같은 증상이 남아있었음.
+     flex-wrap으로 자리가 부족하면 다음 줄로 넘어가게 하고, 각 버튼 자체는
+     white-space:nowrap으로 텍스트가 절대 중간에서 안 잘리게 함. */
   .toolbar{
     display:flex;
     align-items:center;
+    flex-wrap:wrap;
     gap:8px;
     margin-bottom:16px;
   }
@@ -105,6 +118,7 @@
     border-radius:20px;
     padding:7px 14px;
     cursor:pointer;
+    white-space:nowrap;
   }
   .toolbar .tab.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
   .toolbar .refresh{
@@ -140,6 +154,7 @@
     padding:6px 13px;
     cursor:pointer;
     font-family:inherit;
+    white-space:nowrap;
   }
   .role-chip.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
 
@@ -319,18 +334,20 @@
 
   .decision-row{
     display:flex;
+    flex-wrap:wrap;
     gap:8px;
     margin-top:16px;
   }
   .decision-row button{
-    flex:1;
+    flex:1 1 120px;
     border:none;
     border-radius:10px;
-    padding:10px 0;
+    padding:10px 6px;
     font-size:13px;
     font-weight:700;
     font-family:inherit;
     cursor:pointer;
+    white-space:nowrap;
     transition:opacity .15s ease;
   }
   .decision-row button:hover{opacity:0.88;}
@@ -503,6 +520,12 @@
     <button class="gate-confirm" id="gateConfirmBtn" type="button">확인하고 들어가기</button>
   </div>
 </div>
+<!-- 코드 리뷰 지적: gateOverlay는 화면상으로만 아래 내용을 가리고 있었고, 키보드
+     Tab 이동은 막지 않아서 이름/소속 확인을 아예 안 거치고도 Tab+Enter로 뒤에 깔린
+     승인/반려 버튼을 누를 수 있었음(확인 절차의 취지 자체가 무력화됨). appRoot에
+     inert 속성을 걸어두면 확인 전까지는 안쪽 요소가 Tab 이동/클릭/스크린리더 모두에서
+     완전히 제외되고, 확인 버튼을 누른 순간 initStaffGate()에서 이 속성을 지워줌. -->
+<div id="appRoot" inert>
 <header>
   <div class="brand">
     <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
@@ -543,6 +566,7 @@
   <div id="list"></div>
   <div id="versionInfo"></div>
 </main>
+</div>
 
 <div class="modal-overlay" id="modalOverlay" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -637,7 +661,14 @@ async function getStaffName(promptAlways){
   return name;
 }
 staffNameLabel.addEventListener('click', () => getStaffName(true));
-getStaffName(false);
+// 코드 리뷰 지적(직접 테스트하다가 발견): 예전엔 여기서 getStaffName(false)를 페이지
+// 로드 즉시 호출했는데, 이러면 "직원 확인" 게이트가 뜬 것과 동시에 이 예전 기능의
+// "처리자 이름을 입력해 주세요" 프롬프트까지 같이 떠서, 이름을 입력하는 창이 화면에
+// 두 개 겹쳐 보이는 상태가 됐음(게이트가 생기기 전부터 있던 기능이라 새 게이트와
+// 안 맞물렸던 것). 게이트가 이미 이름/소속을 매번 받아서 localStorage에 저장해주므로,
+// 이 호출은 게이트 확인이 끝난 뒤(아래 initStaffGate의 confirmGate 안)로 옮겨서
+// 프롬프트가 중복으로 뜨지 않게 함 — 그 시점엔 이미 이름이 저장돼 있어서 실제로
+// 프롬프트가 뜨지는 않고, 그냥 라벨(staffNameLabel)만 채워짐.
 
 // 3단계 승인 — 이 브라우저(탭)에서 내가 어떤 역할로 처리하는지 선택. 역할에 따라 카드마다
 // 뜨는 승인/반려 버튼이 달라짐(내 역할이 처리할 차례인 신청서만 버튼이 뜸).
@@ -659,6 +690,18 @@ document.querySelectorAll('.role-chip').forEach(chip => {
   chip.addEventListener('click', () => setRole(chip.dataset.role));
 });
 applyRoleChipState();
+
+// 코드 리뷰 지적: renderCard()가 학생이 챗봇에 자유텍스트로 입력한 값(과목명, 이름,
+// 이메일 등)을 그대로 innerHTML에 꽂아 넣고 있어서, 과목명 같은 데 우연히 "<"/">" 같은
+// 문자가 들어가면(예: "C++ <입문>") 카드가 깨지거나 최악의 경우 스크립트가 실행될 수
+// 있는 위험이 있었음(incidents.html은 escapeHtml을 이미 쓰고 있는데 staff.html만
+// 빠져있었음). 같은 방식으로 이스케이프 헬퍼를 추가하고 사용자 입력이 들어가는 모든
+// 자리에 적용함.
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s == null ? '' : s;
+  return div.innerHTML;
+}
 
 function fmtDate(iso){
   if(!iso) return '';
@@ -685,9 +728,9 @@ const STAGE_META = {
 function stageChip(label, step){
   let detail = '대기중';
   if(step.status === 'approved'){
-    detail = `${step.decided_by || '-'} · ${fmtDate(step.decided_at)}`;
+    detail = `${escapeHtml(step.decided_by || '-')} · ${fmtDate(step.decided_at)}`;
   }else if(step.status === 'rejected'){
-    detail = `${step.decided_by || '-'} · ${fmtDate(step.decided_at)}${step.note ? ' · ' + step.note : ''}`;
+    detail = `${escapeHtml(step.decided_by || '-')} · ${fmtDate(step.decided_at)}${step.note ? ' · ' + escapeHtml(step.note) : ''}`;
   }
   return `<div class="stage-chip ${step.status}">
       <div class="stage-chip-label">${label}</div>
@@ -699,7 +742,7 @@ function stageTrackHtml(app){
   const stages = Object.values(STAGE_META).map(m => [m.label, app[m.field]]);
   const hasStagedRecord = stages.some(([, step]) => step.status !== 'pending');
   if(!hasStagedRecord && app.status !== 'pending'){
-    return `<div class="decided-note">(구버전 단일승인 기록) ${statusLabel(app.status)} · ${fmtDate(app.decided_at)}${app.decided_by ? ' · ' + app.decided_by : ''}${app.decision_note ? ' · ' + app.decision_note : ''}</div>`;
+    return `<div class="decided-note">(구버전 단일승인 기록) ${statusLabel(app.status)} · ${fmtDate(app.decided_at)}${app.decided_by ? ' · ' + escapeHtml(app.decided_by) : ''}${app.decision_note ? ' · ' + escapeHtml(app.decision_note) : ''}</div>`;
   }
   return `<div class="stage-track">${stages.map(([label, step]) => stageChip(label, step)).join('')}</div>`;
 }
@@ -730,7 +773,7 @@ function decisionSectionHtml(app){
     .filter(m => m.field !== meta.field)
     .every(m => app[m.field].status === 'approved');
   const emailHint = app.student_email
-    ? `<div class="decision-hint">📧 반려하시면 즉시, 승인하시면 ${otherStagesApproved ? '지금이 마지막 단계라 바로' : '남은 단계까지 다 끝나야'} <b>${app.student_email}</b>로 알림 메일이 자동 발송됩니다.</div>`
+    ? `<div class="decision-hint">📧 반려하시면 즉시, 승인하시면 ${otherStagesApproved ? '지금이 마지막 단계라 바로' : '남은 단계까지 다 끝나야'} <b>${escapeHtml(app.student_email)}</b>로 알림 메일이 자동 발송됩니다.</div>`
     : `<div class="decision-hint decision-hint-missing">📧 학생 이메일이 없어서 승인/반려하셔도 알림 메일은 발송되지 않습니다.</div>`;
   return `<div class="decision-row">
        <button class="btn-approve" data-action="approved" data-id="${app.id}" data-stage="${currentRole}">${meta.label} 승인</button>
@@ -745,11 +788,11 @@ function renderCard(app){
 
   const matchedRows = (app.matched_courses || []).map(c => `
     <tr>
-      <td class="code">${c.course_code}</td>
-      <td>${c.course_name}</td>
-      <td>${c.credit}학점</td>
-      <td>${c.year_semester || ''}</td>
-      <td class="note">${c.matched_note || '교육과정표 동일과목'}</td>
+      <td class="code">${escapeHtml(c.course_code)}</td>
+      <td>${escapeHtml(c.course_name)}</td>
+      <td>${escapeHtml(c.credit)}학점</td>
+      <td>${escapeHtml(c.year_semester || '')}</td>
+      <td class="note">${escapeHtml(c.matched_note || '교육과정표 동일과목')}</td>
     </tr>
   `).join('');
 
@@ -762,7 +805,7 @@ function renderCard(app){
 
   const unmatchedHtml = (app.unmatched_course_names && app.unmatched_course_names.length)
     ? `<div class="section-label">학생이 말했지만 자동 매칭 안 된 과목 (참고용, 필요시 직접 확인)</div>
-       <div class="unmatched-list">${app.unmatched_course_names.map(n => `<span>${n}</span>`).join('')}</div>`
+       <div class="unmatched-list">${app.unmatched_course_names.map(n => `<span>${escapeHtml(n)}</span>`).join('')}</div>`
     : '';
 
   const stageSectionHtml = stageTrackHtml(app);
@@ -770,12 +813,12 @@ function renderCard(app){
 
   const studentHtml = (app.student_name || app.student_id)
     ? `<div class="student-info">
-         👤 ${app.student_name || '(이름 미확인)'}
-         ${app.student_id ? ' · 학번 ' + app.student_id : ''}
-         ${app.student_grade ? ' · ' + app.student_grade : ''}
-         ${app.student_college ? ' · ' + app.student_college : ''}
+         👤 ${escapeHtml(app.student_name || '(이름 미확인)')}
+         ${app.student_id ? ' · 학번 ' + escapeHtml(app.student_id) : ''}
+         ${app.student_grade ? ' · ' + escapeHtml(app.student_grade) : ''}
+         ${app.student_college ? ' · ' + escapeHtml(app.student_college) : ''}
          ${app.student_email
-           ? ' · 📧 ' + app.student_email
+           ? ' · 📧 ' + escapeHtml(app.student_email)
            : ' · <span style="color:var(--no)">📧 이메일 미확인(승인/반려하셔도 알림이 발송되지 않습니다)</span>'}
        </div>`
     : `<div class="student-info student-info-missing">👤 학생 개인정보 미확인(신청서 초안 단계에서 아직 입력되지 않았습니다)</div>`;
@@ -787,8 +830,8 @@ function renderCard(app){
           <input type="checkbox" class="app-checkbox" data-id="${app.id}" ${selectedIds.has(app.id) ? 'checked' : ''} />
         </label>
         <div>
-          <div class="route">${app.home_major || '(소속 미확인)'}<span class="arrow">→</span>${app.target_major}</div>
-          <div class="meta">신청 ID ${app.id} · 세션 ${app.session_id.slice(0,8)}… · ${fmtDate(app.created_at)} 제출</div>
+          <div class="route">${escapeHtml(app.home_major || '(소속 미확인)')}<span class="arrow">→</span>${escapeHtml(app.target_major)}</div>
+          <div class="meta">신청 ID ${escapeHtml(app.id)} · 세션 ${escapeHtml((app.session_id || '').slice(0,8))}… · ${fmtDate(app.created_at)} 제출</div>
         </div>
       </div>
       <div class="status-badge ${app.status}">${statusLabel(app.status)}</div>
@@ -979,6 +1022,9 @@ loadList();
     localStorage.setItem('univoc_staff_name', name);
     localStorage.setItem('univoc_staff_affiliation', affiliation);
     overlay.hidden = true;
+    const root = document.getElementById('appRoot');
+    if(root) root.removeAttribute('inert');
+    getStaffName(false);
   }
 
   confirmBtn.addEventListener('click', confirmGate);

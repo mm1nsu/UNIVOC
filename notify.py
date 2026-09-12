@@ -31,20 +31,29 @@ import config
 RESEND_API_URL = "https://api.resend.com/emails"
 _TIMEOUT_SECONDS = 10
 
-_ACCENT_COLORS = {
-    "rejected": "#c0392b",  # YU 팔레트의 --no와 동일
-    "approved": "#0f7a52",  # YU 팔레트의 --ok와 동일
+# status별로 강조색·연한 배경(pill)·아이콘 글자·한글 라벨을 한 번에 묶어둠 — staff.html의
+# .status-badge/.stage-chip과 같은 톤(연한 배경 + 진한 글자)을 이메일에도 그대로 재현.
+_STATUS_META = {
+    "rejected": {"accent": "#c0392b", "tint": "#fdf0ee", "glyph": "&#10005;", "label": "반려"},
+    "approved": {"accent": "#0f7a52", "tint": "#eaf7f1", "glyph": "&#10003;", "label": "승인"},
 }
-_DEFAULT_ACCENT = "#153974"  # YU블루
+_DEFAULT_META = {"accent": "#153974", "tint": "#e6eaf3", "glyph": "&#128276;", "label": "알림"}
+
+# 헤더 위/카드 아래에 까는 얇은 그라데이션 띠 — staff.html 헤더 하단의 브랜드 스트라이프와
+# 동일한 4색(YU블루 진한색 -> YU블루 -> YU스카이블루 -> YU베이지)을 그대로 씀.
+_BRAND_STRIPE = "linear-gradient(90deg, #0e2850, #153974, #00aaca, #eae3d2)"
 
 
 def _render_html_body(subject: str, text_body: str, status: str) -> str:
-    """text_body(줄바꿈 두 번으로 문단 구분된 평문)를 간단한 카드형 HTML 이메일로 감싼다.
-    이메일 클라이언트 호환성 때문에 flex/grid/gradient 없이 table+인라인 스타일만 씀
-    (네이버메일·지메일 등 오래된 렌더러에서도 깨지지 않게)."""
-    accent = _ACCENT_COLORS.get(status, _DEFAULT_ACCENT)
+    """text_body(줄바꿈 두 번으로 문단 구분된 평문)를 카드형 HTML 이메일로 감싼다.
+    이메일 클라이언트 호환성 때문에 flex/grid 대신 table+인라인 스타일만 씀(네이버메일·
+    지메일 등에서도 안 깨지게). 그라데이션/box-shadow는 지원 안 하는 클라이언트에선 그냥
+    무시되고 solid 색만 남는 정도라 안전하게 곁들임."""
+    meta = _STATUS_META.get(status, _DEFAULT_META)
+    accent, tint, glyph, label = meta["accent"], meta["tint"], meta["glyph"], meta["label"]
+
     paragraphs = "".join(
-        f'<p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.7;color:#1c2530;">'
+        f'<p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.75;color:#1c2530;">'
         f'{html_lib.escape(p).replace(chr(10), "<br/>")}</p>'
         for p in text_body.split("\n\n")
         if p.strip()
@@ -52,29 +61,54 @@ def _render_html_body(subject: str, text_body: str, status: str) -> str:
     safe_subject = html_lib.escape(subject)
     return f"""<!doctype html>
 <html lang="ko">
-<body style="margin:0;padding:24px 12px;background:#f7f7f5;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;">
+<body style="margin:0;padding:32px 12px;background:#f2f2f1;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tr><td align="center">
       <table role="presentation" width="480" cellpadding="0" cellspacing="0"
-             style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e7e5df;max-width:480px;width:100%;">
+             style="background:#ffffff;border-radius:16px;overflow:hidden;max-width:480px;width:100%;
+                    box-shadow:0 8px 28px rgba(21,57,116,.14);">
+        <tr><td style="height:5px;line-height:5px;font-size:0;background:{_BRAND_STRIPE};">&nbsp;</td></tr>
         <tr>
-          <td style="background:{accent};padding:20px 28px;">
-            <div style="color:#ffffff;font-size:13px;font-weight:700;letter-spacing:.3px;">UNI-VOC</div>
-            <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;">영남대학교 부(복수)전공 이수과목 인정신청</div>
+          <td style="background:#153974;background:linear-gradient(120deg,#0e2850,#153974 65%);padding:22px 28px 20px;">
+            <div style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:.4px;">UNI-VOC</div>
+            <div style="color:rgba(255,255,255,.78);font-size:12px;margin-top:3px;">영남대학교 부(복수)전공 이수과목 인정신청</div>
           </td>
         </tr>
         <tr>
-          <td style="padding:26px 28px 22px;">
-            <div style="font-size:16px;font-weight:700;color:#1c2530;margin-bottom:14px;">{safe_subject}</div>
+          <td style="padding:28px 28px 6px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="44" valign="top">
+                  <table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0"
+                         style="background:{accent};border-radius:50%;">
+                    <tr><td align="center" valign="middle"
+                        style="color:#ffffff;font-size:18px;line-height:40px;height:40px;">{glyph}</td></tr>
+                  </table>
+                </td>
+                <td valign="middle" style="padding-left:12px;">
+                  <span style="display:inline-block;background:{tint};color:{accent};font-size:12px;
+                        font-weight:700;border-radius:20px;padding:4px 12px;">{label}</span>
+                  <div style="font-size:16.5px;font-weight:700;color:#1c2530;margin-top:8px;line-height:1.4;">{safe_subject}</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 28px 22px;">
             {paragraphs}
           </td>
         </tr>
+        <tr><td style="height:1px;line-height:1px;font-size:0;background:#e7e5df;margin:0 28px;">&nbsp;</td></tr>
         <tr>
-          <td style="padding:14px 28px 22px;border-top:1px solid #e7e5df;">
-            <div style="font-size:12px;color:#6b7280;">이 메일은 Uni-VOC 챗봇에서 자동으로 발송됐어요. 문의사항은 학교 수업학적팀으로 연락해줘.</div>
+          <td style="padding:16px 28px 24px;">
+            <div style="font-size:12px;color:#9d9d9c;">이 메일은 Uni-VOC 챗봇에서 자동으로 발송됐어요.</div>
+            <div style="font-size:12px;color:#9d9d9c;margin-top:2px;">문의사항은 학교 수업학적팀(053-810-1095)으로 연락해줘.</div>
           </td>
         </tr>
+        <tr><td style="height:5px;line-height:5px;font-size:0;background:{_BRAND_STRIPE};">&nbsp;</td></tr>
       </table>
+      <div style="font-size:11px;color:#9d9d9c;margin-top:14px;">Uni-VOC · 영남대학교</div>
     </td></tr>
   </table>
 </body>

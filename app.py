@@ -20,6 +20,7 @@ from pydantic import BaseModel
 import bot_core
 import config
 import curriculum
+import notify
 import recognition_doc
 from matching import match_scholarships, major_clearly_matches
 from rules import check_dual_major_eligibility
@@ -144,7 +145,7 @@ def _new_dual_major_state() -> dict:
         "semester_pending": [],  # course_semester_check 단계에서 물어본, 아직 이수시점 모르는 과목명
         "last_application_id": None,
         "rejection_notified": False,  # last_application_id가 반려됐다는 걸 학생한테 이미 알렸는지
-        "student_identity": {"name": None, "student_id": None, "grade": None, "college": None},
+        "student_identity": {"name": None, "student_id": None, "grade": None, "college": None, "email": None},
     }
 
 
@@ -981,7 +982,9 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             sub["stage"] = "student_info"
             reply = (
                 "좋아, 마지막으로 신청서에 넣을 정보만 확인할게! "
-                "이름, 학번, 학년, 소속 단과대학 알려줄래? (예: 이민수 20231234 3학년 공과대학)"
+                "이름, 학번, 학년, 소속 단과대학, 이메일 알려줄래? "
+                "(예: 이민수 20231234 3학년 공과대학 minsu@yu.ac.kr) "
+                "— 이메일은 반려/승인 결과 나오는 즉시 바로 알려주려고 받는 거야!"
             )
             return {"reply": reply, "stage": "student_info"}
 
@@ -1011,6 +1014,8 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
                 identity["grade"] = extracted.grade
             if extracted.college:
                 identity["college"] = extracted.college
+            if extracted.email:
+                identity["email"] = extracted.email
         except Exception:  # noqa: BLE001
             pass  # 추출 실패해도 아래에서 부족한 항목 다시 물어보면 되니 신청 자체는 안 막음
 
@@ -1023,6 +1028,8 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             missing_labels.append("학년")
         if not identity["college"]:
             missing_labels.append("소속 단과대학")
+        if not identity["email"]:
+            missing_labels.append("이메일")
 
         if missing_labels:
             reply = f"{', '.join(missing_labels)}을(를) 아직 못 알아들었어. 다시 한번 알려줄래?"
@@ -1034,8 +1041,8 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
         sub["stage"] = "student_info_confirm"
         reply = (
             f"확인할게! 이름: {identity['name']} / 학번: {identity['student_id']} / "
-            f"학년: {identity['grade']} / 소속: {identity['college']} — 맞으면 '제출', "
-            f"틀린 게 있으면 '다시입력'이라고 알려줘!"
+            f"학년: {identity['grade']} / 소속: {identity['college']} / 이메일: {identity['email']} "
+            f"— 맞으면 '제출', 틀린 게 있으면 '다시입력'이라고 알려줘!"
         )
         return {"reply": reply, "stage": "student_info_confirm"}
 
@@ -1046,9 +1053,18 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
         norm = user_msg.replace(" ", "")
 
         if norm in RETRY_WORDS:
-            sub["student_identity"] = {"name": None, "student_id": None, "grade": None, "college": None}
+            sub["student_identity"] = {
+                "name": None,
+                "student_id": None,
+                "grade": None,
+                "college": None,
+                "email": None,
+            }
             sub["stage"] = "student_info"
-            reply = "알겠어, 다시 알려줄래? 이름, 학번, 학년, 소속 단과대학 (예: 이민수 20231234 3학년 공과대학)"
+            reply = (
+                "알겠어, 다시 알려줄래? 이름, 학번, 학년, 소속 단과대학, 이메일 "
+                "(예: 이민수 20231234 3학년 공과대학 minsu@yu.ac.kr)"
+            )
             return {"reply": reply, "stage": "student_info"}
 
         if norm in CANCEL_WORDS:
@@ -1068,6 +1084,7 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             student_id=identity["student_id"],
             student_grade=identity["grade"],
             student_college=identity["college"],
+            student_email=identity["email"],
             home_major=sub["state"].home_college,
             target_major=sub["state"].target_major,
             matched_courses=sub["matched"],
@@ -1313,6 +1330,19 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
             # 다른 단계의 기록은 지우지 않고 그대로 남겨둠(실제로 있었던 일이니까). 학생은
             # 반려 사유(note)를 보고 수정해서 챗봇으로 다시 신청하면 됨(새 신청서로 재제출).
             target.status = "rejected"
+            # 실사용자 요청: "반려되는 순간 바로 알림" — 학생이 챗봇을 다시 열 때까지 기다리지
+            # 않고, 반려가 확정되는 이 자리에서 바로 이메일 발송. 실패해도(주소 없음/API 키
+            # 미설정/네트워크 오류) 신청서 반려 처리 자체는 그대로 진행됨(notify.send_email이
+            # 예외를 던지지 않게 만들어둠).
+            notify.send_email(
+                target.student_email,
+                subject="[Uni-VOC] 이수과목 인정신청서가 반려됐어요",
+                text_body=(
+                    f"{target.student_name}님, 신청하신 이수과목 인정신청서(타전공: {target.target_major})가 "
+                    f"반려됐어요.\n\n{_rejection_reason(target)}\n\n"
+                    "챗봇에서 '신청확인'이라고 말하고 학번을 알려주면 바로 이어서 재제출할 수 있어요."
+                ),
+            )
         elif (
             target.home_chair_approval.status == "approved"
             and target.dual_chair_approval.status == "approved"
@@ -1320,6 +1350,14 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
         ):
             # 세 단계 전부 승인돼야만 전산 반영(최종 승인) 처리됨
             target.status = "approved"
+            notify.send_email(
+                target.student_email,
+                subject="[Uni-VOC] 이수과목 인정신청서가 승인됐어요",
+                text_body=(
+                    f"{target.student_name}님, 신청하신 이수과목 인정신청서(타전공: {target.target_major})가 "
+                    "3단계 승인 절차를 모두 마치고 전산 반영까지 완료됐어요. 축하드려요!"
+                ),
+            )
         # 셋 중 일부만 승인된 상태면 status는 계속 "pending"으로 남음(아직 전산 반영 전)
 
         save_recognition_apps(apps)

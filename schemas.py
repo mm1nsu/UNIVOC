@@ -213,6 +213,11 @@ class StudentIdentity(BaseModel):
     student_id: Optional[str] = None
     grade: Optional[str] = None
     college: Optional[str] = None
+    # 실사용자 요청: "반려되는 순간 바로 알림 받고 싶다"는 로그인이 아니라 이메일 같은
+    # 컴퓨터/브라우저와 무관한 외부 채널이 있어야 가능함(로그인은 "누군지 확인"만 해줄 뿐,
+    # 컴퓨터가 꺼져있으면 어차피 아무것도 못 받음) — 그래서 이름/학번/학년/소속과 함께
+    # 이메일도 한 번 더 받아서, 반려/승인되는 그 순간 notify.send_email로 바로 보낸다.
+    email: Optional[str] = None
 
 
 class ApprovalStep(BaseModel):
@@ -243,6 +248,7 @@ class RecognitionApplication(BaseModel):
     student_id: Optional[str] = None
     student_grade: Optional[str] = None
     student_college: Optional[str] = None  # 소속 단과대학(예: 공과대학) — 양식의 "대학" 칸
+    student_email: Optional[str] = None  # 반려/승인 즉시 알림 발송용(notify.send_email) — 양식엔 안 들어감
     home_major: Optional[str] = None
     target_major: str
     matched_courses: list[MatchedCourse] = []

@@ -55,3 +55,31 @@ def set_model(model: str) -> None:
 
 def has_api_key() -> bool:
     return bool(get_api_key())
+
+
+# 실사용자 요청: "반려되는 순간 바로 알림, 컴퓨터 꺼도 받게" — 이메일 발송(Resend) 설정.
+# Gemini 키와 완전히 같은 패턴: 환경변수(RESEND_API_KEY)가 최우선이고, 없으면
+# data/config.json에 저장된 값을 씀. RESEND_FROM_EMAIL을 따로 안 정해주면 Resend가
+# 도메인 인증 없이도 바로 쓸 수 있게 제공하는 기본 발신주소(onboarding@resend.dev)로 감 —
+# 데모 단계에서 별도 도메인 인증 없이 바로 발송 테스트가 가능하게 하기 위함.
+_DEFAULT_FROM_EMAIL = "Uni-VOC <onboarding@resend.dev>"
+
+
+def get_resend_api_key() -> str | None:
+    env_key = os.environ.get("RESEND_API_KEY")
+    if env_key:
+        return env_key
+    return _read_config().get("resend_api_key")
+
+
+def set_resend_api_key(key: str) -> None:
+    cfg = _read_config()
+    cfg["resend_api_key"] = key.strip()
+    _write_config(cfg)
+
+
+def get_notify_from_email() -> str:
+    env_from = os.environ.get("RESEND_FROM_EMAIL")
+    if env_from:
+        return env_from
+    return _read_config().get("resend_from_email", _DEFAULT_FROM_EMAIL)

@@ -746,18 +746,23 @@ def generate_recognition_draft_message(
     return _generate_text(prompt, DRAFT_EXPLAIN_PROMPT, temperature=0.3)
 
 
-STUDENT_IDENTITY_EXTRACTION_PROMPT = """학생이 방금 자기 이름/학번/학년/소속 단과대학을
+STUDENT_IDENTITY_EXTRACTION_PROMPT = """학생이 방금 자기 이름/학번/학년/소속 단과대학/이메일을
 알려주는 메시지에서 그 정보만 그대로 뽑아내라. 지어내지 말고, 메시지에 없는 항목은 null로
 둬라(예: 학번만 말했으면 나머지는 null). "3학년"처럼 학년만 말해도 grade에 그대로 담고,
-"공과대학"처럼 단과대학 이름만 말해도 college에 그대로 담아라."""
+"공과대학"처럼 단과대학 이름만 말해도 college에 그대로 담아라. email은 "xxx@yyy.zzz" 형태로
+이메일 주소가 명확하게 포함돼 있을 때만 담고, 없으면 절대 지어내지 마라."""
 
 
 def extract_student_identity(user_message: str) -> StudentIdentity:
-    """신청서에 실제로 들어갈 학생 본인 정보(성명/학번/학년/소속 단과대학) 추출 — 인정
-    여부처럼 판단이 필요한 게 아니라 학생이 말한 걸 그대로 옮기는 것뿐이라 LLM이 해도 되는
-    범위(구조화 파싱). 실패해도 신청 자체가 막히면 안 되므로 예외는 호출부에서 흡수하고
-    빈 값으로 계속 물어보게 함."""
-    text = _generate_json(user_message, StudentIdentity, temperature=0.0)
+    """신청서에 실제로 들어갈 학생 본인 정보(성명/학번/학년/소속 단과대학/이메일) 추출 —
+    인정 여부처럼 판단이 필요한 게 아니라 학생이 말한 걸 그대로 옮기는 것뿐이라 LLM이 해도
+    되는 범위(구조화 파싱). 실패해도 신청 자체가 막히면 안 되므로 예외는 호출부에서 흡수하고
+    빈 값으로 계속 물어보게 함.
+    (기존에 STUDENT_IDENTITY_EXTRACTION_PROMPT가 정의만 되고 실제로는 안 넘겨지고 있었음 —
+    이메일 지어내지 말라는 규칙이 실제로 적용되게 system_instruction으로 제대로 연결함.)"""
+    text = _generate_json(
+        user_message, StudentIdentity, temperature=0.0, system_instruction=STUDENT_IDENTITY_EXTRACTION_PROMPT
+    )
     return StudentIdentity.model_validate_json(text)
 
 

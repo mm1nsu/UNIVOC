@@ -565,5 +565,50 @@
     "decided_at": null,
     "decided_by": null,
     "decision_note": null
+  },
+  {
+    "id": "6dc83dea1c594465bb511d4dd73c6a59",
+    "session_id": "test-account-seed",
+    "student_name": "테스트학생",
+    "student_id": "99990000",
+    "student_grade": "4",
+    "student_college": "디지털융합대학",
+    "home_major": "미래자동차공학과",
+    "target_major": "컴퓨터공학전공",
+    "matched_courses": [
+      {
+        "course_code": "AME057",
+        "course_name": "취업/현장기술세미나",
+        "credit": 1,
+        "year_semester": "4학년/1학기",
+        "matched_note": "타전공인정 미래자동차공학과",
+        "taken_year": "2025",
+        "taken_semester": "1"
+      }
+    ],
+    "unmatched_course_names": [],
+    "status": "rejected",
+    "created_at": "2026-09-12T07:01:34.460923+00:00",
+    "home_chair_approval": {
+      "status": "rejected",
+      "decided_by": "김민준 교수",
+      "decided_at": "2026-09-12T07:01:34.460946+00:00",
+      "note": "이수학점 증빙서류 확인 필요 - 재제출 요망"
+    },
+    "dual_chair_approval": {
+      "status": "pending",
+      "decided_by": null,
+      "decided_at": null,
+      "note": null
+    },
+    "admin_approval": {
+      "status": "pending",
+      "decided_by": null,
+      "decided_at": null,
+      "note": null
+    },
+    "decided_at": null,
+    "decided_by": null,
+    "decision_note": null
   }
 ]

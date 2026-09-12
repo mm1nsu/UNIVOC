@@ -467,13 +467,18 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
     반환해서 호출부가 원래 하던 대로(장학금/복수전공 상담 등) 계속 처리하게 한다 —
     신고 오판정이 진행 중이던 상담을 끊어버리면 안 되니까 항상 "확실할 때만 가로채기" 원칙.
 
-    진짜 신고로 확인되면 그 자리에서 바로 접수하지 않고 sess["pending_incident"]로
-    넘어가 112 지령실처럼 위치/인원수/이름·연락처를 몇 차례 더 캐묻는다(실사용자 요청:
-    "112신고하면 어디에 칼부림났어요하면 계속 물어보잖아 그런걸 모델로해서 뭔가 계속
-    물어보면 좋겠어. 대신 언제든 신고를 끝낼 수는 잇도록 안내하고, 개인정보 익명처리
-    하고 싶다하면 그렇게 할 수 있도록"). 다음 단계 진행/질문 문구는 `_incident_next_action`
-    이 만들고, 학생의 답변을 해석하는 건 이어지는 메시지마다 `_handle_incident_followup_message`
-    가 처리한다."""
+    진짜 신고로 확인되면 위치/인원수/이름·연락처가 다 안 갖춰졌어도 지금까지 아는
+    정보만으로 즉시 신고를 저장부터 해서 직원 화면에 바로 뜨게 하고, 그 다음 112
+    지령실처럼 부족한 정보를 몇 차례 더 캐물으면서 답이 들어올 때마다 이미 떠 있는
+    그 신고를 실시간으로 갱신한다(실사용자 요청: "112신고하면 어디에 칼부림났어요하면
+    계속 물어보잖아 그런걸 모델로해서 뭔가 계속 물어보면 좋겠어. 대신 언제든 신고를
+    끝낼 수는 잇도록 안내하고, 개인정보 익명처리하고 싶다하면 그렇게 할 수 있도록" +
+    이후 "'신고좀'이라고 했을 때 직원용페이지에는 일단 올려놓고 그뒤로 업데이트되는
+    정보들을 직원용페이지에 업데이트하는건 어때?" — 응급 상황일수록 접수 자체를 뒤로
+    미루면 안 되고, 후속 답변은 이미 접수된 건을 보강하는 것이어야 한다는 취지).
+    다음 단계 진행/질문 문구는 `_incident_next_action`이 만들고, 학생의 답변을 해석해서
+    저장된 신고를 갱신하는 건 이어지는 메시지마다 `_handle_incident_followup_message`가
+    처리한다."""
     try:
         extraction = bot_core.extract_incident_report(user_msg)
     except Exception:  # noqa: BLE001 — LLM 실패 시 신고 아님으로 안전하게 처리, 원래 흐름 계속
@@ -482,11 +487,26 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
         return None
 
     category = extraction.category if extraction.category in INCIDENT_CATEGORIES else "기타"
+    location = (extraction.location or "").strip() or None
+    people_count = (extraction.people_count or "").strip() or None
+    description = extraction.description.strip()
+
+    # 여기서 바로 저장 — 후속 질문에 학생이 답을 안 하거나 도중에 나가버려도 최소한
+    # 지금까지 확보한 내용은 이미 직원 화면에 올라가 있게 된다.
+    report = _save_new_incident_report(
+        category=category,
+        description=description,
+        location=location,
+        people_count=people_count,
+        reporter_name=None,
+        reporter_contact=None,
+    )
     pending = {
+        "report_id": report.id,
         "category": category,
-        "description": extraction.description.strip(),
-        "location": (extraction.location or "").strip() or None,
-        "people_count": (extraction.people_count or "").strip() or None,
+        "description": description,
+        "location": location,
+        "people_count": people_count,
         "reporter_name": None,
         "reporter_contact": None,
         "anonymous": False,
@@ -499,9 +519,9 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
     question = _incident_next_action(pending)
     if question is None:
         # 이론상 도달 안 함(방금 만든 pending은 contact_asked=False라 항상 물어볼 게 있음) —
-        # 그래도 혹시 모를 상황을 대비해 안전하게 즉시 접수로 마무리.
+        # 그래도 혹시 모를 상황을 대비해 안전하게 즉시 마무리.
         return _finalize_incident(sess, early=False)
-    return {"reply": question, "stage": "incident_pending_followup", "options": []}
+    return {"reply": question, "stage": "incident_pending_followup", "options": [], "incident_report_id": report.id}
 
 
 def _incident_next_action(pending: dict) -> Optional[str]:
@@ -528,7 +548,9 @@ def _incident_next_action(pending: dict) -> Optional[str]:
             if "people_count" in missing:
                 bits.append("몇 명 정도 있어?")
             # 실사용자 요청: "언제든 신고를 끝낼 수는 잇도록 안내" — 캐물을 때마다 매번 상기시켜줌.
-            return "신고 접수 중이야! " + " ".join(bits) + " (언제든 '그만'이라고 하면 지금까지 내용으로 바로 접수할게!)"
+            # "신고 접수됐어"로 시작 — 지금 이 순간 이미 직원 화면에 올라가 있는 상태이지,
+            # 후속 질문이 끝나야 비로소 접수되는 게 아니라는 걸 분명히 함.
+            return "신고 접수됐어! 담당팀 화면에 바로 올라갔어. " + " ".join(bits) + " (언제든 '그만'이라고 하면 지금까지 내용으로 마무리할게!)"
         pending["stage"] = "contact"
 
     # stage == "contact"
@@ -540,77 +562,91 @@ def _incident_next_action(pending: dict) -> Optional[str]:
 
 def _handle_incident_followup_message(sess: dict, user_msg: str) -> dict:
     """`_try_handle_incident_report`/`_incident_next_action`이 던진 후속 질문에 대한
-    학생의 답변(user_msg)을 해석해서 sess["pending_incident"]에 반영한 뒤, 계속 캐물을지
-    (`_incident_next_action`이 다음 질문을 만듦) 아니면 여기서 접수를 끝낼지
+    학생의 답변(user_msg)을 해석해서 sess["pending_incident"]에 반영하고, 새로 알게 된
+    정보는 그 즉시 `_sync_incident_fields`로 이미 직원 화면에 떠 있는 신고 건에도
+    반영한다(실사용자 요청: "'신고좀'이라고 했을 때 직원용페이지에는 일단 올려놓고
+    그뒤로 업데이트되는 정보들을 직원용페이지에 업데이트하는건 어때?"). 그 다음 계속
+    캐물을지(`_incident_next_action`이 다음 질문을 만듦) 아니면 여기서 마무리할지
     (`_finalize_incident`) 판단한다. LLM 호출(extract_incident_followup)이 실패해도
     그냥 다음 단계로 넘어갈 뿐 신고 자체가 무산되진 않음 — 후속 질문은 어디까지나
     "있으면 좋은" 보강 정보라 실패했다고 이미 확보한 신고를 날려버리면 안 된다."""
     pending = sess["pending_incident"]
     wants_to_finish = False
+    updates: dict = {}
     try:
         fu = bot_core.extract_incident_followup(user_msg)
         if fu.location:
             pending["location"] = fu.location.strip()
+            updates["location"] = pending["location"]
         if fu.people_count:
             pending["people_count"] = fu.people_count.strip()
+            updates["people_count"] = pending["people_count"]
         if fu.extra_detail and fu.extra_detail.strip():
             pending["description"] = (pending["description"] + " " + fu.extra_detail.strip()).strip()
+            updates["description"] = pending["description"]
         if fu.reporter_name:
             pending["reporter_name"] = fu.reporter_name.strip()
+            updates["reporter_name"] = pending["reporter_name"]
         if fu.reporter_contact:
             pending["reporter_contact"] = fu.reporter_contact.strip()
+            updates["reporter_contact"] = pending["reporter_contact"]
         if fu.wants_anonymous:
             # 실사용자 요청대로 익명 요청은 그 순간부터 확실히 반영 — 혹시 이전에 이름/
-            # 연락처를 흘렸어도(예: 먼저 이름 말했다가 마음이 바뀐 경우) 지워버림.
+            # 연락처를 흘렸어도(예: 먼저 이름 말했다가 마음이 바뀐 경우), 이미 직원 화면에
+            # 올라간 값까지 포함해서 지워버림.
             pending["anonymous"] = True
             pending["reporter_name"] = None
             pending["reporter_contact"] = None
+            updates["reporter_name"] = None
+            updates["reporter_contact"] = None
         wants_to_finish = fu.wants_to_finish
     except Exception:  # noqa: BLE001 — 해석 실패해도 진행은 계속(질문을 다시 던지거나 다음 단계로)
         pass
 
+    if updates:
+        _sync_incident_fields(pending["report_id"], **updates)
+
     if wants_to_finish:
-        # 실사용자 요청: "언제든 신고를 끝낼 수는 잇도록" — 지금까지 모은 정보만으로 즉시 접수.
+        # 실사용자 요청: "언제든 신고를 끝낼 수는 잇도록" — 지금까지 모은 정보로 바로 마무리.
         return _finalize_incident(sess, early=True)
 
     question = _incident_next_action(pending)
     if question is None:
         return _finalize_incident(sess, early=False)
-    return {"reply": question, "stage": "incident_pending_followup", "options": []}
+    return {
+        "reply": question,
+        "stage": "incident_pending_followup",
+        "options": [],
+        "incident_report_id": pending["report_id"],
+    }
 
 
 def _finalize_incident(sess: dict, early: bool) -> dict:
-    """sess["pending_incident"]에 지금까지 모인 정보로 실제 신고를 저장하고 대기 상태를
-    정리한다. early=True는 학생이 "그만"으로 후속 질문을 중간에 끊은 경우(안내 문구를
-    조금 다르게 함), False는 정상적으로 details→contact 단계를 다 거친 경우."""
+    """신고는 `_try_handle_incident_report`에서 이미 저장되고 이후 답변마다
+    `_sync_incident_fields`로 계속 갱신돼 있으므로, 여기서는 새로 저장할 게 없고
+    sess["pending_incident"]만 정리하고 마무리 안내만 돌려주면 된다. early=True는
+    학생이 "그만"으로 후속 질문을 중간에 끊은 경우(안내 문구를 조금 다르게 함),
+    False는 정상적으로 details→contact 단계를 다 거친 경우."""
     pending = sess["pending_incident"]
     sess["pending_incident"] = None
-    report = _save_new_incident_report(
-        category=pending["category"],
-        description=pending["description"],
-        location=pending["location"],
-        people_count=pending["people_count"],
-        # 익명 요청이 있었으면 혹시 모를 잔여값까지 한 번 더 확실하게 걸러냄.
-        reporter_name=None if pending["anonymous"] else pending["reporter_name"],
-        reporter_contact=None if pending["anonymous"] else pending["reporter_contact"],
-    )
     # 학생용 챗봇이라 100% 반말 유지 — 존댓말 규칙은 이메일/직원화면(staff.html/incidents.html)에만
     # 적용된다는 기존 원칙 그대로.
     if early:
         reply = (
-            f"알겠어, 지금까지 말해준 내용으로 바로 접수할게! ({pending['category']}) "
-            "담당팀 화면에 바로 전달됐어 — 알려줘서 고마워. 하던 얘기 있으면 이어서 계속해도 돼!"
+            f"알겠어, 지금까지 말해준 내용으로 마무리할게! ({pending['category']}) "
+            "신고는 처음 말했을 때부터 이미 담당팀 화면에 올라가 있었어 — 알려줘서 고마워. "
+            "하던 얘기 있으면 이어서 계속해도 돼!"
         )
     else:
         reply = (
-            f"신고 접수 완료! ({pending['category']}) 담당팀 화면에 바로 전달됐어 — 알려줘서 고마워. "
-            "하던 얘기 있으면 이어서 계속해도 돼!"
+            f"신고 접수 다 됐어! ({pending['category']}) 처음 말해줬을 때부터 담당팀 화면에 올라가 있었고, "
+            "방금까지 알려준 내용도 다 반영해놨어 — 알려줘서 고마워. 하던 얘기 있으면 이어서 계속해도 돼!"
         )
     return {
         "reply": reply,
         "stage": "incident_reported",
         "options": [],
-        "incident_report_id": report.id,
+        "incident_report_id": pending["report_id"],
     }
 
 
@@ -1807,6 +1843,24 @@ def _save_new_incident_report(
     return report
 
 
+# 챗봇의 112식 후속 질문(`_handle_incident_followup_message`)이 이미 저장된 신고를
+# 실시간으로 보강할 때, 그리고 직원이 대시보드에서 직접 정보를 채워 넣는
+# `/api/incidents/{id}/update`가 저장할 때 — 결국 둘 다 "이미 있는 신고 건의 일부
+# 필드만 덮어쓴다"는 같은 일이라 여기로 합침. fields로 넘긴 키만 덮어쓰고, 넘기지
+# 않은 필드는 기존 값을 그대로 둔다. 값을 None으로 명시적으로 넘기면(예: 익명 처리 시
+# reporter_name=None) 그 필드를 지운다.
+def _sync_incident_fields(report_id: str, **fields) -> Optional[IncidentReport]:
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        target = next((r for r in reports if r.id == report_id), None)
+        if target is None:
+            return None
+        for key, value in fields.items():
+            setattr(target, key, value)
+        save_incident_reports(reports)
+        return target
+
+
 class IncidentReportIn(BaseModel):
     category: str
     description: str
@@ -1892,17 +1946,15 @@ def update_incident_report(report_id: str, body: IncidentUpdateIn):
     # 확인한 뒤 여기서 채워 넣는다. body에 실제로 넘어온 필드만 덮어씀(model_fields_set) —
     # 그래야 프론트에서 일부 칸만 채워 보내도 나머지 기존 값이 사라지지 않는다. 빈 문자열을
     # 명시적으로 보내면(예: "" 로 지우기 버튼) 그 필드를 null로 지운다.
-    with INCIDENT_REPORTS_LOCK:
-        reports = load_incident_reports()
-        target = next((r for r in reports if r.id == report_id), None)
-        if target is None:
-            return JSONResponse(status_code=404, content={"error": "신고를 찾을 수 없습니다"})
-        for field in ("location", "people_count", "reporter_name", "reporter_contact"):
-            if field in body.model_fields_set:
-                value = (getattr(body, field) or "").strip() or None
-                setattr(target, field, value)
-        save_incident_reports(reports)
-        return target.model_dump()
+    updates = {
+        field: ((getattr(body, field) or "").strip() or None)
+        for field in ("location", "people_count", "reporter_name", "reporter_contact")
+        if field in body.model_fields_set
+    }
+    target = _sync_incident_fields(report_id, **updates)
+    if target is None:
+        return JSONResponse(status_code=404, content={"error": "신고를 찾을 수 없습니다"})
+    return target.model_dump()
 
 
 class DeleteIncidentsIn(BaseModel):

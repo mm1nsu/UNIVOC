@@ -95,39 +95,36 @@
     "benefit_type": "장학금",
     "eligibility": {
       "student_status": [
-        "재학생",
-        "신입생",
-        "편입생"
+        "재학생"
       ],
-      "grade_or_semester_note": "정규학기 이내(일반학과 8학기 이내 / 건축학전공 10학기 이내 / 약학부 및 의학과 12학기 이내). 신·편입학 첫 학기는 성적 기준 미적용. 정규학기 초과자는 가족 중 1명이라도 있을 경우 신청 불가.",
+      "grade_or_semester_note": "정규학기 이내(수업연한 학기)에 동시 재학 중인 학부생 (일반학과 8학기 이내, 건축학전공 10학기 이내, 약학부 및 의학과 12학기 이내). 신·편입학 첫 학기 포함 가능 (성적 기준 미적용). 정규학기 초과자 제외.",
       "major_restriction": null,
-      "gpa_requirement_raw": "직전 학기 평점평균 B(3.0) 이상 (단, 신·편입학 첫 학기는 성적 기준 미적용)",
+      "gpa_requirement_raw": "직전 학기 평점평균 B(3.0) 이상",
       "gpa_requirement_percent": 66.7,
       "income_bracket_max": null,
       "income_bracket_priority_note": null,
-      "credit_requirement": "직전 학기 과락 없이 12학점 이상 취득 (단, 신·편입학 첫 학기는 성적 기준 미적용)",
+      "credit_requirement": "직전 학기 과락 없이 12학점 이상 취득",
       "special_conditions": [
-        "본교 학부 과정에 가족(부·모·형제자매) 2명 이상이 정규학기 이내(수업연한 학기)에 동시 재학 중인 학부생",
-        "신청 가족 모두 2026학년도 2학기 수업일수 3/4선까지 재학 상태를 유지해야 함",
-        "제외 대상: 정규학기 초과자, 대학원생, 외국인, 징계처분을 받은 자"
+        "본교 학부 과정에 가족(부·모·형제자매) 2명 이상이 정규학기 이내 동시 재학",
+        "신청 가족 전원 해당 학기 수업일수 3/4선까지 재학 상태 유지"
       ],
-      "other_conditions": "소득 분위 무관"
+      "other_conditions": "대학원생 및 외국인 제외. 징계처분을 받은 자는 지급 제한."
     },
     "required_documents": [
-      "주민등록등본 또는 (부/모 명의) 가족관계증명서 1부 (공고일 기준 2개월 이내 발급, 주민등록번호 뒷자리 비공개 마스킹 처리 후 PDF 업로드)"
+      "주민등록등본 또는 (부/모 명의) 가족관계증명서 1부"
     ],
-    "how_to_apply": "URP 포털 시스템을 통한 온라인 신청",
+    "how_to_apply": "URP 시스템을 통한 온라인 신청",
     "application_steps": [
       "URP 시스템 접속",
-      "장학관리 접속",
-      "천마가족장학금 신청 선택",
+      "장학관리 이동",
+      "천마가족장학금 신청 클릭",
       "유의사항 확인 및 개인정보 동의",
-      "등록된 가족현황 조회 및 확인",
-      "신청된 가족현황(본인 및 가족) 입력",
-      "증빙서류(PDF) 업로드",
+      "[3. 등록된 가족현황] 조회 및 확인",
+      "[1. 신청된 가족현황] (본인 및 가족 추가) 입력",
+      "[2. 증빙자료] 업로드",
       "[저장하기] 클릭"
     ],
-    "notes": "2027년 1월 중 학생 본인 명의 계좌로 지급 예정 (학자금 대출자는 대출 상환 기관으로 직접 상환 처리). 등록금 범위 내에서만 지원되며 타 장학금 수혜 후 남은 실납부 잔여액 한도로만 지급. 학기 중 3/4선 이전에 가족 중 1인이라도 휴학 시 가족 전체 선발 취소.",
+    "notes": "가족 중 대표 1인만 신청. 신청 기간 외 추가 접수 절대 불가. 학기 중 수업일수 3/4선 이전 휴학 시 전원 지급 제외. 등록금성 장학금으로 수업료 범위 내 중복 수혜 가능.",
     "source_url": "https://www.yu.ac.kr/scholar/notice/notice.do?mode=view&articleNo=231554923&article.offset=0&articleLimit=10",
     "target_year": "2026"
   },
@@ -187,7 +184,7 @@
     "name": "[사전 공표] 학자금 지원구간 산정체계 개편 안내",
     "apply_start": null,
     "apply_end": null,
-    "amount": "국가장학금 I유형 연간 100만 원 ~ 전액 / 다자녀 국가장학금 연간 135만 원 ~ 전액 (구간별 차등)",
+    "amount": "구간별 차등 지급 (기초·차상위 전액 ~ 라구간 100만원)",
     "is_open_application": false,
     "benefit_type": "장학금",
     "eligibility": {
@@ -196,18 +193,16 @@
       "major_restriction": null,
       "gpa_requirement_raw": null,
       "gpa_requirement_percent": null,
-      "income_bracket_max": 9,
-      "income_bracket_priority_note": "개편안 기준 기초·차상위 및 '가' ~ '라' 구간 (현행 기초·차상위 및 1~9구간, 10구간/마구간은 미지원)",
+      "income_bracket_max": null,
+      "income_bracket_priority_note": "2027학년도 1학기부터 5개 구간 체계('가~마' 및 기초·차상위) 적용",
       "credit_requirement": null,
-      "special_conditions": [
-        "한국장학재단 학자금 지원(국가장학금 등) 신청 가구 대상"
-      ],
-      "other_conditions": null
+      "special_conditions": [],
+      "other_conditions": "한국장학재단 학자금(국가장학금 등) 지원 신청 가구"
     },
     "required_documents": [],
-    "how_to_apply": "2027학년도 1학기 한국장학재단 국가장학금 신청 시 자동 적용",
+    "how_to_apply": "2027학년도 1학기 한국장학재단 국가장학금 신청 시 개편된 산정체계로 자동 적용",
     "application_steps": [],
-    "notes": "2027학년도 1학기 국가장학금 신청부터 현행 10개 구간 체계에서 5개 구간('가~마' 구간) 체계로 통합 개편 적용 예정 안내입니다.",
+    "notes": "2027학년도 1학기부터 학자금 지원구간 산정체계가 10개 구간에서 5개 구간('가~마')으로 개편될 예정임을 안내하는 사전 공표 공지입니다.",
     "source_url": null,
     "target_year": "2026"
   },

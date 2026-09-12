@@ -1377,6 +1377,7 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
                     f"반려됐어요.\n\n{_rejection_reason(target)}\n\n"
                     "챗봇에서 '신청확인'이라고 말하고 학번을 알려주면 바로 이어서 재제출할 수 있어요."
                 ),
+                status="rejected",
             )
         elif (
             target.home_chair_approval.status == "approved"
@@ -1392,6 +1393,7 @@ def decide_recognition_application(app_id: str, body: DecisionIn):
                     f"{target.student_name}님, 신청하신 이수과목 인정신청서(타전공: {target.target_major})가 "
                     "3단계 승인 절차를 모두 마치고 전산 반영까지 완료됐어요. 축하드려요!"
                 ),
+                status="approved",
             )
         # 셋 중 일부만 승인된 상태면 status는 계속 "pending"으로 남음(아직 전산 반영 전)
 

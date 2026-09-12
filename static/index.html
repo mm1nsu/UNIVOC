@@ -286,7 +286,12 @@
     background:var(--pastel-sky);
     border-radius:22px;
     padding:12px 16px;
-    font-size:13.5px;
+    /* 실사용자 피드백: "모바일로 들어가서 타자 칠라고 하니까 계속 확대되어서 좀 불편해" —
+       iOS Safari는 포커스된 입력창의 글자 크기가 16px보다 작으면 자동으로 화면을
+       확대시켜버림(접근성 기능이라 막을 수 없고, 글자 크기를 16px 이상으로 키우는 게
+       정석 해결법). 원래 13.5px여서 매번 확대됐던 것 — 16px로 올려서 확대 자체가
+       안 일어나게 함. */
+    font-size:16px;
     font-family:inherit;
     outline:none;
     color:var(--text);

@@ -359,3 +359,36 @@ class IncidentFollowupExtraction(BaseModel):
     extra_detail: Optional[str] = None  # 상황 설명에 보탤 추가 정보(존댓말, description에 이어붙임) — 없으면 null
     reporter_name: Optional[str] = None
     reporter_contact: Optional[str] = None
+
+
+# ---------------- 직원 접속 로그 / 대화 로그 ----------------
+# 실사용자 요청: "직원 페이지는 직원 페이지 들어갈때마다 본인의 이름과 소속을 확인해서
+# 항상 로그를 남길 수 있도록 하면 좋겠어" — 실제 학생 개인정보(신청서/신고 내용)를
+# 다루는 직원용 화면(staff.html/incidents.html)에 아무나 URL만 알면 들어가는 게 아니라,
+# 최소한 "누가 언제 들어왔는지"는 남기고 싶다는 취지. 로그인/비밀번호 같은 정식 인증은
+# 데모 코앞에 손대기엔 과함 — 대신 페이지 진입 시 이름/소속을 매번 입력받아 기록만
+# 남기는 가벼운 "체크인 로그" 방식으로 구현함(app.py의 /api/staff/access-log 참고).
+class StaffAccessLog(BaseModel):
+    id: str
+    name: str
+    affiliation: str
+    page: str  # "staff"(인정신청서 승인) | "incidents"(안전신고 대시보드)
+    created_at: str
+
+
+# 실사용자 요청: "사람들이 나눈 대화를 로그처럼 저장해놓을 수 있으면 좋겠는데" — 지금까지
+# 대화 내용은 UNIFIED_SESSIONS(서버 메모리)와 sessionStorage(브라우저, 새로고침만
+# 버팀)에만 있어서 서버 재시작하거나 탭을 닫으면 완전히 사라졌음. 턴(학생 메시지 +
+# AI 답변) 단위로 파일에 남겨서 나중에 검토/감사할 수 있게 함 — 다른 저장소들과
+# 동일하게 JSON 배열 파일로 저장(app.py의 load_chat_logs/save_chat_logs, _log_chat_turn
+# 참고). 주의: Render 배포 환경에 영구 디스크가 붙어있지 않으면 incident_reports.json
+# 등 기존 데이터와 마찬가지로 재배포/재시작 시 초기화될 수 있음 — 이 프로젝트의 기존
+# 저장 방식과 동일한 한계를 그대로 이어받음.
+class ChatLogEntry(BaseModel):
+    id: str
+    session_id: str
+    created_at: str
+    student_message: str
+    ai_reply: str
+    mode: Optional[str] = None  # None | "scholarship" | "dual_major"
+    stage: Optional[str] = None

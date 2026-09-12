@@ -400,7 +400,9 @@
   }
   .modal-input{
     width:100%;
-    font-size:14px;
+    /* 모바일(iOS Safari)에서 입력창 포커스할 때 자동 확대되는 걸 막으려면 글자 크기가
+       16px 이상이어야 함(index.html 쪽 동일 이슈 참고) */
+    font-size:16px;
     font-family:inherit;
     padding:9px 12px;
     border-radius:8px;
@@ -432,9 +434,75 @@
     color:#fff;
   }
   .modal-confirm:hover{filter:brightness(1.1);}
+
+  /* 실사용자 요청: "직원 페이지는 직원 페이지 들어갈때마다 본인의 이름과 소속을 확인해서
+     항상 로그를 남길 수 있도록" — 실제 학생 개인정보(신청서)를 다루는 화면이라, 로그인
+     까지는 아니어도 최소한 "누가 언제 들어왔는지"는 남기고 싶다는 취지. 정식 인증은
+     아니라서 완전한 접근 차단은 아니고(같은 URL을 알면 뒤에서 페이지 자체는 이미
+     로딩되고 있음), 화면을 덮어서 이름/소속을 입력해야 실제로 보이게 하는 가벼운
+     체크인 게이트. 매번(새로고침 포함) 다시 뜸 — 한 번 입력하면 다음부터 안 물어보게
+     하면 "들어갈때마다"라는 요청 취지와 어긋나므로 localStorage로 건너뛰게 하지 않음. */
+  .gate-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(21,27,38,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:2000;
+  }
+  .gate-overlay[hidden]{display:none;}
+  .gate-box{
+    background:var(--panel);
+    border-radius:16px;
+    padding:26px 24px 20px;
+    max-width:360px;
+    width:100%;
+    box-shadow:0 12px 40px rgba(21,57,116,.3);
+  }
+  .gate-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+  .gate-desc{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+  .gate-label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin:10px 0 5px;}
+  .gate-input{
+    width:100%;
+    font-size:16px;
+    font-family:inherit;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--border);
+  }
+  .gate-input:focus{border-color:var(--yu-sky);}
+  .gate-error{font-size:12px;color:var(--no);margin-top:8px;min-height:14px;}
+  .gate-confirm{
+    width:100%;
+    margin-top:14px;
+    background:var(--yu-blue);
+    color:#fff;
+    font-size:13.5px;
+    font-weight:700;
+    font-family:inherit;
+    border:none;
+    border-radius:10px;
+    padding:11px;
+    cursor:pointer;
+  }
+  .gate-confirm:hover{background:var(--yu-blue-dark);}
 </style>
 </head>
 <body>
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div class="gate-title" id="gateTitle">직원 확인</div>
+    <div class="gate-desc">이 페이지는 학생 개인정보(이수과목 인정신청서)를 다루기 때문에, 들어올 때마다 이름과 소속을 남겨야 해요. 입력 즉시 접속 기록에 저장됩니다.</div>
+    <label class="gate-label">이름</label>
+    <input class="gate-input" id="gateName" type="text" autocomplete="name" placeholder="예: 홍길동" />
+    <label class="gate-label">소속</label>
+    <input class="gate-input" id="gateAffiliation" type="text" autocomplete="organization" placeholder="예: 수업학적팀, 학과 행정실" />
+    <div class="gate-error" id="gateError"></div>
+    <button class="gate-confirm" id="gateConfirmBtn" type="button">확인하고 들어가기</button>
+  </div>
+</div>
 <header>
   <div class="brand">
     <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
@@ -871,6 +939,54 @@ async function checkVersion(){
 checkVersion();
 
 loadList();
+
+// ---------------- 직원 확인 게이트 (실사용자 요청: "들어갈때마다 이름/소속 확인 + 로그") ----------------
+// 위의 getStaffName()/currentRole은 "승인/반려 기록에 남는 처리자 이름"용으로 이미 있던
+// 기능이라 그대로 두고, 이 게이트는 별개로 "이 화면에 접속한 사실 자체"를 서버에 기록하는
+// 용도. 로그인이 아니라 화면을 덮어두는 방식이라 완벽한 접근 차단은 아니지만, 최소한
+// 접속 기록은 매번 남는다. 이름 입력칸은 위 getStaffName에 저장된 값이 있으면 기본값으로
+// 채워 반복 입력 부담을 줄이고, 소속도 지난번 입력을 기억해 기본값으로 채운다(다만
+// "매번 확인"이라는 요청 취지상 자동으로 건너뛰지는 않고 매번 확인 버튼을 눌러야 함).
+(function initStaffGate(){
+  const overlay = document.getElementById('gateOverlay');
+  const nameInput = document.getElementById('gateName');
+  const affInput = document.getElementById('gateAffiliation');
+  const errorEl = document.getElementById('gateError');
+  const confirmBtn = document.getElementById('gateConfirmBtn');
+
+  nameInput.value = localStorage.getItem('univoc_staff_name') || '';
+  affInput.value = localStorage.getItem('univoc_staff_affiliation') || '';
+
+  async function confirmGate(){
+    const name = nameInput.value.trim();
+    const affiliation = affInput.value.trim();
+    if(!name || !affiliation){
+      errorEl.textContent = '이름과 소속을 둘 다 입력해줘야 들어갈 수 있어요.';
+      return;
+    }
+    confirmBtn.disabled = true;
+    errorEl.textContent = '';
+    try{
+      await fetch('/api/staff/access-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, affiliation, page: 'staff'}),
+      });
+    }catch(e){
+      // 로그 저장이 네트워크 문제로 실패해도 화면 자체는 볼 수 있게 진행 — 감사로그 하나
+      // 때문에 정작 급한 업무(승인/반려)가 막히면 안 됨.
+    }
+    localStorage.setItem('univoc_staff_name', name);
+    localStorage.setItem('univoc_staff_affiliation', affiliation);
+    overlay.hidden = true;
+  }
+
+  confirmBtn.addEventListener('click', confirmGate);
+  [nameInput, affInput].forEach(el => el.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); confirmGate(); }
+  }));
+  nameInput.focus();
+})();
 </script>
 </body>
 </html>

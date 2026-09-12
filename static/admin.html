@@ -111,7 +111,9 @@
     background:var(--bg);
     border-radius:10px;
     padding:10px 13px;
-    font-size:13.5px;
+    /* 모바일(iOS Safari)에서 입력창 포커스할 때 자동 확대되는 걸 막으려면 글자 크기가
+       16px 이상이어야 함(index.html 쪽 동일 이슈 참고) */
+    font-size:16px;
     font-family:inherit;
     outline:none;
     color:var(--text);
@@ -162,7 +164,10 @@
     max-height:340px;
     line-height:1.6;
   }
-  table{width:100%;border-collapse:collapse;font-size:13px;}
+  /* 좁은 화면(모바일)에서 표가 억지로 눌리면 한글 셀 내용이 글자 중간에서 줄바꿈되며
+     깨져 보이는 것 방지 — 표는 그대로 두고 필요하면 가로 스크롤로 보게 함 */
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;min-width:480px;border-collapse:collapse;font-size:13px;white-space:nowrap;}
   th, td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
   th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
   .tag{
@@ -187,6 +192,7 @@
   <nav>
     <a href="/" target="_blank" rel="noopener">← 메인 챗봇</a>
     <a href="/staff" target="_blank" rel="noopener">인정신청서 승인</a>
+    <a href="/incidents" target="_blank" rel="noopener">안전신고 현황</a>
   </nav>
 </header>
 
@@ -243,7 +249,36 @@
   <div class="card">
     <div class="eyebrow">Step 3</div>
     <h2>등록된 장학금 (<span id="dbCount">0</span>건)</h2>
-    <div id="dbTableWrap"><div class="empty">불러오는 중...</div></div>
+    <div id="dbTableWrap" class="table-scroll"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Step 4</div>
+    <h2>직원 접속 로그 (<span id="accessLogCount">0</span>건)</h2>
+    <!-- 실사용자 요청: "직원 페이지는 직원 페이지 들어갈때마다 본인의 이름과 소속을 확인해서
+         항상 로그를 남길 수 있도록" — staff.html/incidents.html에 들어갈 때마다 남는
+         체크인 기록을 여기서 확인함. -->
+    <div class="desc">직원용 화면(인정신청서 승인 / 안전신고 현황)에 들어갈 때마다 남는 이름·소속 체크인 기록이에요.</div>
+    <div class="row" style="margin-bottom:12px;">
+      <div style="flex:0;"><button class="secondary" onclick="loadAccessLogs()">새로고침</button></div>
+    </div>
+    <div id="accessLogTableWrap" class="table-scroll"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Step 5</div>
+    <h2>학생 대화 로그</h2>
+    <!-- 실사용자 요청: "사람들이 나눈 대화를 로그처럼 저장해놓을 수 있으면 좋겠는데" —
+         메인 챗봇에서 오간 모든 턴(학생 메시지 + AI 답변)이 매번 자동으로 저장됨. -->
+    <div class="desc">메인 챗봇에서 학생과 나눈 대화가 턴 단위로 저장돼요. 세션 ID로 특정 학생 대화만 걸러볼 수 있어요(최신순, 기본 100건).</div>
+    <div class="row" style="margin-bottom:12px;">
+      <div>
+        <label>세션 ID (선택)</label>
+        <input id="chatLogSessionId" type="text" placeholder="비워두면 전체" />
+      </div>
+      <div style="flex:0;"><button class="secondary" onclick="loadChatLogs()">조회</button></div>
+    </div>
+    <div id="chatLogTableWrap" class="table-scroll"><div class="empty">불러오는 중...</div></div>
   </div>
 </main>
 
@@ -390,8 +425,78 @@ async function deleteScholarship(id){
   loadDb();
 }
 
+function fmtLogTime(iso){
+  if(!iso) return '';
+  try{
+    return new Date(iso).toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'});
+  }catch(e){ return iso; }
+}
+
+const PAGE_LABELS = {staff: '인정신청서 승인', incidents: '안전신고 현황'};
+
+async function loadAccessLogs(){
+  const wrap = document.getElementById('accessLogTableWrap');
+  try{
+    const res = await fetch('/api/staff/access-log');
+    const list = await res.json();
+    document.getElementById('accessLogCount').textContent = list.length;
+    if(list.length === 0){
+      wrap.innerHTML = '<div class="empty">아직 접속 기록이 없어요.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>시간</th><th>이름</th><th>소속</th><th>페이지</th></tr></thead><tbody>';
+    list.forEach(r => {
+      html += `<tr>
+        <td>${fmtLogTime(r.created_at)}</td>
+        <td>${r.name}</td>
+        <td>${r.affiliation}</td>
+        <td>${PAGE_LABELS[r.page] || r.page}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">불러오기 실패</div>';
+  }
+}
+
+async function loadChatLogs(){
+  const wrap = document.getElementById('chatLogTableWrap');
+  const sessionId = document.getElementById('chatLogSessionId').value.trim();
+  try{
+    const url = sessionId
+      ? `/api/chat-logs?session_id=${encodeURIComponent(sessionId)}`
+      : '/api/chat-logs';
+    const res = await fetch(url);
+    const list = await res.json();
+    if(list.length === 0){
+      wrap.innerHTML = '<div class="empty">해당하는 대화 로그가 없어요.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>시간</th><th>세션</th><th>학생</th><th>AI 답변</th></tr></thead><tbody>';
+    list.forEach(r => {
+      html += `<tr>
+        <td>${fmtLogTime(r.created_at)}</td>
+        <td>${r.session_id.slice(0, 8)}…</td>
+        <td>${escapeHtml(r.student_message)}</td>
+        <td>${escapeHtml(r.ai_reply)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">불러오기 실패</div>';
+  }
+}
+
+function escapeHtml(s){
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 loadSettings();
 loadDb();
+loadAccessLogs();
+loadChatLogs();
 </script>
 </body>
 </html>

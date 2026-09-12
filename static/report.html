@@ -144,7 +144,9 @@
     border:1.5px solid var(--border);
     border-radius:10px;
     padding:11px 13px;
-    font-size:14px;
+    /* 모바일(iOS Safari)에서 입력창 포커스할 때 자동 확대되는 걸 막으려면 글자 크기가
+       16px 이상이어야 함(index.html 쪽 동일 이슈 참고) */
+    font-size:16px;
     font-family:inherit;
     color:var(--text);
     background:#fdfdfc;

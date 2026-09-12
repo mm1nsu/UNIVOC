@@ -25,6 +25,7 @@ import recognition_doc
 from matching import match_scholarships, major_clearly_matches
 from rules import check_dual_major_eligibility
 from schemas import (
+    ChatLogEntry,
     CompletedCourseItem,
     DualMajorState,
     IncidentReport,
@@ -33,6 +34,7 @@ from schemas import (
     RecognitionApplication,
     Scholarship,
     SlotState,
+    StaffAccessLog,
     dual_major_missing_slots,
     missing_slots,
 )
@@ -41,6 +43,8 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "data" / "scholarship_db.json"
 RECOGNITION_PATH = BASE_DIR / "data" / "recognition_applications.json"
 INCIDENT_REPORTS_PATH = BASE_DIR / "data" / "incident_reports.json"
+STAFF_ACCESS_LOGS_PATH = BASE_DIR / "data" / "staff_access_logs.json"
+CHAT_LOGS_PATH = BASE_DIR / "data" / "chat_logs.json"
 STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(title="Uni-VOC 챗봇")
@@ -64,6 +68,8 @@ _SESSION_LOCKS: dict[str, threading.Lock] = {}
 _SESSION_LOCKS_GUARD = threading.Lock()
 RECOGNITION_APPS_LOCK = threading.Lock()
 INCIDENT_REPORTS_LOCK = threading.Lock()
+STAFF_ACCESS_LOGS_LOCK = threading.Lock()
+CHAT_LOGS_LOCK = threading.Lock()
 
 
 def _get_session_lock(session_id: str) -> threading.Lock:
@@ -118,6 +124,36 @@ def save_recognition_apps(apps: list[RecognitionApplication]) -> None:
     RECOGNITION_PATH.parent.mkdir(parents=True, exist_ok=True)
     RECOGNITION_PATH.write_text(
         json.dumps([a.model_dump() for a in apps], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def load_staff_access_logs() -> list[StaffAccessLog]:
+    if not STAFF_ACCESS_LOGS_PATH.exists():
+        return []
+    raw = json.loads(STAFF_ACCESS_LOGS_PATH.read_text(encoding="utf-8"))
+    return [StaffAccessLog.model_validate(r) for r in raw]
+
+
+def save_staff_access_logs(logs: list[StaffAccessLog]) -> None:
+    STAFF_ACCESS_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STAFF_ACCESS_LOGS_PATH.write_text(
+        json.dumps([r.model_dump() for r in logs], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def load_chat_logs() -> list[ChatLogEntry]:
+    if not CHAT_LOGS_PATH.exists():
+        return []
+    raw = json.loads(CHAT_LOGS_PATH.read_text(encoding="utf-8"))
+    return [ChatLogEntry.model_validate(r) for r in raw]
+
+
+def save_chat_logs(logs: list[ChatLogEntry]) -> None:
+    CHAT_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CHAT_LOGS_PATH.write_text(
+        json.dumps([r.model_dump() for r in logs], ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -1483,6 +1519,29 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
     return {"reply": reply, "stage": stage}
 
 
+# 실사용자 요청: "사람들이 나눈 대화를 로그처럼 저장해놓을 수 있으면 좋겠는데" — `_chat_impl`
+# 안에 return 지점이 여러 군데(RESET/EXIT/도움말/신고 후속질문/학번조회/본래 상태머신 등)라
+# 각각에 로깅 코드를 넣으면 하나라도 빠뜨리기 쉬움. 대신 호출부인 `chat()`에서 결과를 받은
+# 직후 한 곳에서만 기록해서, 실제로 학생에게 나간 응답과 항상 정확히 일치하게 함.
+def _log_chat_turn(session_id: str, user_msg: str, result: dict) -> None:
+    entry = ChatLogEntry(
+        id=uuid.uuid4().hex[:12],
+        session_id=session_id,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        student_message=user_msg,
+        ai_reply=result.get("reply", ""),
+        mode=result.get("mode"),
+        stage=result.get("stage"),
+    )
+    try:
+        with CHAT_LOGS_LOCK:
+            logs = load_chat_logs()
+            logs.append(entry)
+            save_chat_logs(logs)
+    except Exception:  # noqa: BLE001 — 로그 저장 실패가 실제 챗봇 응답까지 막으면 안 됨
+        pass
+
+
 @app.post("/api/chat")
 def chat(body: ChatIn):
     # 같은 세션(같은 학생)에서 거의 동시에 요청이 두 번 들어와도(더블클릭, 응답 느릴 때
@@ -1490,7 +1549,9 @@ def chat(body: ChatIn):
     # 단계에서 "제출"이 두 번 겹치면 신청서가 2개로 접수되는 걸 막기 위함.
     session_id = body.session_id or uuid.uuid4().hex
     with _get_session_lock(session_id):
-        return _chat_impl(session_id, body)
+        result = _chat_impl(session_id, body)
+        _log_chat_turn(session_id, body.message, result)
+        return result
 
 
 def _chat_impl(session_id: str, body: ChatIn):
@@ -1972,6 +2033,61 @@ def delete_incident_reports(body: DeleteIncidentsIn):
         deleted_count = len(reports) - len(remaining)
         save_incident_reports(remaining)
     return {"deleted": deleted_count}
+
+
+# ---------------- 직원 접속 로그 (staff.html / incidents.html 진입 시 체크인) ----------------
+# 실사용자 요청: "직원 페이지는 직원 페이지 들어갈때마다 본인의 이름과 소속을 확인해서
+# 항상 로그를 남길 수 있도록 하면 좋겠어" — schemas.StaffAccessLog 주석 참고. 정식
+# 로그인은 아니고(비밀번호 검증 없음), 페이지 진입 시 이름/소속을 입력받아 그 사실을
+# 기록만 남기는 가벼운 체크인 방식.
+class StaffAccessLogIn(BaseModel):
+    name: str
+    affiliation: str
+    page: str
+
+
+@app.post("/api/staff/access-log")
+def create_staff_access_log(body: StaffAccessLogIn):
+    name = (body.name or "").strip()
+    affiliation = (body.affiliation or "").strip()
+    page = (body.page or "").strip() or "unknown"
+    if not name or not affiliation:
+        return JSONResponse(status_code=400, content={"error": "이름과 소속을 모두 입력해주세요"})
+    entry = StaffAccessLog(
+        id=uuid.uuid4().hex[:12],
+        name=name,
+        affiliation=affiliation,
+        page=page,
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    with STAFF_ACCESS_LOGS_LOCK:
+        logs = load_staff_access_logs()
+        logs.append(entry)
+        save_staff_access_logs(logs)
+    return entry.model_dump()
+
+
+@app.get("/api/staff/access-log")
+def list_staff_access_logs():
+    # 관리자 페이지(admin.html)에서 "누가 언제 직원 화면에 들어왔는지" 확인하는 용도 —
+    # 최근 기록이 위로 오게 정렬.
+    logs = load_staff_access_logs()
+    logs_sorted = sorted(logs, key=lambda r: r.created_at, reverse=True)
+    return [r.model_dump() for r in logs_sorted]
+
+
+# ---------------- 대화 로그 조회 (관리자 페이지용) ----------------
+@app.get("/api/chat-logs")
+def list_chat_logs(session_id: Optional[str] = None, limit: int = 200):
+    # 실사용자 요청: "사람들이 나눈 대화를 로그처럼 저장해놓을 수 있으면 좋겠는데" — 저장은
+    # `_log_chat_turn`(위 /api/chat 참고)이 매 턴마다 하고, 여긴 관리자 화면에서 확인하는
+    # 조회용 API. session_id로 필터링 가능, limit으로 최근 N건만(기본 200건, 로그가 계속
+    # 쌓이는데 매번 전체를 다 내려주면 화면이 무거워지므로) 최신순으로 잘라서 반환.
+    logs = load_chat_logs()
+    if session_id:
+        logs = [r for r in logs if r.session_id == session_id]
+    logs_sorted = sorted(logs, key=lambda r: r.created_at, reverse=True)[: max(1, limit)]
+    return [r.model_dump() for r in logs_sorted]
 
 
 if __name__ == "__main__":

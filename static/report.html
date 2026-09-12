@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Uni-VOC 캠퍼스 신고</title>
+<link rel="icon" href="/static/assets/yu-mark.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --yu-blue:#153974;
+    --yu-blue-dark:#0e2850;
+    --yu-sky:#00aaca;
+    --yu-gray:#9d9d9c;
+    --yu-beige:#eae3d2;
+    --bg:#f7f7f5;
+    --panel:#ffffff;
+    --border:#e7e5df;
+    --text:#1c2530;
+    --muted:#6b7280;
+    --ok:#0f7a52;
+    --ok-bg:#eaf7f1;
+    --no:#c0392b;
+    --no-bg:#fdf0ee;
+    --pastel-navy:#e6eaf3;
+    --pastel-navy-border:#ccd4e6;
+    --pastel-sky:#e1f6fa;
+    --pastel-sky-border:#bfeaf1;
+  }
+  *{box-sizing:border-box;}
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+    outline:2px solid var(--yu-sky);
+    outline-offset:2px;
+  }
+  body{
+    margin:0;
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0,170,202,.06), transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(21,57,116,.05), transparent 35%),
+      var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(120deg, var(--pastel-navy), var(--pastel-sky) 70%);
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:4px;
+    background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
+    box-shadow:0 1px 6px rgba(21,57,116,.25);
+  }
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img.logo{height:24px;}
+  header .divider{width:1px;height:20px;background:var(--border);}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
+  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
+  header nav a{
+    color:var(--yu-blue);
+    text-decoration:none;
+    font-size:13px;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:6px 13px;
+  }
+  header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  main{
+    max-width:560px;
+    margin:0 auto;
+    padding:32px 20px 70px;
+  }
+  .hero{
+    text-align:center;
+    margin-bottom:24px;
+  }
+  .hero .glyph{
+    width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(120deg, var(--yu-blue-dark), var(--yu-blue));
+    color:#fff;font-size:26px;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 14px;
+    box-shadow:0 8px 20px rgba(21,57,116,.25);
+  }
+  .hero h1{font-size:19px;margin:0 0 6px;}
+  .hero p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.6;}
+
+  form{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:24px 22px;
+    box-shadow:0 6px 24px rgba(21,57,116,.06);
+  }
+  .field{margin-bottom:18px;}
+  .field:last-of-type{margin-bottom:0;}
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:7px;
+    color:var(--text);
+  }
+  label .optional{
+    font-weight:400;
+    color:var(--muted);
+    font-size:12px;
+    margin-left:4px;
+  }
+  .cat-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .cat-btn{
+    flex:1;
+    min-width:90px;
+    padding:12px 10px;
+    border-radius:12px;
+    border:1.5px solid var(--pastel-navy-border);
+    background:var(--pastel-navy);
+    color:var(--yu-blue);
+    font-size:13.5px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all .12s;
+  }
+  .cat-btn.active{
+    background:var(--yu-blue);
+    border-color:var(--yu-blue);
+    color:#fff;
+    box-shadow:0 4px 12px rgba(21,57,116,.25);
+  }
+  textarea, input[type=text]{
+    width:100%;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:14px;
+    font-family:inherit;
+    color:var(--text);
+    background:#fdfdfc;
+  }
+  textarea{min-height:110px;resize:vertical;line-height:1.55;}
+  textarea:focus, input[type=text]:focus{border-color:var(--yu-sky);}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .anon-box{
+    background:var(--pastel-sky);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:12.5px;
+    color:var(--yu-blue-dark);
+    margin-bottom:18px;
+    line-height:1.6;
+  }
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+  button[type=submit]{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(120deg, var(--yu-blue-dark), var(--yu-blue));
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    margin-top:6px;
+    box-shadow:0 8px 20px rgba(21,57,116,.22);
+  }
+  button[type=submit]:disabled{opacity:.6;cursor:not-allowed;}
+  button[type=submit]:hover:not(:disabled){filter:brightness(1.06);}
+
+  .error-box{
+    background:var(--no-bg);
+    border:1px solid #f3c9c1;
+    color:var(--no);
+    border-radius:10px;
+    padding:10px 13px;
+    font-size:13px;
+    margin-bottom:16px;
+    display:none;
+  }
+
+  .done{
+    display:none;
+    text-align:center;
+    padding:40px 20px;
+  }
+  .done .glyph{
+    width:64px;height:64px;border-radius:50%;
+    background:var(--ok-bg);color:var(--ok);
+    font-size:30px;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 18px;
+  }
+  .done h2{font-size:18px;margin:0 0 8px;}
+  .done p{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 20px;}
+  .done .again{
+    display:inline-block;
+    font-size:13px;
+    color:var(--yu-blue);
+    border:1px solid var(--pastel-navy-border);
+    background:var(--pastel-navy);
+    border-radius:20px;
+    padding:8px 18px;
+    text-decoration:none;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
+    <div class="divider"></div>
+    <div class="title">캠퍼스 안전·시설 신고<small>Uni-VOC · 영남대학교</small></div>
+  </div>
+  <nav><a href="/">메인 챗봇</a></nav>
+</header>
+
+<main>
+  <div class="hero" id="heroBlock">
+    <div class="glyph">📣</div>
+    <h1>불편하거나 위험한 상황을 발견하셨나요?</h1>
+    <p>신고 즉시 담당팀 화면에 바로 전달됩니다. 급한 상황이 아니어도 괜찮으니, 편하게 알려주세요.</p>
+  </div>
+
+  <form id="reportForm">
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="field">
+      <label>신고 유형</label>
+      <div class="cat-group" id="catGroup">
+        <button type="button" class="cat-btn" data-cat="보안">🔒 보안</button>
+        <button type="button" class="cat-btn" data-cat="시설">🛠️ 시설</button>
+        <button type="button" class="cat-btn" data-cat="기타">📋 기타</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>어디서 있었던 일인가요? <span class="optional">(선택)</span></label>
+      <input type="text" id="location" placeholder="예: 정문, 공학관 3층 화장실, 학생회관 앞" />
+    </div>
+
+    <div class="field">
+      <label>무슨 일인지 자세히 알려주세요</label>
+      <textarea id="description" placeholder="예: 정문 근처에 신천지로 추정되는 사람들이 학생들에게 접근하고 있어요. 오후 2시쯤부터 있었어요."></textarea>
+    </div>
+
+    <div class="anon-box">
+      🔐 이름과 연락처는 <b>입력하지 않으셔도 신고가 접수</b>됩니다. 다만 담당자가 확인 과정에서 연락드려야 할 수도 있는 경우, 남겨주시면 더 빠르게 처리될 수 있어요.
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>이름 <span class="optional">(선택)</span></label>
+        <input type="text" id="reporterName" placeholder="홍길동" />
+      </div>
+      <div class="field">
+        <label>연락처 <span class="optional">(선택)</span></label>
+        <input type="text" id="reporterContact" placeholder="010-1234-5678" />
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">신고 접수하기</button>
+  </form>
+
+  <div class="done" id="doneBlock">
+    <div class="glyph">✓</div>
+    <h2>신고가 접수되었습니다</h2>
+    <p>담당팀 화면에 바로 전달됐어요.<br/>알려주셔서 감사합니다.</p>
+    <a class="again" id="againBtn">다른 건 또 신고하기</a>
+  </div>
+</main>
+
+<script>
+let selectedCategory = null;
+
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCategory = btn.dataset.cat;
+  });
+});
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+document.getElementById('reportForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError();
+
+  const description = document.getElementById('description').value.trim();
+  if (!selectedCategory) {
+    showError('신고 유형을 먼저 선택해주세요.');
+    return;
+  }
+  if (!description) {
+    showError('무슨 일인지 내용을 입력해주세요.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '접수 중...';
+
+  try {
+    const res = await fetch('/api/incidents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: selectedCategory,
+        description: description,
+        location: document.getElementById('location').value.trim() || null,
+        reporter_name: document.getElementById('reporterName').value.trim() || null,
+        reporter_contact: document.getElementById('reporterContact').value.trim() || null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError(data.error || '신고 접수 중 문제가 발생했어요. 다시 시도해주세요.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '신고 접수하기';
+      return;
+    }
+    document.getElementById('heroBlock').style.display = 'none';
+    document.getElementById('reportForm').style.display = 'none';
+    document.getElementById('doneBlock').style.display = 'block';
+  } catch (err) {
+    showError('서버와 통신 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '신고 접수하기';
+  }
+});
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  selectedCategory = null;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('reportForm').reset();
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = '신고 접수하기';
+  document.getElementById('doneBlock').style.display = 'none';
+  document.getElementById('heroBlock').style.display = 'block';
+  document.getElementById('reportForm').style.display = 'block';
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Uni-VOC 신고 접수 현황</title>
+<link rel="icon" href="/static/assets/yu-mark.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --yu-blue:#153974;
+    --yu-blue-dark:#0e2850;
+    --yu-sky:#00aaca;
+    --yu-gray:#9d9d9c;
+    --yu-beige:#eae3d2;
+    --bg:#f7f7f5;
+    --panel:#ffffff;
+    --border:#e7e5df;
+    --text:#1c2530;
+    --muted:#6b7280;
+    --ok:#0f7a52;
+    --ok-bg:#eaf7f1;
+    --no:#c0392b;
+    --no-bg:#fdf0ee;
+    --pending:#8a5a00;
+    --pending-bg:#fff8ea;
+    --pastel-navy:#e6eaf3;
+    --pastel-navy-border:#ccd4e6;
+    --pastel-sky:#e1f6fa;
+    --pastel-sky-border:#bfeaf1;
+    --pastel-beige:#f8f4ea;
+    --pastel-beige-border:#eae3d2;
+    --pastel-gray:#f2f2f1;
+    --pastel-gray-border:#e2e2e0;
+  }
+  *{box-sizing:border-box;}
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--yu-sky);
+    outline-offset:2px;
+  }
+  body{
+    margin:0;
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0,170,202,.06), transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(21,57,116,.05), transparent 35%),
+      var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(120deg, var(--pastel-navy), var(--pastel-sky) 70%);
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:4px;
+    background:linear-gradient(90deg, var(--yu-blue-dark), var(--yu-blue), var(--yu-sky), var(--yu-beige));
+    box-shadow:0 1px 6px rgba(21,57,116,.25);
+  }
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img.logo{height:24px;}
+  header .divider{width:1px;height:20px;background:var(--border);}
+  header .title{font-weight:600;font-size:14px;letter-spacing:-0.2px;}
+  header .title small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:1px;}
+  header nav{display:flex;gap:8px;align-items:center;}
+  header a{
+    color:var(--yu-blue);
+    text-decoration:none;
+    font-size:13px;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:6px 13px;
+  }
+  header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  main{
+    max-width:900px;
+    margin:0 auto;
+    padding:24px 20px 70px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .toolbar .tab{
+    font-size:13px;
+    color:var(--yu-blue);
+    border:1px solid var(--pastel-navy-border);
+    background:var(--pastel-navy);
+    border-radius:20px;
+    padding:7px 14px;
+    cursor:pointer;
+    font-family:inherit;
+    position:relative;
+  }
+  .toolbar .tab.active{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+  .tab .new-dot{
+    display:none;
+    position:absolute;
+    top:-3px;right:-3px;
+    width:9px;height:9px;
+    border-radius:50%;
+    background:var(--no);
+    border:1.5px solid #fff;
+  }
+  .tab.has-new .new-dot{display:block;}
+  .toolbar .refresh{
+    font-size:13px;
+    color:var(--muted);
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:20px;
+    padding:7px 14px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .toolbar .refresh:hover{color:var(--yu-blue);border-color:var(--yu-blue);}
+  .live-indicator{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .live-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--ok);
+    box-shadow:0 0 0 0 rgba(15,122,82,.5);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(15,122,82,.5);}
+    70%{box-shadow:0 0 0 6px rgba(15,122,82,0);}
+    100%{box-shadow:0 0 0 0 rgba(15,122,82,0);}
+  }
+  .status-tabs{margin-top:-6px;}
+  .status-tabs .tab{background:var(--pastel-gray);color:var(--text);border-color:var(--pastel-gray-border);}
+  .status-tabs .tab.active{background:var(--text);border-color:var(--text);color:#fff;}
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:60px 20px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-top:3px solid var(--pastel-sky-border);
+    border-radius:14px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .card.cat-보안{border-top-color:#e0958a;}
+  .card.cat-시설{border-top-color:#f0c866;}
+  .card.cat-기타{border-top-color:var(--pastel-sky-border);}
+  .card.is-new{animation:flashNew 2.4s ease-out 1;}
+  @keyframes flashNew{
+    0%{background:var(--pastel-sky);}
+    100%{background:var(--panel);}
+  }
+  .card-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .card-head-left{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .cat-badge{
+    font-size:12px;
+    font-weight:700;
+    border-radius:20px;
+    padding:4px 12px;
+    white-space:nowrap;
+  }
+  .cat-badge.cat-보안{color:#a1361f;background:#fbe9e5;}
+  .cat-badge.cat-시설{color:#7a5900;background:#fdf3da;}
+  .cat-badge.cat-기타{color:var(--yu-blue);background:var(--pastel-navy);}
+  .card-head .meta{font-size:12.5px;color:var(--muted);}
+  .status-badge{
+    font-size:12px;
+    font-weight:700;
+    border-radius:20px;
+    padding:4px 11px;
+    white-space:nowrap;
+  }
+  .status-badge.open{color:var(--pending);background:var(--pending-bg);}
+  .status-badge.resolved{color:var(--ok);background:var(--ok-bg);}
+
+  .desc{font-size:14px;line-height:1.6;margin:6px 0 8px;white-space:pre-wrap;word-break:break-word;}
+  .loc{font-size:13px;color:var(--yu-blue);font-weight:600;margin-bottom:4px;}
+  .reporter{font-size:12.5px;color:var(--muted);margin-bottom:10px;}
+  .resolved-note{
+    margin-top:10px;
+    background:var(--ok-bg);
+    border:1px solid var(--ok);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:12.5px;
+    color:var(--text);
+  }
+  .resolved-note b{color:var(--ok);}
+
+  .decision-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .btn{
+    font-size:13px;
+    font-weight:600;
+    border-radius:20px;
+    padding:7px 15px;
+    cursor:pointer;
+    font-family:inherit;
+    border:1px solid transparent;
+  }
+  .btn-resolve{color:var(--ok);background:var(--ok-bg);border-color:var(--ok);}
+  .btn-resolve:hover{background:var(--ok);color:#fff;}
+  .btn-reopen{color:var(--muted);background:var(--panel);border-color:var(--border);}
+  .btn-reopen:hover{color:var(--yu-blue);border-color:var(--yu-blue);}
+  .btn-delete{color:var(--no);background:var(--no-bg);border-color:var(--no);}
+  .btn-delete:hover{background:var(--no);color:#fff;}
+
+  .toast-wrap{
+    position:fixed;
+    top:16px;right:16px;
+    z-index:999;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-width:320px;
+  }
+  .toast{
+    background:var(--yu-blue-dark);
+    color:#fff;
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:13px;
+    line-height:1.5;
+    box-shadow:0 10px 28px rgba(0,0,0,.25);
+    animation:toastIn .25s ease-out;
+  }
+  @keyframes toastIn{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img class="logo" src="/static/assets/yu-logo.png" alt="영남대학교" />
+    <div class="divider"></div>
+    <div class="title">신고 접수 현황<small>캠퍼스 안전·시설 신고 대시보드 — 실시간 갱신</small></div>
+  </div>
+  <nav>
+    <a href="/">메인 챗봇</a>
+    <a href="/staff">인정신청 승인</a>
+    <a href="/admin">관리자</a>
+  </nav>
+</header>
+
+<main>
+  <div class="toolbar" id="catTabs">
+    <button class="tab active" data-cat="">전체<span class="new-dot"></span></button>
+    <button class="tab" data-cat="보안">🔒 보안<span class="new-dot"></span></button>
+    <button class="tab" data-cat="시설">🛠️ 시설<span class="new-dot"></span></button>
+    <button class="tab" data-cat="기타">📋 기타<span class="new-dot"></span></button>
+    <div class="live-indicator"><span class="live-dot"></span>실시간 갱신 중</div>
+  </div>
+  <div class="toolbar status-tabs" id="statusTabs">
+    <button class="tab active" data-status="open">접수(미처리)</button>
+    <button class="tab" data-status="resolved">처리완료</button>
+    <button class="tab" data-status="">전체 상태</button>
+    <button class="refresh" id="refreshBtn">↻ 새로고침</button>
+  </div>
+
+  <div id="listArea"><div class="empty">불러오는 중입니다...</div></div>
+</main>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+let currentCategory = '';
+let currentStatus = 'open';
+let knownIds = new Set();
+let firstLoad = true;
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s == null ? '' : s;
+  return div.innerHTML;
+}
+
+function timeAgo(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('ko-KR', { hour12: false });
+  } catch (e) {
+    return iso || '';
+  }
+}
+
+function showToast(msg) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.remove(); }, 6000);
+}
+
+function renderCard(r, isNew) {
+  const cat = r.category || '기타';
+  const reporterHtml = (r.reporter_name || r.reporter_contact)
+    ? `신고자: ${escapeHtml(r.reporter_name || '(이름 미기재)')}${r.reporter_contact ? ' · ' + escapeHtml(r.reporter_contact) : ''}`
+    : '신고자 정보 없음(익명 신고)';
+  const resolvedHtml = r.status === 'resolved'
+    ? `<div class="resolved-note">✓ <b>${escapeHtml(r.resolved_by || '처리자 미기재')}</b>님이 처리 완료했습니다 (${timeAgo(r.resolved_at)})${r.resolved_note ? '<br/>메모: ' + escapeHtml(r.resolved_note) : ''}</div>`
+    : '';
+  const actionsHtml = r.status === 'resolved'
+    ? `<div class="decision-row">
+         <button class="btn btn-reopen" data-action="reopen" data-id="${r.id}">다시 접수 상태로 되돌리기</button>
+         <button class="btn btn-delete" data-action="delete" data-id="${r.id}">삭제</button>
+       </div>`
+    : `<div class="decision-row">
+         <button class="btn btn-resolve" data-action="resolve" data-id="${r.id}">처리 완료로 표시</button>
+         <button class="btn btn-delete" data-action="delete" data-id="${r.id}">삭제</button>
+       </div>`;
+
+  return `<div class="card cat-${cat} ${isNew ? 'is-new' : ''}" data-id="${r.id}">
+    <div class="card-head">
+      <div class="card-head-left">
+        <span class="cat-badge cat-${cat}">${escapeHtml(cat)}</span>
+        <span class="status-badge ${r.status}">${r.status === 'resolved' ? '처리완료' : '접수'}</span>
+        <span class="meta">${timeAgo(r.created_at)}</span>
+      </div>
+    </div>
+    ${r.location ? `<div class="loc">📍 ${escapeHtml(r.location)}</div>` : ''}
+    <div class="desc">${escapeHtml(r.description)}</div>
+    <div class="reporter">${reporterHtml}</div>
+    ${resolvedHtml}
+    ${actionsHtml}
+  </div>`;
+}
+
+async function loadReports(opts = {}) {
+  const params = new URLSearchParams();
+  if (currentCategory) params.set('category', currentCategory);
+  if (currentStatus) params.set('status', currentStatus);
+  const url = '/api/incidents' + (params.toString() ? '?' + params.toString() : '');
+
+  let data;
+  try {
+    const res = await fetch(url);
+    data = await res.json();
+  } catch (e) {
+    document.getElementById('listArea').innerHTML = '<div class="empty">목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
+    return;
+  }
+
+  if (!Array.isArray(data) || data.length === 0) {
+    document.getElementById('listArea').innerHTML = '<div class="empty">해당하는 신고가 없습니다.</div>';
+  } else {
+    document.getElementById('listArea').innerHTML = data.map(r => renderCard(r, false)).join('');
+  }
+
+  // 실시간 감지: 폴링으로 새로 들어온 신고를 찾아 토스트 + 카드 하이라이트 + 탭에 점 표시
+  if (!firstLoad && !opts.silent) {
+    const newlyArrived = data.filter(r => !knownIds.has(r.id));
+    if (newlyArrived.length > 0) {
+      newlyArrived.forEach(r => {
+        showToast(`📣 새 신고가 접수되었습니다 (${r.category}) — ${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}`);
+        const card = document.querySelector(`.card[data-id="${r.id}"]`);
+        if (card) card.classList.add('is-new');
+        if (r.category) {
+          const tab = document.querySelector(`.tab[data-cat="${r.category}"]`);
+          if (tab && currentCategory !== r.category) tab.classList.add('has-new');
+        }
+        const allTab = document.querySelector('.tab[data-cat=""]');
+        if (allTab && currentCategory !== '') allTab.classList.add('has-new');
+      });
+    }
+  }
+  knownIds = new Set(data.map(r => r.id));
+  firstLoad = false;
+}
+
+document.getElementById('listArea').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+
+  if (action === 'resolve') {
+    const resolvedBy = prompt('처리자 이름(또는 소속)을 입력해 주세요 — 처리 기록에 남습니다.');
+    if (resolvedBy === null) return;
+    const note = prompt('처리 메모를 남겨주세요 (선택 사항 — 비워두셔도 됩니다).') || null;
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/incidents/${id}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolved_by: resolvedBy || null, note: note }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || '처리 중 오류가 발생했습니다.');
+        btn.disabled = false;
+        return;
+      }
+      await loadReports({ silent: true });
+    } catch (err) {
+      alert('서버와 통신 중 오류가 발생했습니다.');
+      btn.disabled = false;
+    }
+  } else if (action === 'reopen') {
+    if (!confirm('이 신고를 다시 접수(미처리) 상태로 되돌리시겠습니까?')) return;
+    btn.disabled = true;
+    try {
+      await fetch(`/api/incidents/${id}/reopen`, { method: 'POST' });
+      await loadReports({ silent: true });
+    } catch (err) {
+      alert('서버와 통신 중 오류가 발생했습니다.');
+      btn.disabled = false;
+    }
+  } else if (action === 'delete') {
+    if (!confirm('이 신고를 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.')) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/incidents/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [id] }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || '삭제 중 오류가 발생했습니다.');
+        btn.disabled = false;
+        return;
+      }
+      knownIds.delete(id);
+      await loadReports({ silent: true });
+    } catch (err) {
+      alert('서버와 통신 중 오류가 발생했습니다.');
+      btn.disabled = false;
+    }
+  }
+});
+
+// 탭(카테고리/상태) 전환이나 수동 새로고침은 "필터가 달라져서 안 보이던 항목이 갑자기
+// 나타나는 것"일 뿐 실제로 새로 접수된 신고가 아님 — 이런 경우까지 "새 신고" 토스트를
+// 띄우면 직원이 필터만 바꿔도 계속 알림이 떠서 오히려 혼란스러움. 그래서 이런 경우는 항상
+// silent(토스트 없이 목록만 갱신 + knownIds 재설정)로 처리하고, 오직 아래 5초 자동
+// 폴링(같은 필터를 계속 보고 있는 동안 시간이 흘러 진짜로 새 신고가 들어온 경우)에서만
+// "새 신고 도착" 토스트를 띄운다.
+document.querySelectorAll('#catTabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#catTabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    tab.classList.remove('has-new');
+    currentCategory = tab.dataset.cat;
+    loadReports({ silent: true });
+  });
+});
+
+document.querySelectorAll('#statusTabs .tab[data-status]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#statusTabs .tab[data-status]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentStatus = tab.dataset.status;
+    loadReports({ silent: true });
+  });
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => loadReports({ silent: true }));
+
+loadReports();
+// 실사용자 요청: "실시간으로 알림도 떴으면!" — 별도 서버 인프라(WebSocket 등) 없이도
+// 데모에서 충분히 "실시간"으로 느껴지도록 5초 폴링으로 새 신고를 감지해 토스트로 알림
+// (같은 필터를 유지한 채로 자동 갱신될 때만 — 위 설명 참고).
+setInterval(() => loadReports(), 5000);
+</script>
+
+</body>
+</html>

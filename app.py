@@ -27,6 +27,8 @@ from rules import check_dual_major_eligibility
 from schemas import (
     CompletedCourseItem,
     DualMajorState,
+    IncidentReport,
+    INCIDENT_CATEGORIES,
     RecognitionApplication,
     Scholarship,
     SlotState,
@@ -37,6 +39,7 @@ from schemas import (
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "data" / "scholarship_db.json"
 RECOGNITION_PATH = BASE_DIR / "data" / "recognition_applications.json"
+INCIDENT_REPORTS_PATH = BASE_DIR / "data" / "incident_reports.json"
 STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(title="Uni-VOC 챗봇")
@@ -59,6 +62,7 @@ UNIFIED_SESSIONS: dict[str, dict] = {}
 _SESSION_LOCKS: dict[str, threading.Lock] = {}
 _SESSION_LOCKS_GUARD = threading.Lock()
 RECOGNITION_APPS_LOCK = threading.Lock()
+INCIDENT_REPORTS_LOCK = threading.Lock()
 
 
 def _get_session_lock(session_id: str) -> threading.Lock:
@@ -92,6 +96,21 @@ def load_recognition_apps() -> list[RecognitionApplication]:
         return []
     raw = json.loads(RECOGNITION_PATH.read_text(encoding="utf-8"))
     return [RecognitionApplication.model_validate(r) for r in raw]
+
+
+def load_incident_reports() -> list[IncidentReport]:
+    if not INCIDENT_REPORTS_PATH.exists():
+        return []
+    raw = json.loads(INCIDENT_REPORTS_PATH.read_text(encoding="utf-8"))
+    return [IncidentReport.model_validate(r) for r in raw]
+
+
+def save_incident_reports(reports: list[IncidentReport]) -> None:
+    INCIDENT_REPORTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    INCIDENT_REPORTS_PATH.write_text(
+        json.dumps([r.model_dump() for r in reports], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def save_recognition_apps(apps: list[RecognitionApplication]) -> None:
@@ -193,6 +212,19 @@ def staff_page():
     return FileResponse(str(STATIC_DIR / "staff.html"))
 
 
+@app.get("/report")
+def incident_report_page():
+    # 실사용자 요청: "독립된 간단 신고 폼" — 챗봇 흐름과 완전히 분리된 별도 페이지.
+    return FileResponse(str(STATIC_DIR / "report.html"))
+
+
+@app.get("/incidents")
+def incidents_dashboard_page():
+    # 실사용자 요청: "사이트 하나를 만들어서 탭 별로 보안/시설/기타 누르면 볼 수 있게" —
+    # 보안팀/행정팀이 보는 화면이라 staff.html과 마찬가지로 전부 존댓말(합쇼체)로 작성됨.
+    return FileResponse(str(STATIC_DIR / "incidents.html"))
+
+
 # ---------------- 버전(마지막 업데이트 시각) ----------------
 # 실사용자 요청: "몇시몇분에 업데이트한 버전인지 웹에서 볼 수 있게 해줘" — 로컬에서 테스트
 # 중인 코드랑 Render에 배포된 코드가 서로 다른 시점일 수 있어서, 지금 화면에 뜬 게 정확히
@@ -208,7 +240,18 @@ _VERSION_FILES = [
     "curriculum.py",
     "static/index.html",
     "static/staff.html",
+    "static/report.html",
+    "static/incidents.html",
 ]
+
+
+# UptimeRobot 같은 외부 감시 서비스가 Render 무료 플랜의 "슬립" 방지용으로 주기적으로
+# 두드리는 헬스체크 엔드포인트. 감시 서비스마다 GET/HEAD/POST 등 실제로 보내는 HTTP
+# 메서드가 다를 수 있어서(예: "405 Method Not Allowed" — 그 메서드를 허용 안 해서 남),
+# "/"(GET만 허용)처럼 특정 메서드만 받지 않고 흔히 쓰이는 세 가지를 전부 허용해둠.
+@app.api_route("/healthz", methods=["GET", "HEAD", "POST"])
+def healthz():
+    return {"status": "ok"}
 
 
 @app.get("/api/version")
@@ -1432,6 +1475,112 @@ def delete_recognition_applications(body: DeleteApplicationsIn):
         remaining = [a for a in apps if a.id not in ids_set]
         deleted_count = len(apps) - len(remaining)
         save_recognition_apps(remaining)
+    return {"deleted": deleted_count}
+
+
+# ---------------- 캠퍼스 안전/시설 신고 ----------------
+# 실사용자 요청: "정문에 신천지 돌아다녀요 이렇게 레포트하면 즉각적으로 보안팀이나 다른
+# 행정팀에 레포트가 간다던가" — 챗봇과 완전히 분리된 독립 신고 폼(/report) +
+# 보안/시설/기타 탭으로 나눠보는 직원 대시보드(/incidents, 실시간 폴링 갱신).
+
+
+class IncidentReportIn(BaseModel):
+    category: str
+    description: str
+    location: Optional[str] = None
+    reporter_name: Optional[str] = None
+    reporter_contact: Optional[str] = None
+
+
+@app.post("/api/incidents")
+def create_incident_report(body: IncidentReportIn):
+    category = (body.category or "").strip()
+    description = (body.description or "").strip()
+    if category not in INCIDENT_CATEGORIES:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"category는 {'/'.join(INCIDENT_CATEGORIES)} 중 하나여야 해요"},
+        )
+    if not description:
+        return JSONResponse(status_code=400, content={"error": "신고 내용을 입력해주세요"})
+
+    report = IncidentReport(
+        id=uuid.uuid4().hex[:12],
+        category=category,
+        description=description,
+        location=(body.location or "").strip() or None,
+        reporter_name=(body.reporter_name or "").strip() or None,
+        reporter_contact=(body.reporter_contact or "").strip() or None,
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        reports.append(report)
+        save_incident_reports(reports)
+    return report.model_dump()
+
+
+@app.get("/api/incidents")
+def list_incident_reports(category: Optional[str] = None, status: Optional[str] = None):
+    reports = load_incident_reports()
+    if category:
+        reports = [r for r in reports if r.category == category]
+    if status:
+        reports = [r for r in reports if r.status == status]
+    reports_sorted = sorted(reports, key=lambda r: r.created_at, reverse=True)
+    return [r.model_dump() for r in reports_sorted]
+
+
+class ResolveIncidentIn(BaseModel):
+    resolved_by: Optional[str] = None
+    note: Optional[str] = None
+
+
+@app.post("/api/incidents/{report_id}/resolve")
+def resolve_incident_report(report_id: str, body: ResolveIncidentIn):
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        target = next((r for r in reports if r.id == report_id), None)
+        if target is None:
+            return JSONResponse(status_code=404, content={"error": "신고를 찾을 수 없습니다"})
+        target.status = "resolved"
+        target.resolved_by = body.resolved_by
+        target.resolved_at = datetime.now(timezone.utc).isoformat()
+        target.resolved_note = body.note
+        save_incident_reports(reports)
+        return target.model_dump()
+
+
+@app.post("/api/incidents/{report_id}/reopen")
+def reopen_incident_report(report_id: str):
+    # 실수로 처리완료 처리했을 때 되돌릴 수 있게 — 직원 대시보드 UX 상 필요한 안전장치.
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        target = next((r for r in reports if r.id == report_id), None)
+        if target is None:
+            return JSONResponse(status_code=404, content={"error": "신고를 찾을 수 없습니다"})
+        target.status = "open"
+        target.resolved_by = None
+        target.resolved_at = None
+        target.resolved_note = None
+        save_incident_reports(reports)
+        return target.model_dump()
+
+
+class DeleteIncidentsIn(BaseModel):
+    ids: list[str]
+
+
+@app.post("/api/incidents/delete")
+def delete_incident_reports(body: DeleteIncidentsIn):
+    if not body.ids:
+        return JSONResponse(status_code=400, content={"error": "삭제할 신고를 선택해주세요"})
+    with INCIDENT_REPORTS_LOCK:
+        reports = load_incident_reports()
+        ids_set = set(body.ids)
+        remaining = [r for r in reports if r.id not in ids_set]
+        deleted_count = len(reports) - len(remaining)
+        save_incident_reports(remaining)
     return {"deleted": deleted_count}
 
 

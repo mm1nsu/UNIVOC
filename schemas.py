@@ -264,3 +264,30 @@ class RecognitionApplication(BaseModel):
     decided_at: Optional[str] = None
     decided_by: Optional[str] = None
     decision_note: Optional[str] = None
+
+
+INCIDENT_CATEGORIES = ["보안", "시설", "기타"]
+
+
+class IncidentReport(BaseModel):
+    """캠퍼스 안전/시설 신고 — 실사용자 요청: "정문에 신천지 돌아다녀요 이렇게 레포트하면
+    즉각적으로 보안팀이나 다른 행정팀에 레포트가 간다던가". 챗봇 흐름에 끼워넣지 않고
+    완전히 독립된 간단 신고 폼으로 만듦(실사용자가 AskUserQuestion에서 "독립된 간단 신고
+    폼"을 선택) — 급한 신고인데 챗봇 대화 흐름을 몇 단계씩 거쳐야 하면 오히려 방해가 됨.
+
+    신고자 정보(이름/연락처)는 선택 입력 — 완전 익명도 아니고 필수 입력도 아님(실사용자가
+    "선택 입력"을 선택). 신원 확인보다 "일단 신고 자체가 쉽게 되는 것"이 우선이라는 판단.
+
+    category는 자유 텍스트가 아니라 반드시 INCIDENT_CATEGORIES(보안/시설/기타) 중 하나 —
+    직원 대시보드가 이 값 그대로 탭으로 나눠 보여주기 때문에 서버에서 강제 검증함."""
+    id: str
+    category: str  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
+    description: str
+    location: Optional[str] = None
+    reporter_name: Optional[str] = None
+    reporter_contact: Optional[str] = None
+    status: str = "open"  # open(접수) / resolved(처리완료)
+    created_at: str
+    resolved_by: Optional[str] = None
+    resolved_at: Optional[str] = None
+    resolved_note: Optional[str] = None

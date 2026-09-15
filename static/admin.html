@@ -32,6 +32,7 @@
     --pastel-gray-border:#e2e2e0;
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
     margin:0;
     font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
@@ -78,6 +79,37 @@
     flex-shrink:0;
   }
   header a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+
+  /* 실사용자 요청: "관리자페이지에 등록된 장학금들 스크롤 너무 많이 내려야하는데 ...
+     접속로그랑 대화기록 볼 수 있도록" — 장학금 목록이 길어질수록 그 아래 Step4(접속
+     로그)/Step5(대화기록)까지 페이지 전체를 한참 내려야 도달했음. 헤더 바로 밑에 각
+     섹션으로 바로 점프하는 바로가기를 둬서, 장학금 목록 길이와 무관하게 한 번에
+     접속로그/대화기록으로 이동할 수 있게 함. */
+  .quicknav{
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:var(--bg);
+    padding:10px 20px;
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    border-bottom:1px solid var(--border);
+  }
+  .quicknav a{
+    color:var(--yu-blue);
+    text-decoration:none;
+    font-size:12.5px;
+    font-weight:600;
+    background:var(--panel);
+    border:1px solid var(--pastel-sky-border);
+    border-radius:20px;
+    padding:6px 14px;
+    white-space:nowrap;
+  }
+  .quicknav a:hover{color:#fff;background:var(--yu-blue);border-color:var(--yu-blue);}
+  /* 앵커로 점프했을 때 sticky 헤더/바로가기 바에 제목이 가려지지 않도록 여유를 둠 */
+  #cardStep3, #cardStep4, #cardStep5{scroll-margin-top:96px;}
 
   main{
     max-width:860px;
@@ -175,9 +207,14 @@
   /* 좁은 화면(모바일)에서 표가 억지로 눌리면 한글 셀 내용이 글자 중간에서 줄바꿈되며
      깨져 보이는 것 방지 — 표는 그대로 두고 필요하면 가로 스크롤로 보게 함 */
   .table-scroll{overflow-x:auto;}
+  /* 실사용자 요청: 장학금이 많이 쌓이면 표가 한없이 길어져서 페이지 전체를 스크롤해야
+     그 아래 접속로그/대화기록까지 내려갈 수 있었음 — 표 자체에 높이 제한을 두고 표
+     내부에서만 세로 스크롤하게 해서, 카드가 무한정 늘어나지 않고 페이지 길이가
+     일정하게 유지되도록 함(헤더 행은 계속 보이도록 sticky 처리). */
+  .table-scroll{max-height:420px;overflow-y:auto;}
   table{width:100%;min-width:480px;border-collapse:collapse;font-size:13px;white-space:nowrap;}
   th, td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
-  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;background:var(--panel);}
   .tag{
     display:inline-block;
     background:#eef7f9;
@@ -203,6 +240,12 @@
     <a href="/incidents" target="_blank" rel="noopener">안전신고 현황</a>
   </nav>
 </header>
+
+<div class="quicknav">
+  <a href="#cardStep3">📋 장학금 목록</a>
+  <a href="#cardStep4">🪪 접속 로그</a>
+  <a href="#cardStep5">💬 대화 로그</a>
+</div>
 
 <main>
   <div class="card" id="cardStep1">

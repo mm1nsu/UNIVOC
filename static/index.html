@@ -173,7 +173,20 @@
     border:1px solid var(--pastel-sky-border);
     border-top-left-radius:4px;
     color:var(--text);
+    /* 장학금 후보 목록처럼 AI 답변이 아주 길어질 때(공지 전문 인용 등) 채팅창 전체가
+       한없이 늘어나는 대신, 말풍선 자체가 일정 높이에서 내부 스크롤되도록 함. 짧은
+       메시지는 max-height보다 작아서 그대로 보이고, 긴 메시지만 스크롤 생김. */
+    max-height:min(52vh, 420px);
+    overflow-y:auto;
+    padding-right:12px;
   }
+  .msg.ai .bubble::-webkit-scrollbar{width:6px;}
+  .msg.ai .bubble::-webkit-scrollbar-track{background:transparent;}
+  .msg.ai .bubble::-webkit-scrollbar-thumb{
+    background:var(--pastel-sky-border);
+    border-radius:3px;
+  }
+  .msg.ai .bubble::-webkit-scrollbar-thumb:hover{background:var(--yu-sky);}
   .msg.user .bubble{
     background:linear-gradient(135deg, var(--yu-blue), var(--yu-blue-dark));
     color:#fff;

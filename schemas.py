@@ -87,6 +87,14 @@ class SoftMatchBatch(BaseModel):
     results: list[SoftMatchItem] = []
 
 
+class GroundingCheck(BaseModel):
+    """생성된 답변이 근거로 준 데이터(JSON) 안에서만 말했는지 검증한 결과.
+    환각 방지용 2차 검증 — grounded=false면 answer를 그대로 학생에게 보여주면 안 됨.
+    애매하면 grounded=false로 두게 프롬프트에서 강제함(과다검열이 환각 노출보다 낫다)."""
+    grounded: bool
+    unsupported_claims: list[str] = []
+
+
 def missing_slots(state: SlotState) -> list[str]:
     return [s for s in REQUIRED_SLOTS if getattr(state, s) in (None, [], "")]
 

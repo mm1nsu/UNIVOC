@@ -15,6 +15,7 @@ from schemas import (
     DualMajorState,
     Eligibility,
     EligibilityResult,
+    GroundingCheck,
     IncidentFollowupExtraction,
     IncidentReportExtraction,
     IntentClassification,
@@ -426,6 +427,59 @@ def generate_matched_stage_reply(
     return _generate_text(prompt, CHAT_SYSTEM_PROMPT, temperature=0.4)
 
 
+# ---------- 2-2. 근거 검증(환각 필터) ----------
+#
+# 지금까지는 "근거 데이터 안에서만 답해라"를 시스템 프롬프트로만 시켰는데, 이건 LLM한테
+# 말로 부탁하는 거라 100% 지켜진다는 보장이 없음 — 특히 사실 정보(금액/절차/서류)가 실제
+# 학생 행동(서류 준비, 제출)으로 이어지는 액션 가이드·상담 답변에서 한 번 더 검증 없이
+# 그대로 내보내는 건 위험함. 그래서 답변을 생성한 뒤, 그 답변이 실제로 건네준 근거
+# 데이터(JSON) 안의 사실만 담고 있는지 별도 LLM 호출로 재검증하는 2차 패스를 추가함.
+# 검증 자체도 temperature=0, JSON 스키마 강제라 "그럴듯한 말"이 아니라 구조화된 판정만 나옴.
+# grounded=false면 답변을 그대로 노출하지 않고, 안전한 대체 문구(장학팀 확인 안내)로 바꿔치기함
+# — HITL 승인 큐에 들어가기 전에 지어낸 내용이 학생한테 노출되는 것 자체를 막는 게 목적.
+
+GROUNDING_CHECK_SYSTEM_PROMPT = """너는 사실검증 AI다. [근거 데이터]와 [생성된 답변]을 비교해서,
+답변에 근거 데이터로 뒷받침되지 않는 구체적인 사실(금액, 날짜, 조건, 절차, 서류명 등)이 있는지 확인한다.
+- 근거 데이터에 명시된 내용을 답변이 그대로 전달하거나 자연스럽게 풀어쓴 건 문제 없다(grounded=true).
+- 근거 데이터에 없는 구체적인 금액/날짜/조건/절차/서류를 답변이 새로 만들어냈으면 grounded=false로
+  하고 unsupported_claims에 그 문장을 그대로 적어라.
+- "정확한 건 확인해봐", "장학팀에 문의해라"처럼 확인을 유도하는 안내 문구는 사실 주장이 아니니
+  문제 없다.
+- 판단이 애매하면 grounded=false로 둬라 — 환각을 놓치는 것보다 과잉검열이 훨씬 안전하다.
+"""
+
+
+def verify_grounding(answer: str, source_data: str) -> GroundingCheck:
+    """생성된 답변이 근거 데이터(source_data) 밖의 사실을 지어내지 않았는지 검증.
+    검증 호출 자체가 실패(네트워크 등)하면 학생 경험을 막지 않기 위해 통과(grounded=true)
+    시키되, 최종 방어선인 HITL 승인은 그대로 남아있음."""
+    prompt = f"""[근거 데이터]
+{source_data}
+
+[생성된 답변]
+{answer}
+"""
+    try:
+        text = _generate_json(
+            prompt, GroundingCheck, temperature=0.0,
+            system_instruction=GROUNDING_CHECK_SYSTEM_PROMPT,
+        )
+        return GroundingCheck.model_validate_json(text)
+    except Exception as exc:
+        print(f"[grounding-check] 검증 호출 실패, 통과 처리: {exc}")
+        return GroundingCheck(grounded=True, unsupported_claims=[])
+
+
+_GROUNDING_FALLBACK_ACTION = (
+    "어 잠깐, 내가 갖고 있는 정보로는 {name} 신청 절차를 정확히 정리 못 하겠어 — "
+    "틀린 안내 해주느니 장학팀에 직접 확인하고 알려줄게. 일단 서류는 {docs}부터 챙겨두면 돼!"
+)
+_GROUNDING_FALLBACK_CONSULT = (
+    "어 그 부분은 내가 갖고 있는 정보로는 정확히 확인이 안 되네 — 지어내서 알려주느니 "
+    "장학팀(담당 부서)에 직접 한 번 더 확인해보는 게 맞을 것 같아!"
+)
+
+
 # ---------- 3. 액션 가이드 ----------
 
 def generate_action_guide(selected: Scholarship) -> str:
@@ -435,7 +489,15 @@ def generate_action_guide(selected: Scholarship) -> str:
 신청절차: {' → '.join(selected.application_steps) if selected.application_steps else selected.how_to_apply}
 출처: {selected.source_url or '정보 없음'}
 """
-    return _generate_text(prompt, ACTIONABLE_PROMPT, temperature=0.3)
+    answer = _generate_text(prompt, ACTIONABLE_PROMPT, temperature=0.3)
+    check = verify_grounding(answer, selected.model_dump_json())
+    if not check.grounded:
+        print(f"[grounding-check] action_guide 근거 부족: {check.unsupported_claims}")
+        return _GROUNDING_FALLBACK_ACTION.format(
+            name=selected.name,
+            docs=', '.join(selected.required_documents) or '필요서류 확인',
+        )
+    return answer
 
 
 # ---------- 4. 선택 이후 자유 상담 ----------
@@ -475,7 +537,18 @@ def generate_consult_answer(
 물어보면, 위 [후보 전체 목록]에서 그 번호를 찾아서 답해라 — 목록에 있는데도 "정보 없다"고
 하면 안 된다.
 """
-    return _generate_text(prompt, CONSULT_PROMPT, temperature=0.4)
+    answer = _generate_text(prompt, CONSULT_PROMPT, temperature=0.4)
+
+    source_data = selected.model_dump_json()
+    if all_candidates:
+        source_data += "\n" + json.dumps(
+            [c.model_dump() for c in all_candidates], ensure_ascii=False
+        )
+    check = verify_grounding(answer, source_data)
+    if not check.grounded:
+        print(f"[grounding-check] consult_answer 근거 부족: {check.unsupported_claims}")
+        return _GROUNDING_FALLBACK_CONSULT
+    return answer
 
 
 # ---------- 5. RAG 자료 추가 (공지 원문 → 구조화 Scholarship) ----------

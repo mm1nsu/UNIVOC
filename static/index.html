@@ -311,6 +311,9 @@
   #btnRecognition{background:var(--pastel-beige);border-color:var(--pastel-beige-border);color:#8a6d33;}
   #btnReset{background:var(--pastel-navy);border-color:var(--pastel-navy-border);color:var(--yu-blue);}
   #btnExit{background:var(--pastel-gray);border-color:var(--pastel-gray-border);color:#5a5a59;}
+  /* 되돌릴 수 없는 동작(대화 전체 삭제)이라 다른 버튼들과 다르게, 이미 쓰고 있는
+     --no/--no-bg(자격판정 '미충족' 배너 색)를 빌려서 은은하게 "주의" 톤만 줌 */
+  #btnClearChat{background:var(--no-bg);border-color:#f3d4cd;color:var(--no);}
   .quickbar button:hover{filter:brightness(0.94);}
   .quickbar button[hidden]{display:none;}
   /* 실사용자 리포트: "좌측 하단에 '이수과목 인정받기' 버튼 줄좀 맞추자" — 버튼이 5개로
@@ -452,6 +455,12 @@
     <button type="button" id="btnRecognition" data-cmd="이미 들은 과목 인정받고 싶어" hidden>인정받기</button>
     <button type="button" id="btnReset" data-cmd="처음부터">처음부터</button>
     <button type="button" id="btnExit" data-cmd="종료">종료</button>
+    <!-- 실사용자 요청: "채팅창 초기화 버튼" — "처음부터"는 서버 쪽 상담 상태만 리셋할 뿐
+         화면에 쌓인 대화 말풍선은 그대로 남아있음(sessionStorage에 로그가 저장돼서
+         새로고침해도 계속 보임). 이 버튼은 화면 자체를 완전히 비우고 세션도 새로
+         시작하는 진짜 "초기화" — data-cmd를 안 써서(서버에 메시지로 안 보냄) 아래
+         btnClearChat 전용 핸들러가 따로 처리함. -->
+    <button type="button" id="btnClearChat">채팅 초기화</button>
   </div>
   <div id="disclaimer" class="disclaimer">
     ※ 자격요건은 규정에 따라 자동 계산된 참고용 결과이며, 실제 신청 가능 여부는 수업학적팀(☎ 053-810-1095) 확인이 필요해요.
@@ -483,6 +492,7 @@ try{
 }catch(e){ savedMessages = []; }
 let currentMode = null;  // null | "scholarship" | "dual_major"
 let isSending = false;  // 응답 기다리는 중 중복 전송(더블클릭 등) 방지
+const GREETING = '안녕! 나는 영남대학교 행정 챗봇 Uni-VOC야. 무슨 일로 왔어? 편하게 말해봐, 도와줄게!';
 
 const messagesEl = document.getElementById('messages');
 const optionsEl = document.getElementById('options');
@@ -696,8 +706,35 @@ checkVersion();
 if(savedMessages.length){
   savedMessages.forEach(m => addMessage(m.role, m.text, true));
 }else{
-  addMessage('ai', '안녕! 나는 영남대학교 행정 챗봇 Uni-VOC야. 무슨 일로 왔어? 편하게 말해봐, 도와줄게!');
+  addMessage('ai', GREETING);
 }
+
+// 실사용자 요청: "채팅창 초기화 버튼" — "처음부터"(RESET_WORDS)는 서버 쪽 상담 진행 상태만
+// 리셋할 뿐 화면에 쌓인 말풍선·sessionStorage 로그는 그대로 남아있어서, 데모를 여러 번
+// 돌리거나 대화가 너무 길어졌을 때 화면을 진짜로 싹 비울 방법이 없었음. 이 버튼은 서버에
+// 아무 메시지도 안 보내고(data-cmd 없음) 순수 클라이언트에서 화면 상태 + sessionStorage +
+// sessionId를 전부 날려서, 다음 메시지부터는 서버도 완전히 새 세션으로 인식하게 함 —
+// 사실상 "새로고침해서 처음 접속한 것"과 동일한 상태로 되돌림. 실수로 눌러서 대화가
+// 통째로 날아가는 걸 막기 위해 confirm으로 한 번 확인받음.
+document.getElementById('btnClearChat').addEventListener('click', () => {
+  if(isSending) return;  // 응답 기다리는 중엔 초기화하면 응답이 빈 세션에 붙어버릴 수 있어 막음
+  if(!confirm('지금까지 나눈 대화를 화면에서 전부 지울까? 되돌릴 수 없어!')) return;
+
+  savedMessages = [];
+  sessionId = null;
+  sessionStorage.removeItem('univoc_messages');
+  sessionStorage.removeItem('univoc_session_id');
+
+  messagesEl.innerHTML = '';
+  optionsEl.innerHTML = '';
+  setVerdict(null);
+  draftActionsEl.dataset.show = '0';
+  appDownloadEl.hidden = true;
+  updateModeUI({mode: null});
+
+  addMessage('ai', GREETING);
+  input.focus();
+});
 input.focus();
 </script>
 </body>

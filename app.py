@@ -510,6 +510,32 @@ _LOOKUP_STUDENT_ID_RE = re.compile(r"\d{6,}")
 SCHOLARSHIP_KEYWORDS = ("장학금", "장학", "학자금")
 DUAL_MAJOR_KEYWORDS = ("복수전공", "복전", "다전공", "부전공", "이수과목")
 
+# 실사용자 요청: 후보 선택 버튼(#options)에 s.name(공지 원문 제목)을 그대로 쓰다 보니
+# "2026학년도 2학기 천마가족장학금", "2026년도 하반기 인천인희망드림 장학생 선발 공고"처럼
+# 다 비슷한 연도/학기/"선발 공고"류 보일러플레이트가 앞뒤에 붙어서 버튼이 쓸데없이 길어짐
+# (가로 스크롤 버튼이라 한 번에 몇 개 안 보임). 실제로 장학금을 구분하는 핵심 정보는
+# 가운데 이름뿐이라, 표시용으로만 흔한 접두/접미 문구를 잘라낸 짧은 라벨을 만듦 — 원본
+# s.name은 그대로 두고(전체 목록 텍스트·신청서 등에는 원문 그대로 계속 씀), 버튼 라벨만
+# 이 함수를 거침. 다 잘려서 빈 문자열이 되면(예상 못 한 형식) 안전하게 원본을 그대로 씀.
+_SCHOLARSHIP_LABEL_LEADING_RE = re.compile(
+    r'^(?:제\d+기\s*(?:전기|후기)?\s*(?:\(\d{4}년도?\s*\d?학기?\))?\s*|'
+    r'\d{4}학년도\s*\d?학기?\s*|'
+    r'\d{4}년도?\s*(?:상반기|하반기|\d학기)?\s*)+'
+)
+_SCHOLARSHIP_LABEL_TRAILING_RE = re.compile(
+    r'\s*(?:장학생\s*)?(?:신청\s*안내|선발\s*공고|선발\s*안내|모집\s*공고|'
+    r'사업\s*계획\s*및\s*장학생?\s*선발\s*안내)\s*$'
+)
+
+
+def _short_scholarship_label(name: str) -> str:
+    s = _SCHOLARSHIP_LABEL_LEADING_RE.sub('', name).strip()
+    prev = None
+    while prev != s:
+        prev = s
+        s = _SCHOLARSHIP_LABEL_TRAILING_RE.sub('', s).strip()
+    return s or name
+
 # 코드 리뷰 발견 버그 수정용: 아래 stage들은 "지금 막 던진 질문에 대한 짧고 명확한 답"을
 # 기다리는 단계라서, 메시지에 다른 모드 키워드가 우연히 섞여 있어도 모드를 바꾸면 안 됨
 # (_chat_impl의 mode 자동전환 분기 참고).
@@ -891,7 +917,7 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         return {
             "reply": reply,
             "stage": "matched",
-            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
+            "options": [{"index": i + 1, "label": _short_scholarship_label(s.name)} for i, (s, _) in enumerate(sub["matches"])],
         }
 
     stage = sub["stage"]
@@ -962,7 +988,7 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         return {
             "reply": reply,
             "stage": "matched",
-            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(matches)],
+            "options": [{"index": i + 1, "label": _short_scholarship_label(s.name)} for i, (s, _) in enumerate(matches)],
         }
 
     if stage == "condition_check":
@@ -989,7 +1015,7 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
         return {
             "reply": reply,
             "stage": "matched",
-            "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(matches)],
+            "options": [{"index": i + 1, "label": _short_scholarship_label(s.name)} for i, (s, _) in enumerate(matches)],
         }
 
     if stage == "matched":
@@ -1023,7 +1049,7 @@ def handle_scholarship_turn(sub: dict, convo: str, user_msg: str) -> dict:
             return {
                 "reply": reply,
                 "stage": "matched",
-                "options": [{"index": i + 1, "label": s.name} for i, (s, _) in enumerate(sub["matches"])],
+                "options": [{"index": i + 1, "label": _short_scholarship_label(s.name)} for i, (s, _) in enumerate(sub["matches"])],
             }
         selected, needs_income_check = sub["matches"][idx]
         sub["selected"] = selected

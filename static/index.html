@@ -229,10 +229,12 @@
     cursor:pointer;
     transition:all .15s ease;
     flex-shrink:0;
-    max-width:200px;
+    /* 실사용자 리포트: max-width+말줄임표로 잘라놨더니 "1. 제24기 후기(2026년
+       2학기)..."처럼 무슨 장학금인지 정작 안 보여서 오히려 불편했음. 가로 스크롤
+       이라 이름이 길어도 옆으로 밀리기만 할 뿐 세로 줄바꿈은 안 생기니(white-space:
+       nowrap) 굳이 잘라낼 필요가 없음 — 버튼이 글자 길이에 맞게 넓어지고, 다음 항목은
+       스와이프해서 보는 걸로. */
     white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
     scroll-snap-align:start;
   }
   #options button:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}

@@ -50,8 +50,15 @@
     color:var(--text);
   }
   .app{
+    /* 실사용자 요청: "화면에 꽉 차도록" — 예전엔 max-width:460px짜리 모바일폭 카드가
+       넓은 데스크톱 화면 한가운데 좁게 떠 있어서, 특히 화면을 확대(Ctrl+스크롤)하면
+       카드 자체가 작다 보니 그 안의 채팅 영역까지 더 좁아 보였음. 카드 폭을 화면
+       대부분을 채우게 넓혀서 확대해도 채팅 영역이 넉넉하게 보이도록 함 — 그래도
+       초광폭 모니터에서 글줄이 과하게 안 늘어나게 상한선(900px)만 남겨둠. 브라우저
+       자체 확대/축소(Ctrl+스크롤, Ctrl+ +/-)는 이 카드 폭과 무관하게 그대로 되니까
+       화면 비율은 사용자가 원하는 대로 계속 조정 가능함.*/
     width:100%;
-    max-width:460px;
+    max-width:900px;
     height:100vh;
     background:var(--panel);
     display:flex;
@@ -162,6 +169,7 @@
     padding:11px 15px;
     border-radius:14px;
     font-size:14px;
+    font-weight:600; /* 실사용자 요청: "챗봇 글자들이 잘 보이도록 굵게" */
     line-height:1.6;
     white-space:pre-wrap;
     word-break:break-word;
@@ -193,12 +201,23 @@
     border-top-right-radius:4px;
   }
 
+  /* 실사용자 리포트: 장학금 후보가 8개씩 뜨면 #options가 flex-wrap으로 줄바꿈되면서
+     세로로 4~5줄까지 쌓여 채팅 메시지 영역을 거의 다 밀어냄("목록들이 우다다다 뜨는데
+     채팅창을 너무 많이 먹지 않게"). 줄바꿈을 아예 없애고 한 줄 가로 스크롤(스와이프)
+     띠로 바꿔서, 옵션이 몇 개든 항상 딱 한 줄 높이만 차지하게 고정함 — 나머지는
+     옆으로 슬라이드해서 보는 식. 스크롤바는 가늘게만 보이게 해서 "선택창"처럼 보이도록.*/
   #options{
     display:flex;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
     gap:7px;
     padding:0 18px 10px;
   }
+  #options::-webkit-scrollbar{height:5px;}
+  #options::-webkit-scrollbar-track{background:transparent;}
+  #options::-webkit-scrollbar-thumb{background:var(--pastel-navy-border);border-radius:3px;}
   #options button{
     background:var(--pastel-navy);
     border:1px solid var(--pastel-navy-border);
@@ -209,6 +228,12 @@
     color:var(--yu-blue);
     cursor:pointer;
     transition:all .15s ease;
+    flex-shrink:0;
+    max-width:200px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    scroll-snap-align:start;
   }
   #options button:hover{background:var(--yu-blue);border-color:var(--yu-blue);color:#fff;}
   #options button:disabled, .quickbar button:disabled, #draftActions button:disabled{

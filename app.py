@@ -593,6 +593,10 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
 
     category = extraction.category if extraction.category in INCIDENT_CATEGORIES else "기타"
     location = (extraction.location or "").strip() or None
+    # "화장실앞" 같은 막연한 장소는 location은 채워지지만 location_specific=false —
+    # 아래 pending에 같이 저장해서 _incident_next_action이 "위치는 이미 들었으니 넘어가자"로
+    # 착각하지 않고 어느 화장실/건물인지 한 번 더 캐묻게 한다.
+    location_specific = bool(location) and extraction.location_specific
     people_count = (extraction.people_count or "").strip() or None
     description = extraction.description.strip()
 
@@ -611,6 +615,7 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
         "category": category,
         "description": description,
         "location": location,
+        "location_specific": location_specific,
         "people_count": people_count,
         "reporter_name": None,
         "reporter_contact": None,
@@ -653,12 +658,27 @@ def _incident_next_action(pending: dict) -> Optional[str]:
 
     if pending["stage"] == "details":
         relevant_fields = ("location", "people_count") if pending["category"] == "보안" else ("location",)
-        missing = [f for f in relevant_fields if not pending.get(f)]
+        # 실사용자 리포트: "화장실앞에 이상한사람있다"처럼 location 자체는 채워졌지만
+        # ("화장실앞") 캠퍼스 어디인지 특정이 안 되는 막연한 장소였는데, 예전엔 location이
+        # null만 아니면 "이미 물어봤음"으로 치고 넘어가서 정작 어느 화장실/건물인지는 한 번도
+        # 안 물어봤음. location은 "값이 있는지"가 아니라 "구체적인지"(location_specific)로
+        # missing 여부를 판단하도록 바꿈 — people_count는 예전 그대로 값 유무로만 판단.
+        def _still_missing(field: str) -> bool:
+            if field == "location":
+                return not pending.get("location") or not pending.get("location_specific")
+            return not pending.get(field)
+
+        missing = [f for f in relevant_fields if _still_missing(f)]
         if missing and pending["detail_rounds"] < INCIDENT_FOLLOWUP_MAX_DETAIL_ROUNDS:
             pending["detail_rounds"] += 1
             bits = []
             if "location" in missing:
-                bits.append("정확히 어디서 그런 거야?")
+                if pending.get("location"):
+                    # 장소를 말하긴 했는데 막연함 — "어디서"를 반복하면 뜬금없으니 이미
+                    # 말한 장소를 인정하면서 더 구체적으로만 되묻는다.
+                    bits.append(f'"{pending["location"]}"이 정확히 어느 건물/몇 층이야?')
+                else:
+                    bits.append("정확히 어디서 그런 거야? (건물이나 장소 이름으로 알려줘)")
             if "people_count" in missing:
                 bits.append("몇 명 정도 있어?")
             # 실사용자 요청: "언제든 신고를 끝낼 수는 잇도록 안내" — 캐물을 때마다 매번 상기시켜줌.
@@ -691,6 +711,7 @@ def _handle_incident_followup_message(sess: dict, user_msg: str) -> dict:
         fu = bot_core.extract_incident_followup(user_msg)
         if fu.location:
             pending["location"] = fu.location.strip()
+            pending["location_specific"] = fu.location_specific
             updates["location"] = pending["location"]
         if fu.people_count:
             pending["people_count"] = fu.people_count.strip()

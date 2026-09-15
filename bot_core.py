@@ -141,21 +141,50 @@ def _generate_json(prompt: str, schema, temperature: float = 0.0, system_instruc
     return response.text
 
 
+def _looks_like_json(text: str) -> bool:
+    s = text.strip()
+    return (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]"))
+
+
+# 실사용자 리포트: 자유텍스트 생성 함수(_generate_text)가 여러 군데서 "학생한테 자연어로
+# 답해라"라고 시켜도, 시스템 프롬프트가 스키마/필드 얘기를 조금이라도 섞고 있으면(과거
+# generate_course_ask_more_message 사례) 모델이 가끔 JSON을 그대로 뱉어서 채팅창에 날것으로
+# 노출되는 사고가 반복됐음. 함수 하나씩 안전장치를 붙이는 대신, _generate_text 전체에 공통
+# 가드레일을 걸어서 "JSON처럼 보이는 응답"이 학생한테 나가는 일 자체를 원천 차단함:
+# 1) 한 번 더, 이번엔 "절대 JSON 쓰지 마라"를 강하게 못박은 프롬프트로 재시도
+# 2) 그래도 JSON이면 예외를 던져서 app.py의 공통 에러 핸들러(미안, 문제가 생겼어! 안내)로
+#    넘긴다 — 날것의 JSON을 보여주느니 재시도 안내가 훨씬 낫다는 원칙.
 def _generate_text(prompt: str, system_instruction: str, temperature: float = 0.4) -> str:
     client = get_client()
     model = config.get_model()
-    t0 = time.perf_counter()
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config={
-            "system_instruction": system_instruction,
-            "temperature": temperature,
-            "thinking_config": _thinking_config_for(model),
-        },
-    )
-    print(f"[Gemini] {model} 텍스트 호출 {time.perf_counter() - t0:.2f}s")
-    return response.text
+
+    def _call(p: str) -> str:
+        t0 = time.perf_counter()
+        response = client.models.generate_content(
+            model=model,
+            contents=p,
+            config={
+                "system_instruction": system_instruction,
+                "temperature": temperature,
+                "thinking_config": _thinking_config_for(model),
+            },
+        )
+        print(f"[Gemini] {model} 텍스트 호출 {time.perf_counter() - t0:.2f}s")
+        return response.text
+
+    text = _call(prompt)
+    if _looks_like_json(text):
+        print(f"[_generate_text] JSON 형태 응답 감지, 재시도: {text.strip()[:200]}")
+        retry_prompt = (
+            prompt
+            + "\n\n[중요] 방금 네 답변이 JSON 형식이었다. 이 자리는 학생에게 그대로 보여줄"
+            " 채팅 메시지다 — 중괄호/대괄호 같은 JSON 문법이나 필드명 없이, 자연스러운"
+            " 문장으로만 다시 답해라."
+        )
+        text = _call(retry_prompt)
+        if _looks_like_json(text):
+            raise ValueError(f"_generate_text: 재시도해도 JSON 형태 응답: {text.strip()[:200]}")
+    return text
 
 
 # ---------- 0. 통합 챗봇 진입 라우팅(의도 분류) ----------
@@ -202,6 +231,12 @@ INCIDENT_SYSTEM_PROMPT = """너는 대학 캠퍼스 안전/시설 신고를 접�
 - description에는 학생이 말한 상황을 한두 문장으로 간결하게 정리해서 담아라 — 존댓말로 써라
   (담당 직원이 보는 공식 신고 내용이다). 학생이 말한 내용만 담고 지어내지 마라.
 - location은 학생이 장소를 명시적으로 언급했을 때만 채우고, 언급 안 했으면 null로 둬라.
+- location_specific: 캠퍼스에서 실제로 "여기다"하고 특정할 수 있는 수준이면 true, 아니면
+  false다. "화장실", "강의실", "앞", "저기", "이쪽" 처럼 건물명/동 이름/층수/구체적
+  랜드마크 없이 학교 어디에나 있는 막연한 장소면 false로 해라 — "화장실앞"도 화장실이
+  캠퍼스에 수십 개라 여전히 false다. "공대 3호관 1층 화장실", "정문", "학생회관 앞",
+  "도서관 4층 열람실"처럼 건물/구역이 특정되면 true. location이 애초에 null이면
+  location_specific도 false로 둬라.
 - people_count는 학생이 관련 인원수를 이미 언급했을 때만("셋이서", "저 혼자", "몇 명 모여있음"
   등) 자유텍스트로 채우고, 언급 안 했으면 null로 둬라 — 지어내지 마라.
 - 신고와 무관한 잡담이나 다른 맥락(예: "나 오늘 게임하다 신고당함ㅋㅋ", "저기 계단 몇 개야"
@@ -238,6 +273,10 @@ INCIDENT_FOLLOWUP_SYSTEM_PROMPT = """너는 대학 캠퍼스 안전/시설 신�
 - wants_anonymous: 학생이 "이름/연락처 말하기 싫어", "익명으로 할래", "그냥 익명으로 해줘"
   처럼 신원을 밝히고 싶지 않다는 의사를 명시했으면 true, 아니면 false.
 - location: 장소를 새로 언급했으면 채우고, 없으면 null.
+- location_specific: 방금 채운(또는 이미 알고 있던) location이 캠퍼스에서 실제로 "여기다"하고
+  특정할 수 있는 수준이면 true, "화장실"/"강의실"/"앞"처럼 건물명·동 이름·층수·구체적
+  랜드마크 없이 막연하면 false. location을 새로 언급 안 했으면(null) 이전 판단 그대로 두면
+  되니 false로 둬도 무방하다 — app.py가 location이 새로 채워질 때만 이 값을 같이 반영한다.
 - people_count: 인원수를 새로 언급했으면 채우고, 없으면 null.
 - extra_detail: 상황 파악에 도움되는 추가 정보(예: "흉기를 들고 있었다", "다친 사람은
   없다")가 있으면 존댓말 한두 문장으로 정리, 없으면 null.
@@ -800,6 +839,24 @@ def extract_completed_courses(
     return CompletedCoursesExtraction.model_validate_json(text)
 
 
+# 버그 수정: 이 함수가 예전엔 시스템 프롬프트로 COURSE_EXTRACTION_SYSTEM_PROMPT(JSON 구조화
+# 추출용 — "course_name에 담아라", "done을 true로 해라" 같은 스키마 필드 지시로 가득함)를
+# 그대로 재사용하고 있었음. 근데 이 함수는 JSON을 뽑는 게 아니라 학생한테 자연스러운 질문을
+# 건네는 함수라 response_schema 강제도 안 걸려있는데, 시스템 프롬프트가 "필드에 담아라"라고
+# 계속 얘기하니까 모델이 이따금 자기가 JSON을 출력해야 하는 걸로 착각해서 실제로 날것의
+# JSON({"courses": [...], "done": ..., "removed_course_names": [...]} 형태)을 그대로 답변으로
+# 뱉어버리는 버그가 있었음(실사용자 리포트로 확인 — 채팅창에 JSON이 그대로 노출됨). 추출
+# 프롬프트와 완전히 분리된, "질문만 자연스럽게 생성해라"는 전용 프롬프트로 교체함.
+COURSE_ASK_MORE_SYSTEM_PROMPT = """너는 대학 행정 안내 AI다. 학생한테 이미 이수한 과목을
+더 말해달라고 짧고 친근하게 되묻는 역할만 한다.
+- 너는 JSON이나 어떤 구조화된 데이터도 출력하지 않는다 — 오직 학생에게 보여줄 자연어
+  문장만 답한다. 절대 중괄호/대괄호 같은 JSON 문법이나 course_name/done/courses 같은
+  필드명을 그대로 노출하지 마라.
+- 지금까지 학생이 말한 과목을 참고해서 자연스럽게 이어 물어봐라(과목을 추출하거나 판단하는
+  건 네 역할이 아니다 — 그냥 대화만 이어가라).
+""" + _OUTPUT_STYLE_RULES
+
+
 def generate_course_ask_more_message(conversation_history: str, collected_so_far: list[str]) -> str:
     prompt = f"""지금까지 학생이 말한 이수과목: {collected_so_far or '아직 없음'}
 학생에게 더 이수한 과목이 있으면 계속 말해달라고 하고, 다 말했으면 "다 말했어"처럼 알려달라고
@@ -811,7 +868,16 @@ def generate_course_ask_more_message(conversation_history: str, collected_so_far
 [대화 이력]
 {conversation_history}
 """
-    return _generate_text(prompt, COURSE_EXTRACTION_SYSTEM_PROMPT, temperature=0.5)
+    text = _generate_text(prompt, COURSE_ASK_MORE_SYSTEM_PROMPT, temperature=0.5)
+    # 안전장치: 프롬프트를 분리해도 모델이 드물게 JSON 비슷한 걸 뱉을 가능성은 완전히
+    # 배제 못 하니, 겉보기에 JSON(중괄호로 시작·끝)처럼 보이면 절대 그대로 노출하지 않고
+    # 고정 문구로 대체한다 — "지어낸 문장"이 아니라 "형식이 깨진 응답"이라 verify_grounding
+    # 대상은 아니지만 같은 원칙(사용자한테 날것을 보여주지 않는다)으로 처리.
+    stripped = text.strip()
+    if stripped.startswith("{") and stripped.endswith("}"):
+        print(f"[course_ask_more] JSON 형태 응답 감지, 고정 문구로 대체: {stripped[:200]}")
+        return "더 이수한 과목 있으면 계속 알려주고, 다 말했으면 \"다 말했어\"라고 알려줘!"
+    return text
 
 
 # ---------- 5-1-2. 이수과목 인정신청서 2단계 보조: "이 과목 몇 학년/학기에 들었어?" ----------

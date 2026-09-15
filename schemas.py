@@ -346,6 +346,13 @@ class IncidentReportExtraction(BaseModel):
     category: str = "기타"  # "보안" | "시설" | "기타" — INCIDENT_CATEGORIES 참고
     description: str = ""  # 신고 내용 요약(존댓말, 담당팀이 보는 공식 신고 내용)
     location: Optional[str] = None  # 학생이 장소를 명시했을 때만
+    # 실사용자 리포트: "화장실앞에 이상한사람있다"처럼 location이 채워지긴 했는데
+    # ("화장실앞") 캠퍼스에 화장실이 한두 개가 아니라 현장 출동에 쓸모가 없는 수준으로
+    # 막연한 경우, 예전엔 location이 null이 아니라는 이유만으로 "위치 다 물어봤음"
+    # 취급해서 정작 어느 건물/어느 화장실인지는 한 번도 되묻지 않았음. location이
+    # "채워졌는지"와 "구체적인지"를 분리해서, 막연하면 계속 캐묻게 함(app.py의
+    # _incident_next_action 참고).
+    location_specific: bool = False  # 건물명/층/구체적 랜드마크 등으로 특정 가능하면 true
     people_count: Optional[str] = None  # 학생이 인원수를 이미 언급했을 때만(자유텍스트)
 
 
@@ -363,6 +370,7 @@ class IncidentFollowupExtraction(BaseModel):
     wants_to_finish: bool = False  # "그만", "됐어", "그냥 접수해줘"처럼 지금까지 내용으로 끝내고 싶다는 의사
     wants_anonymous: bool = False  # "이름/연락처 말하기 싫어", "익명으로 할래"처럼 신원을 밝히기 싫다는 의사(명시했을 때만)
     location: Optional[str] = None
+    location_specific: bool = False  # IncidentReportExtraction.location_specific과 동일한 기준
     people_count: Optional[str] = None
     extra_detail: Optional[str] = None  # 상황 설명에 보탤 추가 정보(존댓말, description에 이어붙임) — 없으면 null
     reporter_name: Optional[str] = None

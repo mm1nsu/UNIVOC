@@ -300,6 +300,10 @@ class IncidentReport(BaseModel):
     people_count: Optional[str] = None  # 관련 인원 수 — 자유텍스트("3명 정도", "혼자" 등), 선택 입력
     reporter_name: Optional[str] = None
     reporter_contact: Optional[str] = None
+    # 실사용자 요청: "진짜 긴급(사람의 안녕에 위해가 가해질 수 있는 상황)에는 긴급상황으로
+    # 생각하고 소리가 좀 많이 나면서 깜빡깜빡거리면서 긴급이라는걸 티낼 수 있으면 좋겠어" —
+    # 직원 대시보드(incidents.html)가 이 값으로 카드를 빨갛게 깜빡이게 하고 알림음도 다르게 줌.
+    is_emergency: bool = False
     status: str = "open"  # open(접수) / resolved(처리완료)
     created_at: str
     resolved_by: Optional[str] = None
@@ -354,6 +358,12 @@ class IncidentReportExtraction(BaseModel):
     # _incident_next_action 참고).
     location_specific: bool = False  # 건물명/층/구체적 랜드마크 등으로 특정 가능하면 true
     people_count: Optional[str] = None  # 학생이 인원수를 이미 언급했을 때만(자유텍스트)
+    # 실사용자 요청: "진짜 긴급(사람의 안녕에 위해가 가해질 수 있는 상황)에는 긴급상황으로
+    # 생각하고" — 직원 대시보드에서 진짜 위급한 건을 한눈에 구분할 수 있게, "지금 당장
+    # 사람이 다칠/다쳤을 수 있는" 수준인지 별도로 판단해서 담아둔다. 기준은 INCIDENT_SYSTEM_PROMPT
+    # 참고 — 아주 보수적으로(false 기본) 판단해서 "수상한 사람 있다"류 일반 보안신고까지
+    # 전부 긴급으로 뜨는 알림 피로를 막는다.
+    is_emergency: bool = False  # 지금 당장 신체적 위해 가능성이 있는 진짜 응급 상황이면 true
 
 
 class IncidentFollowupExtraction(BaseModel):
@@ -375,6 +385,11 @@ class IncidentFollowupExtraction(BaseModel):
     extra_detail: Optional[str] = None  # 상황 설명에 보탤 추가 정보(존댓말, description에 이어붙임) — 없으면 null
     reporter_name: Optional[str] = None
     reporter_contact: Optional[str] = None
+    # 후속 답변에서 처음 드러나는 위급 정보도 있을 수 있음(예: 첫 메시지엔 "이상한 사람
+    # 있어"뿐이었는데 후속 답변에서 "흉기 들고 있어" 같은 게 나오는 경우) — 이번 답변만
+    # 보고 새로 위급하다고 판단되면 true, 위급한 내용이 없으면 false(app.py가 기존 값과
+    # OR로 합쳐서 한 번 true가 되면 그 뒤로 다시 false로 안 내려가게 처리함 — 안전 우선).
+    is_emergency: bool = False
 
 
 # ---------------- 직원 접속 로그 / 대화 로그 ----------------

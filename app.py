@@ -628,6 +628,7 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
 
     # 여기서 바로 저장 — 후속 질문에 학생이 답을 안 하거나 도중에 나가버려도 최소한
     # 지금까지 확보한 내용은 이미 직원 화면에 올라가 있게 된다.
+    is_emergency = bool(extraction.is_emergency)
     report = _save_new_incident_report(
         category=category,
         description=description,
@@ -635,6 +636,7 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
         people_count=people_count,
         reporter_name=None,
         reporter_contact=None,
+        is_emergency=is_emergency,
     )
     pending = {
         "report_id": report.id,
@@ -645,6 +647,7 @@ def _try_handle_incident_report(sess: dict, user_msg: str) -> Optional[dict]:
         "people_count": people_count,
         "reporter_name": None,
         "reporter_contact": None,
+        "is_emergency": is_emergency,
         "anonymous": False,
         "stage": "details",  # "details"(위치/인원수 캐묻는 중) -> "contact"(이름/연락처 물어보는 중)
         "detail_rounds": 0,
@@ -758,6 +761,12 @@ def _handle_incident_followup_message(sess: dict, user_msg: str) -> dict:
         if fu.reporter_contact and not pending["anonymous"]:
             pending["reporter_contact"] = fu.reporter_contact.strip()
             updates["reporter_contact"] = pending["reporter_contact"]
+        if fu.is_emergency and not pending.get("is_emergency"):
+            # 실사용자 요청: "진짜 긴급에는 긴급상황으로 생각하고" — 1차 판단에선 놓쳤어도
+            # 후속 답변("흉기 들고 있었다" 등)에서 뒤늦게 드러날 수 있으니, 한 번 true가
+            # 되면 절대 다시 false로 내려가지 않도록 OR-merge만 한다(안전 우선).
+            pending["is_emergency"] = True
+            updates["is_emergency"] = True
         if fu.wants_anonymous:
             # 실사용자 요청대로 익명 요청은 그 순간부터 확실히 반영 — 혹시 이전에 이름/
             # 연락처를 흘렸어도(예: 먼저 이름 말했다가 마음이 바뀐 경우), 이미 직원 화면에
@@ -1548,7 +1557,7 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             reply = (
                 "좋아, 마지막으로 신청서에 넣을 정보만 확인할게! "
                 "이름, 학번, 학년, 소속 단과대학, 이메일 알려줄래? "
-                "(예: 이민수 20231234 3학년 공과대학 minsu@yu.ac.kr) "
+                "(예: 이민수 20231234 3학년 공과대학 dlalstn8306@naver.com) "
                 "— 이메일은 반려/승인 결과 나오는 즉시 바로 알려주려고 받는 거야!"
             )
             return {"reply": reply, "stage": "student_info"}
@@ -1613,7 +1622,7 @@ def handle_dual_major_turn(session_id: str, sub: dict, convo: str, user_msg: str
             sub["stage"] = "student_info"
             reply = (
                 "알겠어, 다시 알려줄래? 이름, 학번, 학년, 소속 단과대학, 이메일 "
-                "(예: 이민수 20231234 3학년 공과대학 minsu@yu.ac.kr)"
+                "(예: 이민수 20231234 3학년 공과대학 dlalstn8306@naver.com)"
             )
             return {"reply": reply, "stage": "student_info"}
 
@@ -2095,6 +2104,7 @@ def _save_new_incident_report(
     people_count: Optional[str] = None,
     reporter_name: Optional[str] = None,
     reporter_contact: Optional[str] = None,
+    is_emergency: bool = False,
 ) -> IncidentReport:
     report = IncidentReport(
         id=uuid.uuid4().hex[:12],
@@ -2104,6 +2114,7 @@ def _save_new_incident_report(
         people_count=people_count or None,
         reporter_name=reporter_name or None,
         reporter_contact=reporter_contact or None,
+        is_emergency=bool(is_emergency),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     with INCIDENT_REPORTS_LOCK:
@@ -2151,12 +2162,23 @@ def create_incident_report(body: IncidentReportIn):
     if not description:
         return JSONResponse(status_code=400, content={"error": "신고 내용을 입력해주세요"})
 
+    # 독립 신고 폼(/report)에도 챗봇 경로와 동일하게 긴급 여부를 매겨서 직원 화면에서
+    # 일관되게 긴급 알림(소리+깜빡임)이 뜨게 한다 — 실패해도 폼 접수 자체는 막지 않음
+    # (best-effort, "확실할 때만" 원칙과 동일하게 실패 시 기본값 false로 안전하게 처리).
+    is_emergency = False
+    try:
+        extraction = bot_core.extract_incident_report(description)
+        is_emergency = bool(extraction.is_emergency)
+    except Exception:  # noqa: BLE001
+        pass
+
     report = _save_new_incident_report(
         category=category,
         description=description,
         location=(body.location or "").strip() or None,
         reporter_name=(body.reporter_name or "").strip() or None,
         reporter_contact=(body.reporter_contact or "").strip() or None,
+        is_emergency=is_emergency,
     )
     return report.model_dump()
 

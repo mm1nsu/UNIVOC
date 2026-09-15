@@ -180,6 +180,37 @@
     0%{background:var(--pastel-sky);}
     100%{background:var(--panel);}
   }
+
+  /* 실사용자 요청: "진짜 긴급에는... 소리가 좀 많이 나면서 깜빡깜빡거리면서 긴급이라는걸
+     티낼 수 있으면 좋겠어" — is_emergency=true이고 아직 처리 전(open)인 카드는 처리 완료
+     될 때까지 계속 빨갛게 깜빡여서 다른 카드들 사이에서도 눈에 확 띄게 함. 폴링마다
+     목록 전체를 다시 그려도(innerHTML 교체) 애니메이션은 클래스만 있으면 계속 재생되는
+     CSS 방식이라 깜빡임이 끊기지 않음. */
+  .card.is-emergency{
+    animation:emergencyBlink 1.1s ease-in-out infinite;
+    border:2px solid #d6291a;
+  }
+  @keyframes emergencyBlink{
+    0%,100%{background:var(--panel); box-shadow:0 0 0 0 rgba(214,41,26,.55);}
+    50%{background:#fdeceb; box-shadow:0 0 0 8px rgba(214,41,26,0);}
+  }
+  .emergency-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:12px;
+    font-weight:800;
+    color:#fff;
+    background:#d6291a;
+    border-radius:20px;
+    padding:4px 12px;
+    white-space:nowrap;
+    animation:emergencyBadgeBlink 1.1s ease-in-out infinite;
+  }
+  @keyframes emergencyBadgeBlink{
+    0%,100%{opacity:1;}
+    50%{opacity:.55;}
+  }
   .card-head{
     display:flex;
     align-items:flex-start;
@@ -391,6 +422,10 @@
 let currentCategory = '';
 let currentStatus = 'open';
 let knownIds = new Set();
+// 후속 답변(예: "흉기 들고 있었다")에서 뒤늦게 긴급으로 격상되는 경우도 있어서, 처음 볼 때
+// 이미 긴급이었는지(새 신고 알림에서 다룸)뿐 아니라 "이미 알고 있던 건이 나중에 긴급으로
+// 바뀌는 순간"도 잡아서 사이렌을 울리기 위해 별도로 추적함.
+let knownEmergencyIds = new Set();
 let firstLoad = true;
 let editingId = null;  // 지금 "위치/인원/연락처 수정" 폼을 열어둔 카드의 id — 없으면 null
 let pollTimer = null;
@@ -441,6 +476,36 @@ function playNewReportSound() {
     osc.start(now + delay);
     osc.stop(now + delay + 0.16);
   });
+}
+
+// 실사용자 요청: "진짜 긴급에는... 소리가 좀 많이 나면서" — 평소 새 신고 알림음(짧고
+// 조용한 2음)과 확실히 구분되도록, 사이렌처럼 주파수가 위아래로 훑는 소리를 더 크고
+// 길게(3회 반복) 재생함. 긴급 신고가 새로 들어왔을 때만 한 번 울리고(카드 자체는 처리
+// 완료 전까지 계속 깜빡여서 시각적으로는 계속 눈에 띔), 매 5초 폴링마다 반복 재생하진
+// 않음(같은 열린 긴급 건마다 5초마다 사이렌이 울리면 오히려 업무 방해가 됨).
+function playEmergencySound() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const sweepDuration = 0.35;
+  const gap = 0.08;
+  for (let i = 0; i < 3; i++) {
+    const start = now + i * (sweepDuration + gap);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(600, start);
+    osc.frequency.linearRampToValueAtTime(1200, start + sweepDuration / 2);
+    osc.frequency.linearRampToValueAtTime(600, start + sweepDuration);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.55, start + 0.03);
+    gain.gain.setValueAtTime(0.55, start + sweepDuration - 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + sweepDuration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + sweepDuration + 0.02);
+  }
 }
 
 function escapeHtml(s) {
@@ -527,9 +592,14 @@ function renderCard(r, isNew, isEditing) {
          <button class="btn btn-delete" data-action="delete" data-id="${r.id}">삭제</button>
        </div>`;
 
-  return `<div class="card cat-${cat} ${isNew ? 'is-new' : ''}" data-id="${r.id}">
+  // "긴급"은 처리 완료된 뒤까지 계속 깜빡일 필요는 없음(이미 대응이 끝났으니) — status가
+  // open일 때만 깜빡임/배지를 켜고, resolved면 평소 카드처럼 조용히 보이게 함.
+  const isEmergencyOpen = !!r.is_emergency && r.status !== 'resolved';
+
+  return `<div class="card cat-${cat} ${isNew ? 'is-new' : ''} ${isEmergencyOpen ? 'is-emergency' : ''}" data-id="${r.id}" data-cat="${escapeAttr(cat)}" data-emergency="${r.is_emergency ? '1' : '0'}">
     <div class="card-head">
       <div class="card-head-left">
+        ${isEmergencyOpen ? '<span class="emergency-badge">🚨 긴급</span>' : ''}
         <span class="cat-badge cat-${cat}">${escapeHtml(cat)}</span>
         <span class="status-badge ${r.status}">${r.status === 'resolved' ? '처리완료' : '접수'}</span>
         <span class="meta">${timeAgo(r.created_at)}</span>
@@ -568,10 +638,20 @@ async function loadReports(opts = {}) {
   // 실시간 감지: 폴링으로 새로 들어온 신고를 찾아 토스트 + 알림음 + 카드 하이라이트 + 탭에 점 표시
   if (!firstLoad && !opts.silent) {
     const newlyArrived = data.filter(r => !knownIds.has(r.id));
-    if (newlyArrived.length > 0) {
-      playNewReportSound();  // 실사용자 요청: "신고가 접수됐을 때 소리도 나오면 좋겠어"
+    // 방금 처음 보는 신고 중 긴급인 것뿐 아니라, 이미 알고 있던(첫 접수 때는 긴급이
+    // 아니었던) 신고가 후속 답변으로 뒤늦게 긴급 판정을 받은 경우도 놓치면 안 됨.
+    const newlyEmergency = data.filter(r => r.is_emergency && !knownEmergencyIds.has(r.id));
+    if (newlyArrived.length > 0 || newlyEmergency.length > 0) {
+      // 실사용자 요청: "진짜 긴급에는... 소리가 좀 많이 나면서" — 새로 들어왔거나 방금
+      // 긴급으로 격상된 건이 하나라도 있으면 평소 알림음 대신 더 크고 긴 사이렌음을 울림.
+      if (newlyEmergency.length > 0) {
+        playEmergencySound();
+      } else if (newlyArrived.length > 0) {
+        playNewReportSound();  // 실사용자 요청: "신고가 접수됐을 때 소리도 나오면 좋겠어"
+      }
       newlyArrived.forEach(r => {
-        showToast(`📣 새 신고가 접수되었습니다 (${r.category}) — ${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}`);
+        const emergencyPrefix = r.is_emergency ? '🚨 긴급 ' : '📣 ';
+        showToast(`${emergencyPrefix}새 신고가 접수되었습니다 (${r.category}) — ${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}`);
         const card = document.querySelector(`.card[data-id="${r.id}"]`);
         if (card) card.classList.add('is-new');
         if (r.category) {
@@ -581,9 +661,14 @@ async function loadReports(opts = {}) {
         const allTab = document.querySelector('.tab[data-cat=""]');
         if (allTab && currentCategory !== '') allTab.classList.add('has-new');
       });
+      // 새로 들어온 게 아니라 격상된 것뿐이어도(이미 목록엔 있었으니) 토스트로 알려줌.
+      newlyEmergency.filter(r => knownIds.has(r.id)).forEach(r => {
+        showToast(`🚨 긴급 상황으로 격상되었습니다 (${r.category}) — ${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}`);
+      });
     }
   }
   knownIds = new Set(data.map(r => r.id));
+  knownEmergencyIds = new Set(data.filter(r => r.is_emergency).map(r => r.id));
   firstLoad = false;
 }
 
@@ -594,6 +679,12 @@ document.getElementById('listArea').addEventListener('click', async (e) => {
   const action = btn.dataset.action;
 
   if (action === 'resolve') {
+    // 실사용자 요청: "처리완료하면 보안 위에 빨간 동그라미가 실시간으로 없어지면 좋겠어" —
+    // .has-new 점은 원래 "탭을 눌러서 직접 봐야만" 지워지는 방식이라, 다른 탭을 보고 있는
+    // 상태에서 알림만 보고 바로 처리 완료를 눌러도 그 카테고리 탭엔 점이 계속 남아있었음.
+    // 카드가 다시 그려지기 전에(data-cat) 카테고리를 미리 기억해뒀다가, 처리 성공 시
+    // clearNewDot으로 바로 지워줌(탭을 직접 클릭한 것과 동일한 효과).
+    const reportCat = btn.closest('.card')?.dataset.cat || '';
     const resolvedBy = prompt('처리자 이름(또는 소속)을 입력해 주세요 — 처리 기록에 남습니다.');
     if (resolvedBy === null) return;
     const note = prompt('처리 메모를 남겨주세요 (선택 사항 — 비워두셔도 됩니다).') || null;
@@ -610,6 +701,7 @@ document.getElementById('listArea').addEventListener('click', async (e) => {
         btn.disabled = false;
         return;
       }
+      clearNewDot(reportCat);
       await loadReports({ silent: true });
     } catch (err) {
       alert('서버와 통신 중 오류가 발생했습니다.');
@@ -687,6 +779,22 @@ document.getElementById('listArea').addEventListener('click', async (e) => {
     }
   }
 });
+
+// 탭에 붙는 빨간 점(.has-new)을 카테고리 하나만, 또는 전체 지우는 공용 함수 — 탭을 직접
+// 클릭했을 때(아래)뿐 아니라, 처리 완료 버튼을 눌렀을 때도 같은 방식으로 점을 지운다
+// (실사용자 요청: "처리완료하면 보안 위에 빨간 동그라미가 실시간으로 없어지면 좋겠어").
+// "전체" 탭의 점은 다른 카테고리 탭에 아직 점이 남아있으면 그대로 두고, 하나도 안 남았을
+// 때만 같이 지운다.
+function clearNewDot(category) {
+  if (category) {
+    document.querySelector(`.tab[data-cat="${category}"]`)?.classList.remove('has-new');
+  }
+  const stillNew = Array.from(document.querySelectorAll('#catTabs .tab[data-cat]'))
+    .some(t => t.dataset.cat !== '' && t.classList.contains('has-new'));
+  if (!stillNew) {
+    document.querySelector('.tab[data-cat=""]')?.classList.remove('has-new');
+  }
+}
 
 // 탭(카테고리/상태) 전환이나 수동 새로고침은 "필터가 달라져서 안 보이던 항목이 갑자기
 // 나타나는 것"일 뿐 실제로 새로 접수된 신고가 아님 — 이런 경우까지 "새 신고" 토스트를

@@ -20,16 +20,28 @@ UNIVOC/
 ├── bot_core.py        # 대화 로직 + RAG 자료 구조화 (Gemini 호출)
 ├── config.py          # API 키/모델 설정 읽기·쓰기
 ├── app.py              # 웹 서버 (FastAPI)
+├── auth.py             # 학번 + 비밀번호 로그인/회원가입 (PBKDF2 해시, data/users.json에 저장)
+├── chat_log.py         # 로그인한 학생의 대화 기록(탭별) 저장/불러오기
+├── session_store.py    # 세션 상태 직렬화/복원 (대화 이어서 하기용, 판단 로직 없음)
+├── recognition_doc.py  # 이수과목 인정신청서 공식 양식(.docx) 자동 작성
+├── notify.py           # 승인/반려 이메일 알림 (Resend API)
 ├── bulk_ingest.py       # 크롤링 공지(.md) 폴더 전체를 한 번에 DB에 채워넣는 CLI (로컬 전용)
 ├── scholar_rag_database/  # 크롤링해둔 장학금 공지 원문(.md) — bulk_ingest.py가 읽는 소스
+├── templates/
+│   └── 이수과목인정신청서_양식.docx  # recognition_doc.py가 채워넣는 공식 양식 원본
 ├── static/
 │   ├── index.html      # 학생용 채팅 화면 (통합 — 장학금 + 복수전공/이수과목 인정, 한 세션 안에서 자동 전환)
 │   ├── staff.html        # 직원 승인 화면 (이수과목 인정신청서 승인/반려, HITL)
 │   ├── admin.html       # 관리자 화면 (API 키 등록 + RAG 자료 추가/삭제)
+│   ├── report.html      # 캠퍼스 신고 접수 폼 (`/report`)
+│   ├── incidents.html   # 신고 접수 현황 대시보드 (`/incidents`)
+│   ├── dualmajor.html   # 옛 `/dualmajor` 링크 호환용 리다이렉트 페이지
 │   └── assets/           # 영남대학교 로고/심볼 (yu-logo.png, yu-mark.png)
 ├── data/
 │   ├── scholarship_db.json           # 실제 장학금 DB (처음엔 비어있음, 관리자 페이지에서 채움)
 │   ├── recognition_applications.json  # 이수과목 인정신청서 저장소 (제출 시 자동 생성)
+│   ├── users.json                     # 로그인 계정 (auth.py가 자동 생성)
+│   ├── chat_logs/                     # 로그인한 학생의 대화 기록 (chat_log.py가 자동 생성)
 │   └── config.json                    # API 키 저장 위치 (관리자 페이지에서 자동 생성됨)
 ├── requirements.txt
 └── README.md
